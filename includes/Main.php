@@ -6,6 +6,9 @@ namespace RRZE\Direction;
 
 defined('ABSPATH') || exit;
 
+/**
+ * Entry point: wires editor assets and localizes FAUdir workplace data for the block UI.
+ */
 final class Main
 {
     public function __construct()
@@ -13,6 +16,9 @@ final class Main
         add_action('enqueue_block_editor_assets', [$this, 'enqueueEditor']);
     }
 
+    /**
+     * Expose `window.rrze_direction` (persons + translated editor labels) before the script runs.
+     */
     public function enqueueEditor(): void
     {
         $handle = generate_block_asset_handle('rrze/direction', 'editorScript');

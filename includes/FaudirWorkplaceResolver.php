@@ -7,15 +7,15 @@ namespace RRZE\Direction;
 defined('ABSPATH') || exit;
 
 /**
- * Loads workplace/contact data via RRZE-FAUdir API for snapshot + map defaults.
+ * Resolves FAUdir contacts and workplaces for block snapshots and map defaults.
  */
 final class FaudirWorkplaceResolver
 {
-/**
- * REST-friendly person/workplace payloads for the block editor.
- *
- * @return array{error:bool,message:string,data:array}
- */
+    /**
+     * Build person/workplace rows for the block editor (inline script payload shape).
+     *
+     * @return array{error:bool, message:string, data:array<int, array<string, mixed>>}
+     */
     public static function personsWithWorkplaces(?\RRZE\FAUdir\API $api = null): array
     {
         if (!post_type_exists('custom_person')) {
@@ -210,7 +210,9 @@ final class FaudirWorkplaceResolver
     }
 
     /**
-     * @return array{0:?float,1:?float}
+     * Find latitude/longitude in workplace data (supports nested geo/location payloads).
+     *
+     * @return array{0: ?float, 1: ?float}
      */
     public static function extractCoordinates(array $data): array
     {
@@ -248,6 +250,7 @@ final class FaudirWorkplaceResolver
         return [null, null];
     }
 
+    /** @param array<string,mixed> $w API workplace fragment */
     private static function streetLine(array $w): string
     {
         if (!empty($w['street']) && is_string($w['street'])) {
@@ -257,6 +260,7 @@ final class FaudirWorkplaceResolver
         return '';
     }
 
+    /** @param array<string,mixed> $w API workplace fragment */
     private static function zip(array $w): string
     {
         if (!empty($w['postalCode']) && is_string($w['postalCode'])) {
@@ -269,6 +273,7 @@ final class FaudirWorkplaceResolver
         return '';
     }
 
+    /** @param array<string,mixed> $w API workplace fragment */
     private static function city(array $w): string
     {
         if (!empty($w['city']) && is_string($w['city'])) {
