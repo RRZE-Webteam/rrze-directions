@@ -2,16 +2,16 @@
 Contributors: rrze-webteam
 Requires at least: 6.8
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 0.0.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Anfahrtsbeschreibungen als Block mit Adressdaten aus RRZE-FAUdir.
+Arrival and directions as a Gutenberg block with address data sourced from RRZE-FAUdir.
 
 == Dependencies ==
 
-Das Plugin benötigt ein aktives RRZE-FAUdir (gleiche Datenbasis wie die Personeneinträge / custom_person).
+Requires the RRZE-FAUdir plugin to be active (same data basis as FAUdir person entries / custom_person).
 
 == Development ==
 
-`npm install && npm run build` erzeugt die Dateien im Ordner `/build`.
+Run `npm install && npm run build` to generate assets in the `/build` directory.
