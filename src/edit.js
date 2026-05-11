@@ -49,6 +49,7 @@ function snapshotFromPlace(place) {
 	return {
 		workplaceKey: place.id ?? '',
 		organizationName: place.organizationName ?? '',
+		organizationNumber: place.organizationNumber ?? '',
 		addressRoom: place.room ?? '',
 		addressFloor: place.floor ?? '',
 		addressStreet: place.street ?? '',
@@ -76,6 +77,7 @@ export default function Edit({ attributes, setAttributes }) {
 		personId,
 		workplaceKey,
 		organizationName,
+		organizationNumber,
 		addressRoom,
 		addressFloor,
 		addressStreet,
@@ -146,6 +148,7 @@ export default function Edit({ attributes, setAttributes }) {
 			setAttributes({
 				workplaceKey: '',
 				organizationName: '',
+				organizationNumber: '',
 				addressRoom: '',
 				addressFloor: '',
 				addressStreet: '',
@@ -249,6 +252,7 @@ export default function Edit({ attributes, setAttributes }) {
 							if (!row?.places?.length) {
 								setAttributes({
 									organizationName: '',
+									organizationNumber: '',
 									addressRoom: '',
 									addressFloor: '',
 									addressStreet: '',
@@ -267,6 +271,7 @@ export default function Edit({ attributes, setAttributes }) {
 							setAttributes({
 								workplaceKey: snapshot.workplaceKey,
 								organizationName: snapshot.organizationName,
+								organizationNumber: snapshot.organizationNumber,
 								addressRoom: snapshot.addressRoom,
 								addressFloor: snapshot.addressFloor,
 								addressStreet: snapshot.addressStreet,
@@ -387,13 +392,17 @@ export default function Edit({ attributes, setAttributes }) {
 							<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
 							<p>
 								<strong>{__('Embedded map:', 'rrze-direction')}</strong>{' '}
-								{mapLatitude &&
-								mapLongitude &&
-								`${mapLatitude}`.trim() !== '' &&
-								`${mapLongitude}`.trim() !== ''
-									? __('OpenStreetMap frame on the frontend', 'rrze-direction')
-									: __('link to campus map URL if coordinates are unavailable', 'rrze-direction')}
+								{__(
+									'The site uses the FAU map API (karte.fau.de): iframe URL if set, otherwise organisation number, map centre from coordinates, or address-based search—per API documentation.',
+									'rrze-direction',
+								)}
 							</p>
+							{organizationNumber ? (
+								<p className="rrze-direction-editor__muted">
+									{__('Organization no. (FAUdir):', 'rrze-direction')}{' '}
+									{organizationNumber}
+								</p>
+							) : null}
 							{mapUrl ? <p>{mapUrl}</p> : null}
 						</section>
 					) : null}

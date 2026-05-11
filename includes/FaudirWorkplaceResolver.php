@@ -100,6 +100,9 @@ final class FaudirWorkplaceResolver
                     $orgName = $contactStub['organization']['name'];
                 }
 
+                $orgPayload = (array) ($contactDetail['organization'] ?? $contactStub['organization'] ?? []);
+                $orgNumber  = self::organizationNumberFromOrg($orgPayload);
+
                 foreach ($contactDetail['workplaces'] ?? [] as $wi => $workplace) {
                     if (!is_array($workplace)) {
                         continue;
@@ -138,8 +141,9 @@ final class FaudirWorkplaceResolver
                             $roomFlo ?: null,
                             $formatted ?: null,
                         ])))),
-                        'organizationName' => $orgName,
-                        'room'             => $room,
+                        'organizationName'   => $orgName,
+                        'organizationNumber' => $orgNumber,
+                        'room'               => $room,
                         'floor'            => $floor,
                         'street'           => self::streetLine($workplace),
                         'zip'              => $zip,
@@ -179,6 +183,7 @@ final class FaudirWorkplaceResolver
                         'workplaceIndex'    => (int) $wi,
                         'label'             => $formatted,
                         'organizationName'  => '',
+                        'organizationNumber' => '',
                         'room'              => $room,
                         'floor'             => $floor,
                         'street'            => $street,
@@ -281,6 +286,32 @@ final class FaudirWorkplaceResolver
         }
         if (!empty($w['addressLocality']) && is_string($w['addressLocality'])) {
             return $w['addressLocality'];
+        }
+
+        return '';
+    }
+
+    /**
+     * FAU organisation number for karte.fau.de (API parameter “org”).
+     *
+     * @link https://karte.fau.de/api/doc
+     *
+     * @param array<string,mixed> $org Organization fragment from FAUdir contact JSON.
+     */
+    private static function organizationNumberFromOrg(array $org): string
+    {
+        if (isset($org['disambiguatingDescription']) && is_string($org['disambiguatingDescription'])) {
+            $digits = preg_replace('/\D+/', '', $org['disambiguatingDescription']);
+
+            return is_string($digits) && $digits !== '' && strlen($digits) <= 10 ? $digits : '';
+        }
+
+        if (isset($org['orgnr'])) {
+            $raw = (is_string($org['orgnr']) || is_int($org['orgnr'])) ? (string) $org['orgnr'] : '';
+            $raw = trim($raw);
+            if ($raw !== '' && ctype_digit($raw) && strlen($raw) <= 10) {
+                return $raw;
+            }
         }
 
         return '';

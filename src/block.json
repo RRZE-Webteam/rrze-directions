@@ -25,6 +25,10 @@
       "type": "string",
       "default": ""
     },
+    "organizationNumber": {
+      "type": "string",
+      "default": ""
+    },
     "addressRoom": {
       "type": "string",
       "default": ""

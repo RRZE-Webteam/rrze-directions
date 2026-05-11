@@ -15,33 +15,33 @@ $addressCity      = (string) ($attributes['addressCity'] ?? '');
 $addressFormatted = (string) ($attributes['addressFormatted'] ?? '');
 
 $showMap    = !empty($attributes['showMap']);
-$mapUrl     = (string) ($attributes['mapUrl'] ?? '');
-$mapLatRaw  = (string) ($attributes['mapLatitude'] ?? '');
-$mapLonRaw  = (string) ($attributes['mapLongitude'] ?? '');
+$mapUrl     = trim((string) ($attributes['mapUrl'] ?? ''));
 $mapImageId = isset($attributes['mapImageId']) ? (int) $attributes['mapImageId'] : 0;
 
 $directionBike    = (string) ($attributes['directionBike'] ?? '');
 $directionCar     = (string) ($attributes['directionCar'] ?? '');
 $directionTransit = (string) ($attributes['directionTransit'] ?? '');
 
-$openStreetMapIframe = static function (float $latitude, float $longitude): string {
-    $delta  = 0.012;
-    $bbox   = implode(
-        ',',
-        [
-            $longitude - $delta,
-            $latitude - $delta,
-            $longitude + $delta,
-            $latitude + $delta,
-        ]
-    );
+$karteIframeSrc = class_exists(\RRZE\Direction\FauMapIframe::class)
+    ? \RRZE\Direction\FauMapIframe::resolveIframeSrc($attributes)
+    : '';
 
-    return sprintf(
-        'https://www.openstreetmap.org/export/embed.html?bbox=%s&layer=mapnik&marker=%s',
-        rawurlencode($bbox),
-        rawurlencode(implode(',', [$latitude, $longitude]))
-    );
+$normalizeMapHref = static function (string $url): string {
+    $url = trim($url);
+    if ($url === '') {
+        return '';
+    }
+    $u = esc_url($url, ['http', 'https']);
+
+    return is_string($u) ? $u : '';
 };
+
+$mapLinkOnly   = $normalizeMapHref($mapUrl);
+$showExtraLink = $mapLinkOnly !== ''
+    && (
+        $karteIframeSrc === ''
+        || rtrim(strtolower($mapLinkOnly), '/') !== rtrim(strtolower($karteIframeSrc), '/')
+    );
 
 $class = trim('wp-block-rrze-direction rrze-direction');
 ?>
@@ -96,56 +96,30 @@ $class = trim('wp-block-rrze-direction rrze-direction');
                 </figure>
             <?php endif; ?>
 
-            <?php
-            $latNormalized = str_replace(',', '.', $mapLatRaw);
-            $lonNormalized = str_replace(',', '.', $mapLonRaw);
-
-            $latFloat = $latNormalized !== '' && is_numeric($latNormalized) ? (float) $latNormalized : null;
-            $lonFloat = $lonNormalized !== '' && is_numeric($lonNormalized) ? (float) $lonNormalized : null;
-
-            $iframeSrc      = '';
-            $canEmbedOpenSm = false;
-            if (
-                null !== $latFloat && null !== $lonFloat
-                && is_finite($latFloat) && is_finite($lonFloat)
-            ) {
-                $iframeCandidate = $openStreetMapIframe($latFloat, $lonFloat);
-                $pieces          = wp_parse_url($iframeCandidate);
-                if (
-                    isset($pieces['host'])
-                    && (str_ends_with(strtolower((string) $pieces['host']), 'openstreetmap.org'))
-                    && (str_starts_with((string) ($pieces['scheme'] ?? ''), 'http'))
-                ) {
-                    $iframeSrc      = esc_url($iframeCandidate, ['http', 'https']);
-                    $canEmbedOpenSm = '' !== $iframeSrc;
-                }
-            }
-            ?>
-
             <div class="rrze-direction__map">
                 <h3 class="rrze-direction__map-title"><?php echo esc_html__('Arrival map', 'rrze-direction'); ?></h3>
 
-                <?php if ($canEmbedOpenSm) : ?>
+                <?php if ($karteIframeSrc !== '') : ?>
                     <div class="rrze-direction__map-frame">
                         <iframe
-                            title="<?php echo esc_attr__('OpenStreetMap', 'rrze-direction'); ?>"
-                            src="<?php echo $iframeSrc; ?>"
+                            title="<?php echo esc_attr__('FAU map service', 'rrze-direction'); ?>"
+                            src="<?php echo esc_url($karteIframeSrc, ['https']); ?>"
                             class="rrze-direction__iframe"
                             loading="lazy"
                             referrerpolicy="no-referrer-when-downgrade"></iframe>
                     </div>
-                    <?php if ($mapUrl !== '') : ?>
+                    <?php if ($showExtraLink) : ?>
                         <p class="rrze-direction__map-extra">
-                            <a href="<?php echo esc_url($mapUrl); ?>"><?php echo esc_html__('Campus map (FAU)', 'rrze-direction'); ?></a>
+                            <a href="<?php echo $mapLinkOnly; ?>"><?php echo esc_html__('Additional map link', 'rrze-direction'); ?></a>
                         </p>
                     <?php endif; ?>
-                <?php elseif ($mapUrl !== '') : ?>
+                <?php elseif ($mapLinkOnly !== '') : ?>
                     <p class="rrze-direction__map-link">
-                        <a href="<?php echo esc_url($mapUrl); ?>"><?php echo esc_html__('Open map link', 'rrze-direction'); ?></a>
+                        <a href="<?php echo $mapLinkOnly; ?>"><?php echo esc_html__('Open map link', 'rrze-direction'); ?></a>
                     </p>
                 <?php else : ?>
                     <p class="rrze-direction__map-empty">
-                        <?php echo esc_html__('No map link or embedded coordinates.', 'rrze-direction'); ?></p>
+                        <?php echo esc_html__('No map parameters available (add FAUdir data or a Map URL).', 'rrze-direction'); ?></p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
