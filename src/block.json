@@ -1,0 +1,89 @@
+{
+  "apiVersion": 3,
+  "name": "rrze/direction",
+  "title": "RRZE Direction",
+  "category": "rrze",
+  "icon": "location",
+  "description": "Directions and arrival information using RRZE-FAUdir address data.",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "personId": {
+      "type": "number",
+      "default": 0
+    },
+    "personLabel": {
+      "type": "string",
+      "default": ""
+    },
+    "workplaceKey": {
+      "type": "string",
+      "default": ""
+    },
+    "organizationName": {
+      "type": "string",
+      "default": ""
+    },
+    "addressRoom": {
+      "type": "string",
+      "default": ""
+    },
+    "addressFloor": {
+      "type": "string",
+      "default": ""
+    },
+    "addressStreet": {
+      "type": "string",
+      "default": ""
+    },
+    "addressZip": {
+      "type": "string",
+      "default": ""
+    },
+    "addressCity": {
+      "type": "string",
+      "default": ""
+    },
+    "addressFormatted": {
+      "type": "string",
+      "default": ""
+    },
+    "showMap": {
+      "type": "boolean",
+      "default": false
+    },
+    "mapUrl": {
+      "type": "string",
+      "default": ""
+    },
+    "mapLatitude": {
+      "type": "string",
+      "default": ""
+    },
+    "mapLongitude": {
+      "type": "string",
+      "default": ""
+    },
+    "mapImageId": {
+      "type": "number",
+      "default": 0
+    },
+    "directionBike": {
+      "type": "string",
+      "default": ""
+    },
+    "directionCar": {
+      "type": "string",
+      "default": ""
+    },
+    "directionTransit": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "editorScript": "file:./index.js",
+  "render": "file:./render.php",
+  "style": "file:./style-index.css",
+  "textdomain": "rrze-direction"
+}
