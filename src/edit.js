@@ -1,4 +1,4 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	PanelBody,
 	SelectControl,
@@ -15,6 +15,9 @@ import {
 import { Fragment, useMemo } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
+
+const KARTE_HOST_SUFFIX = 'karte.fau.de';
+const KARTE_IFRAME_PATH = '/api/v1/iframe';
 
 function getPersonRows() {
 	if (typeof window === 'undefined' || !window.rrze_direction) {
@@ -34,15 +37,119 @@ function getEditorStrings() {
 	return window.rrze_direction?.editorStrings ?? {};
 }
 
-function coordsLabel(latRaw, lngRaw, noneLabel) {
-	const la = `${latRaw ?? ''}`.trim();
-	const lo = `${lngRaw ?? ''}`.trim();
-
-	if (!la || !lo) {
-		return noneLabel;
+function parseCoordinate(value) {
+	if (value === null || value === undefined || `${value}`.trim() === '') {
+		return null;
 	}
 
-	return `${la}, ${lo}`;
+	const normalized = `${value}`.trim().replace(',', '.');
+	if (normalized === '' || Number.isNaN(Number(normalized))) {
+		return null;
+	}
+
+	const parsed = Number(normalized);
+
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildAddressParam(street, zip, city) {
+	const cityLine = [zip, city].filter(Boolean).join(' ').trim();
+	const parts = [street.trim(), cityLine].filter(Boolean);
+
+	return parts.join(',');
+}
+
+function isApiIframeUrl(url) {
+	const trimmed = `${url ?? ''}`.trim();
+	if (!trimmed) {
+		return false;
+	}
+
+	try {
+		const parsed = new URL(trimmed, 'https://karte.fau.de');
+		const host = parsed.hostname.toLowerCase();
+		const path = parsed.pathname;
+
+		return host.endsWith(KARTE_HOST_SUFFIX) && path.includes(KARTE_IFRAME_PATH);
+	} catch (error) {
+		return false;
+	}
+}
+
+function sanitizeOrganizationDigits(raw) {
+	const digits = `${raw ?? ''}`.replace(/\D+/g, '');
+
+	return digits.length > 0 && digits.length <= 10 ? digits : '';
+}
+
+function resolveMapIframeSrc(attributes) {
+	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
+	if (mapUrl && isApiIframeUrl(mapUrl)) {
+		return mapUrl;
+	}
+
+	const org = sanitizeOrganizationDigits(attributes.organizationNumber);
+	if (org) {
+		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/org/${org}/`;
+	}
+
+	const lat = parseCoordinate(attributes.mapLatitude);
+	const lon = parseCoordinate(attributes.mapLongitude);
+	if (lat !== null && lon !== null) {
+		const pair = encodeURIComponent(`${lat},${lon}`);
+
+		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/center/${pair}/zoom/16/`;
+	}
+
+	const addressQuery = buildAddressParam(
+		attributes.addressStreet ?? '',
+		attributes.addressZip ?? '',
+		attributes.addressCity ?? ''
+	);
+	if (addressQuery) {
+		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/address/${encodeURIComponent(addressQuery)}/`;
+	}
+
+	return '';
+}
+
+function formatStreetLine(street, zip, city) {
+	const cityLine = [zip, city].filter(Boolean).join(' ').trim();
+	const parts = [street, cityLine].filter(Boolean);
+
+	return parts.join(', ');
+}
+
+function normalizeAddress(value) {
+	return `${value ?? ''}`
+		.trim()
+		.toLowerCase()
+		.replace(/\s+/g, ' ');
+}
+
+function shouldShowFormattedAddress(formatted, streetLine) {
+	const trimmed = `${formatted ?? ''}`.trim();
+	if (!trimmed) {
+		return false;
+	}
+
+	if (!streetLine) {
+		return true;
+	}
+
+	return normalizeAddress(trimmed) !== normalizeAddress(streetLine);
+}
+
+function googleMapsUrl(latitude, longitude) {
+	const query = encodeURIComponent(`${latitude},${longitude}`);
+
+	return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function appleMapsUrl(latitude, longitude) {
+	const query = encodeURIComponent(`${latitude},${longitude}`);
+
+	return `https://maps.apple.com/?ll=${query}`;
 }
 
 function snapshotFromPlace(place) {
@@ -72,6 +179,40 @@ function snapshotFromPlace(place) {
 	};
 }
 
+function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false }) {
+	const lat = parseCoordinate(latitude);
+	const lon = parseCoordinate(longitude);
+
+	if (lat === null || lon === null) {
+		if (hideWhenMissing) {
+			return null;
+		}
+
+		return (
+			<p className="rrze-direction-editor__coordinates">
+				{strings.coordinatesMissing ??
+					__('No coordinates detected in API data.', 'rrze-direction')}
+			</p>
+		);
+	}
+
+	return (
+		<p className="rrze-direction-editor__coordinates">
+			{strings.mapCoordinates ?? __('Coordinates', 'rrze-direction')}:{' '}
+			<a href={googleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
+				{strings.googleMaps ?? __('Google Maps', 'rrze-direction')}
+			</a>
+			<span className="rrze-direction-editor__coordinates-sep" aria-hidden="true">
+				{' '}
+				·{' '}
+			</span>
+			<a href={appleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
+				{strings.appleMaps ?? __('Apple Maps', 'rrze-direction')}
+			</a>
+		</p>
+	);
+}
+
 export default function Edit({ attributes, setAttributes }) {
 	const {
 		personId,
@@ -98,12 +239,12 @@ export default function Edit({ attributes, setAttributes }) {
 	const strings = getEditorStrings();
 	const personRows = useMemo(() => getPersonRows(), []);
 
-	const coordReadout = coordsLabel(
-		mapLatitude,
-		mapLongitude,
-		strings.coordinatesMissing ??
-			__('No coordinates detected in API data.', 'rrze-direction'),
+	const streetLine = formatStreetLine(addressStreet, addressZip, addressCity);
+	const showFormattedAddress = shouldShowFormattedAddress(
+		addressFormatted,
+		streetLine
 	);
+	const mapIframeSrc = resolveMapIframeSrc(attributes);
 
 	const imageDetails = useSelect(
 		(select) => {
@@ -113,7 +254,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 			return select(coreStore).getMedia(mapImageId, { context: 'view' });
 		},
-		[mapImageId],
+		[mapImageId]
 	);
 
 	const imageSrc =
@@ -193,7 +334,8 @@ export default function Edit({ attributes, setAttributes }) {
 									type="button"
 									onClick={open}
 								>
-									{__('Replace illustration', 'rrze-direction')}
+									{strings.replaceIllustration ??
+										__('Replace illustration', 'rrze-direction')}
 								</button>
 							)}
 						/>
@@ -202,7 +344,8 @@ export default function Edit({ attributes, setAttributes }) {
 							className="components-button is-link is-destructive is-small"
 							onClick={() => setAttributes({ mapImageId: 0 })}
 						>
-							{__('Remove illustration', 'rrze-direction')}
+							{strings.removeIllustration ??
+								__('Remove illustration', 'rrze-direction')}
 						</button>
 					</MediaUploadCheck>
 				</Fragment>
@@ -217,8 +360,13 @@ export default function Edit({ attributes, setAttributes }) {
 						value={0}
 						allowedTypes={['image']}
 						render={({ open }) => (
-							<button className="components-button is-primary" type="button" onClick={open}>
-								{__('Optional map illustration', 'rrze-direction')}
+							<button
+								className="components-button is-primary"
+								type="button"
+								onClick={open}
+							>
+								{strings.mapImageLabel ??
+									__('Optional map illustration', 'rrze-direction')}
 							</button>
 						)}
 					/>
@@ -291,11 +439,7 @@ export default function Edit({ attributes, setAttributes }) {
 								strings.selectWorkplace ??
 								__('Office / workplace', 'rrze-direction')
 							}
-							value={
-								workplaceKey ||
-								selectedRow?.places?.[0]?.id ||
-								''
-							}
+							value={workplaceKey || selectedRow?.places?.[0]?.id || ''}
 							options={wpSelectOptions}
 							onChange={(key) => syncWorkplaceAttrs(key)}
 						/>
@@ -321,23 +465,22 @@ export default function Edit({ attributes, setAttributes }) {
 									strings.mapUrl ??
 									__('Map URL (preset from FAUdir)', 'rrze-direction')
 								}
-								help={__(
-									'Taken from RRZE-FAUdir (campus map) but can be edited.',
-									'rrze-direction',
-								)}
-								value={mapUrl}
-								onChange={(next) =>
-									setAttributes({ mapUrl: next })
+								help={
+									strings.mapUrlHelp ??
+									__(
+										'Taken from RRZE-FAUdir (campus map) but can be edited.',
+										'rrze-direction'
+									)
 								}
+								value={mapUrl}
+								onChange={(next) => setAttributes({ mapUrl: next })}
 							/>
 
-							<p className="description">
-								<strong>
-									{strings.mapCoordinates ?? __('Coordinates', 'rrze-direction')}
-								</strong>
-								<br />
-								{coordReadout}
-							</p>
+							<CoordinateLinks
+								latitude={mapLatitude}
+								longitude={mapLongitude}
+								strings={strings}
+							/>
 
 							{mapIllustration}
 						</Fragment>
@@ -353,57 +496,93 @@ export default function Edit({ attributes, setAttributes }) {
 					</h3>
 
 					<section>
-						<h4>
-							{strings.addressFromFaudir ??
-								__('Address (from FAUdir)', 'rrze-direction')}
-						</h4>
-						{organizationName ? (
-							<p className="rrze-direction-editor__line">{organizationName}</p>
-						) : null}
-						{addressRoom || addressFloor ? (
-							<p className="rrze-direction-editor__line">
-								{[addressRoom, addressFloor].filter(Boolean).join(' · ')}
-							</p>
-						) : null}
-
-						<p className="rrze-direction-editor__line">
-							{[addressStreet, [addressZip, addressCity].filter(Boolean).join(' ')]
-								.filter(Boolean)
-								.join(', ')}
-							{!personId ||
-							(!addressStreet && !addressZip && !addressCity) ? (
-								<>
-									<span className="rrze-direction-editor__muted">
-										{' '}
-										{__('Select person + workplace.', 'rrze-direction')}
-									</span>
-								</>
+						<address className="rrze-direction-editor__address">
+							{strings.addressLabel ?? __('Address', 'rrze-direction')}
+							<br />
+							{organizationName ? (
+								<span className="rrze-direction-editor__line">
+									{organizationName}
+									<br />
+								</span>
 							) : null}
-						</p>
-						{addressFormatted ? (
-							<p className="rrze-direction-editor__muted">
-								<em>{addressFormatted}</em>
-							</p>
-						) : null}
+							{addressRoom ? (
+								<span className="rrze-direction-editor__line">
+									{sprintf(
+										/* translators: %s: room number */
+										strings.roomLabel ?? __('Room: %s', 'rrze-direction'),
+										addressRoom
+									)}
+									<br />
+								</span>
+							) : null}
+							{addressFloor ? (
+								<span className="rrze-direction-editor__line">
+									{sprintf(
+										/* translators: %s: floor */
+										strings.floorLabel ?? __('Floor: %s', 'rrze-direction'),
+										addressFloor
+									)}
+									<br />
+								</span>
+							) : null}
+							{streetLine ? (
+								<span className="rrze-direction-editor__line">
+									{streetLine}
+									<br />
+								</span>
+							) : showFormattedAddress ? (
+								<span className="rrze-direction-editor__line">
+									{addressFormatted}
+									<br />
+								</span>
+							) : null}
+							{showFormattedAddress && streetLine ? (
+								<span className="rrze-direction-editor__meta">
+									{addressFormatted}
+								</span>
+							) : null}
+							{!personId ||
+							(!streetLine && !showFormattedAddress && !organizationName) ? (
+								<span className="rrze-direction-editor__muted">
+									{strings.selectPersonWorkplace ??
+										__('Select person and workplace.', 'rrze-direction')}
+								</span>
+							) : null}
+						</address>
+
+						<CoordinateLinks
+							latitude={mapLatitude}
+							longitude={mapLongitude}
+							strings={strings}
+							hideWhenMissing
+						/>
 					</section>
 
 					{showMap ? (
-						<section className="rrze-direction-editor__muted">
+						<section className="rrze-direction-editor__map">
 							<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
-							<p>
-								<strong>{__('Embedded map:', 'rrze-direction')}</strong>{' '}
-								{__(
-									'The site uses the FAU map API (karte.fau.de): iframe URL if set, otherwise organisation number, map centre from coordinates, or address-based search—per API documentation.',
-									'rrze-direction',
-								)}
-							</p>
-							{organizationNumber ? (
+							{mapIframeSrc ? (
+								<div className="rrze-direction__map-frame">
+									<iframe
+										title={
+											strings.mapServiceTitle ??
+											__('FAU map service', 'rrze-direction')
+										}
+										src={mapIframeSrc}
+										className="rrze-direction__iframe"
+										loading="lazy"
+										referrerPolicy="no-referrer-when-downgrade"
+									/>
+								</div>
+							) : (
 								<p className="rrze-direction-editor__muted">
-									{__('Organization no. (FAUdir):', 'rrze-direction')}{' '}
-									{organizationNumber}
+									{strings.mapUnavailable ??
+										__(
+											'No map parameters available (add FAUdir data or a Map URL).',
+											'rrze-direction'
+										)}
 								</p>
-							) : null}
-							{mapUrl ? <p>{mapUrl}</p> : null}
+							)}
 						</section>
 					) : null}
 
@@ -415,15 +594,12 @@ export default function Edit({ attributes, setAttributes }) {
 							tagName="div"
 							className="rrze-direction-editor__richtext"
 							value={directionBike}
-							onChange={(value) =>
-								setAttributes({ directionBike: value })
+							onChange={(value) => setAttributes({ directionBike: value })}
+							allowedFormats={['core/bold', 'core/italic', 'core/link']}
+							placeholder={
+								strings.directionBikePlaceholder ??
+								__('Directions by foot / bike.', 'rrze-direction')
 							}
-							allowedFormats={[
-								'core/bold',
-								'core/italic',
-								'core/link',
-							]}
-							placeholder={__('Directions by foot / bike.', 'rrze-direction')}
 						/>
 
 						<h4>
@@ -433,34 +609,27 @@ export default function Edit({ attributes, setAttributes }) {
 							tagName="div"
 							className="rrze-direction-editor__richtext"
 							value={directionCar}
-							onChange={(value) =>
-								setAttributes({ directionCar: value })
+							onChange={(value) => setAttributes({ directionCar: value })}
+							allowedFormats={['core/bold', 'core/italic', 'core/link']}
+							placeholder={
+								strings.directionCarPlaceholder ??
+								__('Directions by car.', 'rrze-direction')
 							}
-							allowedFormats={[
-								'core/bold',
-								'core/italic',
-								'core/link',
-							]}
-							placeholder={__('Directions by car.', 'rrze-direction')}
 						/>
 
 						<h4>
-							{strings.directionTransit ??
-								__('Bus / train', 'rrze-direction')}
+							{strings.directionTransit ?? __('Bus / train', 'rrze-direction')}
 						</h4>
 						<RichText
 							tagName="div"
 							className="rrze-direction-editor__richtext"
 							value={directionTransit}
-							onChange={(value) =>
-								setAttributes({ directionTransit: value })
+							onChange={(value) => setAttributes({ directionTransit: value })}
+							allowedFormats={['core/bold', 'core/italic', 'core/link']}
+							placeholder={
+								strings.directionTransitPlaceholder ??
+								__('Public transport.', 'rrze-direction')
 							}
-							allowedFormats={[
-								'core/bold',
-								'core/italic',
-								'core/link',
-							]}
-							placeholder={__('Public transport.', 'rrze-direction')}
 						/>
 					</section>
 				</div>

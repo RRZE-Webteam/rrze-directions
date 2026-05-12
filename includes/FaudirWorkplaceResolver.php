@@ -112,9 +112,21 @@ final class FaudirWorkplaceResolver
                     $street      = self::streetLine($workplace);
                     $zip         = self::zip($workplace);
                     $city        = self::city($workplace);
-                    $room        = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
-                    $floor       = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
                     $faumap      = isset($workplace['faumap']) && is_string($workplace['faumap']) ? trim($workplace['faumap']) : '';
+
+                    if (null === $lat || null === $lon) {
+                        [$lat, $lon] = FauMapGeojson::resolveCoordinates(
+                            $workplace,
+                            $orgNumber,
+                            $street,
+                            $zip,
+                            $city,
+                            $faumap
+                        );
+                    }
+
+                    $room  = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
+                    $floor = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
 
                     if ($street === '' && $zip === '' && $city === '') {
                         continue;
@@ -166,9 +178,21 @@ final class FaudirWorkplaceResolver
                     $street      = self::streetLine($workplace);
                     $zip         = self::zip($workplace);
                     $city        = self::city($workplace);
-                    $room        = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
-                    $floor       = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
                     $faumap      = isset($workplace['faumap']) && is_string($workplace['faumap']) ? trim($workplace['faumap']) : '';
+
+                    if (null === $lat || null === $lon) {
+                        [$lat, $lon] = FauMapGeojson::resolveCoordinates(
+                            $workplace,
+                            '',
+                            $street,
+                            $zip,
+                            $city,
+                            $faumap
+                        );
+                    }
+
+                    $room  = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
+                    $floor = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
 
                     if ($street === '' && $zip === '' && $city === '') {
                         continue;

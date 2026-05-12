@@ -1,0 +1,135 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: RRZE Direction 0.0.3\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: de_DE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Directions"
+msgstr "Anfahrt"
+
+msgid "Address"
+msgstr "Anschrift"
+
+msgid "Room: %s"
+msgstr "Raum: %s"
+
+msgid "Floor: %s"
+msgstr "Stockwerk: %s"
+
+msgid "Address data unavailable."
+msgstr "Keine Anschrift verfügbar."
+
+msgid "Coordinates"
+msgstr "Koordinaten"
+
+msgid "Google Maps"
+msgstr "Google Maps"
+
+msgid "Apple Maps"
+msgstr "Apple Maps"
+
+msgid "Arrival map"
+msgstr "Anfahrtskarte"
+
+msgid "FAU map service"
+msgstr "FAU-Kartendienst"
+
+msgid "Additional map link"
+msgstr "Zusätzlicher Kartenlink"
+
+msgid "Open map link"
+msgstr "Kartenlink öffnen"
+
+msgid "No map parameters available (add FAUdir data or a Map URL)."
+msgstr "Keine Kartenparameter verfügbar (FAUdir-Daten oder Karten-URL ergänzen)."
+
+msgid "Walking / Cycling"
+msgstr "Zu Fuß / mit dem Rad"
+
+msgid "By car"
+msgstr "Mit dem Auto"
+
+msgid "Bus / train"
+msgstr "Bus / Bahn"
+
+msgid "Select a person from FAUdir first."
+msgstr "Wählen Sie zuerst eine Person aus FAUdir."
+
+msgid "Select person and workplace."
+msgstr "Person und Arbeitsplatz auswählen."
+
+msgid "Office / workplace"
+msgstr "Büro / Arbeitsplatz"
+
+msgid "FAUdir person entry"
+msgstr "FAUdir-Personeneintrag"
+
+msgid "Directions map"
+msgstr "Anfahrtskarte"
+
+msgid "Show arrival map section"
+msgstr "Anfahrtskarte anzeigen"
+
+msgid "Map URL (FAU Campus Map preset)"
+msgstr "Karten-URL (Voreinstellung aus FAUdir)"
+
+msgid "Taken from RRZE-FAUdir (campus map) but can be edited."
+msgstr "Übernommen aus RRZE-FAUdir (Campuskarte), kann bearbeitet werden."
+
+msgid "Optional map illustration"
+msgstr "Optionale Kartenillustration"
+
+msgid "Replace illustration"
+msgstr "Illustration ersetzen"
+
+msgid "Remove illustration"
+msgstr "Illustration entfernen"
+
+msgid "Directions by foot / bike."
+msgstr "Anfahrt zu Fuß / mit dem Rad."
+
+msgid "Directions by car."
+msgstr "Anfahrt mit dem Auto."
+
+msgid "Public transport."
+msgstr "Öffentlicher Nahverkehr."
+
+msgid "No coordinates detected in API data."
+msgstr "In den API-Daten wurden keine Koordinaten gefunden."
+
+msgid "— Choose —"
+msgstr "— Auswählen —"
+
+msgid "FAUdir"
+msgstr "FAUdir"
+
+msgid "Published FAUdir person entry"
+msgstr "Veröffentlichter FAUdir-Personeneintrag"
+
+msgid "Map"
+msgstr "Karte"
+
+msgid "Map URL (preset from FAUdir)"
+msgstr "Karten-URL (Voreinstellung aus FAUdir)"
+
+msgid "RRZE Direction has been deactivated because RRZE-FAUdir is installed but failed to initialize fully."
+msgstr "RRZE Direction wurde deaktiviert, weil RRZE-FAUdir installiert ist, aber nicht vollständig initialisiert werden konnte."
+
+msgid "RRZE Direction requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it."
+msgstr "RRZE Direction benötigt RRZE-FAUdir. Das Plugin kann ohne dieses Plugin nicht aktiviert werden."
+
+msgid "RRZE Direction is inactive because RRZE-FAUdir is not active."
+msgstr "RRZE Direction ist inaktiv, weil RRZE-FAUdir nicht aktiv ist."
+
+msgid "The FAUdir person custom post type is not registered."
+msgstr "Der FAUdir-Personenbeitragstyp ist nicht registriert."
+
+msgid "FAUdir API classes are not available."
+msgstr "FAUdir-API-Klassen sind nicht verfügbar."
+
+msgid "The configured FAUdir person post type does not exist."
+msgstr "Der konfigurierte FAUdir-Personenbeitragstyp existiert nicht."

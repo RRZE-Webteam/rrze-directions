@@ -26,6 +26,18 @@ $karteIframeSrc = class_exists(\RRZE\Direction\FauMapIframe::class)
     ? \RRZE\Direction\FauMapIframe::resolveIframeSrc($attributes)
     : '';
 
+[$mapLatitude, $mapLongitude] = class_exists(\RRZE\Direction\MapLinks::class)
+    ? \RRZE\Direction\MapLinks::coordinatesFromAttributes($attributes)
+    : [null, null];
+
+$streetLine = class_exists(\RRZE\Direction\AddressPresentation::class)
+    ? \RRZE\Direction\AddressPresentation::streetLine($addressStreet, $addressZip, $addressCity)
+    : '';
+
+$showFormattedAddress = class_exists(\RRZE\Direction\AddressPresentation::class)
+    ? \RRZE\Direction\AddressPresentation::shouldShowFormattedAddress($addressFormatted, $streetLine)
+    : trim($addressFormatted) !== '';
+
 $normalizeMapHref = static function (string $url): string {
     $url = trim($url);
     if ($url === '') {
@@ -55,28 +67,59 @@ $class = trim('wp-block-rrze-direction rrze-direction');
                 <span class="rrze-direction__org"><?php echo esc_html($organizationName); ?></span><br>
             <?php endif; ?>
 
-            <?php if ($addressRoom !== '' || $addressFloor !== '') : ?>
+            <?php if ($addressRoom !== '') : ?>
                 <span class="rrze-direction__room">
-                    <?php echo esc_html(implode(' · ', array_filter([$addressRoom, $addressFloor]))); ?>
+                    <?php
+                    echo esc_html(
+                        sprintf(
+                            /* translators: %s: room number */
+                            __('Room: %s', 'rrze-direction'),
+                            $addressRoom
+                        )
+                    );
+                    ?>
                 </span><br>
             <?php endif; ?>
 
-            <?php
-            $line = array_filter(
-                [$addressStreet, trim($addressZip . ' ' . $addressCity)],
-                static fn(string $v): bool => $v !== ''
-            );
-            ?>
-            <?php if ($line !== []) : ?>
-                <span class="rrze-direction__street"><?php echo esc_html(implode(', ', $line)); ?></span><br>
-            <?php elseif ('' === $organizationName && '' === $addressFormatted) : ?>
+            <?php if ($addressFloor !== '') : ?>
+                <span class="rrze-direction__floor">
+                    <?php
+                    echo esc_html(
+                        sprintf(
+                            /* translators: %s: floor */
+                            __('Floor: %s', 'rrze-direction'),
+                            $addressFloor
+                        )
+                    );
+                    ?>
+                </span><br>
+            <?php endif; ?>
+
+            <?php if ($streetLine !== '') : ?>
+                <span class="rrze-direction__street"><?php echo esc_html($streetLine); ?></span><br>
+            <?php elseif ($showFormattedAddress) : ?>
+                <span class="rrze-direction__street"><?php echo esc_html($addressFormatted); ?></span><br>
+            <?php elseif ('' === $organizationName) : ?>
                 <?php echo esc_html__('Address data unavailable.', 'rrze-direction'); ?><br>
             <?php endif; ?>
 
-            <?php if ($addressFormatted !== '') : ?>
+            <?php if ($showFormattedAddress && $streetLine !== '') : ?>
                 <span class="rrze-direction__meta"><?php echo esc_html($addressFormatted); ?></span>
             <?php endif; ?>
         </address>
+
+        <?php if (null !== $mapLatitude && null !== $mapLongitude) : ?>
+            <p class="rrze-direction__coordinates">
+                <?php echo esc_html__('Coordinates', 'rrze-direction'); ?>:
+                <a href="<?php echo esc_url(\RRZE\Direction\MapLinks::googleMapsUrl($mapLatitude, $mapLongitude), ['https']); ?>">
+                    <?php echo esc_html__('Google Maps', 'rrze-direction'); ?>
+                </a>
+                <span class="rrze-direction__coordinates-sep" aria-hidden="true">·</span>
+                <a href="<?php echo esc_url(\RRZE\Direction\MapLinks::appleMapsUrl($mapLatitude, $mapLongitude), ['https']); ?>">
+                    <?php echo esc_html__('Apple Maps', 'rrze-direction'); ?>
+                </a>
+            </p>
+        <?php endif; ?>
 
         <?php if ($showMap) : ?>
             <?php if ($mapImageId > 0) : ?>

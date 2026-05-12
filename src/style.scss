@@ -7,8 +7,20 @@
 		font-weight: 600;
 	}
 
-	address {
+	&__address {
 		font-style: normal;
+		margin-bottom: 0.75rem;
+	}
+
+	&__coordinates {
+		margin: 0 0 1rem;
+	}
+
+	&__coordinates-sep {
+		margin: 0 0.25rem;
+	}
+
+	&__map {
 		margin-bottom: 1rem;
 	}
 
@@ -45,6 +57,14 @@
 
 	&__rte p:first-child {
 		margin-top: 0;
+	}
+
+	&__coordinates {
+		margin: 0 0 1rem;
+	}
+
+	&__coordinates-sep {
+		margin: 0 0.25rem;
 	}
 
 	&__iframe {
