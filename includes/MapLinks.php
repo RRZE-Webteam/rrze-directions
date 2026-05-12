@@ -52,8 +52,8 @@ final class MapLinks
 
     public static function appleMapsUrl(float $latitude, float $longitude): string
     {
-        $query = rawurlencode($latitude . ',' . $longitude);
+        $pair = $latitude . ',' . $longitude;
 
-        return 'https://maps.apple.com/?ll=' . $query;
+        return 'https://maps.apple.com/?ll=' . rawurlencode($pair) . '&q=' . rawurlencode($pair);
     }
 }

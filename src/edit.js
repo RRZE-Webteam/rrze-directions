@@ -147,9 +147,10 @@ function googleMapsUrl(latitude, longitude) {
 }
 
 function appleMapsUrl(latitude, longitude) {
-	const query = encodeURIComponent(`${latitude},${longitude}`);
+	const pair = `${latitude},${longitude}`;
+	const encoded = encodeURIComponent(pair);
 
-	return `https://maps.apple.com/?ll=${query}`;
+	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
 }
 
 function snapshotFromPlace(place) {
