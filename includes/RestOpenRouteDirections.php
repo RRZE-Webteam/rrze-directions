@@ -37,10 +37,11 @@ final class RestOpenRouteDirections
         }
 
         $city = sanitize_text_field((string) ($params['city'] ?? ''));
+        $zip  = sanitize_text_field((string) ($params['zip'] ?? ''));
         $lat  = MapLinks::parseCoordinate($params['latitude'] ?? null);
         $lon  = MapLinks::parseCoordinate($params['longitude'] ?? null);
 
-        if ($city === '' || null === $lat || null === $lon) {
+        if (null === $lat || null === $lon) {
             return new \WP_REST_Response(
                 [
                     'directionBike'    => '',
@@ -51,7 +52,18 @@ final class RestOpenRouteDirections
             );
         }
 
-        $start = RegionalStationOrigin::startLonLatForCity($city);
+        if ($city === '' && $zip === '') {
+            return new \WP_REST_Response(
+                [
+                    'directionBike'    => '',
+                    'directionCar'     => '',
+                    'directionTransit' => '',
+                ],
+                200
+            );
+        }
+
+        $start = RegionalStationOrigin::startLonLatForCityOrZip($city, $zip);
         if (null === $start) {
             return new \WP_REST_Response(
                 [

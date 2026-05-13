@@ -45,13 +45,16 @@ final class OpenRouteDirections
      */
     private static function fetchProfileHtml(string $apiKey, string $profile, array $coords): string
     {
-        $url = self::API_BASE . '/' . rawurlencode($profile) . '/geojson';
+        $url = self::API_BASE . '/' . rawurlencode($profile) . '/json';
 
         $body = wp_json_encode([
-            'coordinates' => [
+            'coordinates'  => [
                 [$coords[0], $coords[1]],
                 [$coords[2], $coords[3]],
             ],
+            // Required for turn-by-turn `steps` with `instruction` text (see ORS directions docs).
+            'instructions' => true,
+            'geometry'     => true,
         ]);
 
         if (!is_string($body)) {
@@ -87,31 +90,48 @@ final class OpenRouteDirections
 
         $decoded = json_decode($raw, true);
 
-        return is_array($decoded) ? self::featureCollectionToHtml($decoded) : '';
+        return is_array($decoded) ? self::directionsPayloadToHtml($decoded) : '';
     }
 
     /**
-     * @param array<string, mixed> $decoded
+     * @param array<string, mixed> $decoded JSON `routes` response or GeoJSON FeatureCollection (legacy).
      */
-    private static function featureCollectionToHtml(array $decoded): string
+    private static function directionsPayloadToHtml(array $decoded): string
     {
-        if (($decoded['type'] ?? '') !== 'FeatureCollection') {
+        $summary  = [];
+        $segments = [];
+
+        if (isset($decoded['routes'][0]) && is_array($decoded['routes'][0])) {
+            $route    = $decoded['routes'][0];
+            $summary  = is_array($route['summary'] ?? null) ? $route['summary'] : [];
+            $segments = is_array($route['segments'] ?? null) ? $route['segments'] : [];
+        } elseif (($decoded['type'] ?? '') === 'FeatureCollection') {
+            $features = $decoded['features'] ?? [];
+            if (!is_array($features) || $features === []) {
+                return '';
+            }
+
+            $first = $features[0];
+            if (!is_array($first)) {
+                return '';
+            }
+
+            $props    = $first['properties'] ?? [];
+            $summary  = is_array($props['summary'] ?? null) ? $props['summary'] : [];
+            $segments = is_array($props['segments'] ?? null) ? $props['segments'] : [];
+        } else {
             return '';
         }
 
-        $features = $decoded['features'] ?? [];
-        if (!is_array($features) || $features === []) {
-            return '';
-        }
+        return self::summaryAndSegmentsToHtml($summary, $segments);
+    }
 
-        $first = $features[0];
-        if (!is_array($first)) {
-            return '';
-        }
-
-        $props   = $first['properties'] ?? [];
-        $summary = is_array($props['summary'] ?? null) ? $props['summary'] : [];
-
+    /**
+     * @param array<string, mixed>        $summary
+     * @param array<int, array<mixed>> $segments
+     */
+    private static function summaryAndSegmentsToHtml(array $summary, array $segments): string
+    {
         $distanceM = isset($summary['distance']) && is_numeric($summary['distance'])
             ? (float) $summary['distance']
             : null;
@@ -120,7 +140,7 @@ final class OpenRouteDirections
             : null;
 
         $steps = [];
-        foreach ($props['segments'] ?? [] as $segment) {
+        foreach ($segments as $segment) {
             if (!is_array($segment)) {
                 continue;
             }
@@ -129,6 +149,9 @@ final class OpenRouteDirections
                     continue;
                 }
                 $instr = isset($step['instruction']) ? trim((string) $step['instruction']) : '';
+                if ($instr === '' && isset($step['name'])) {
+                    $instr = trim((string) $step['name']);
+                }
                 if ($instr !== '') {
                     $steps[] = $instr;
                 }

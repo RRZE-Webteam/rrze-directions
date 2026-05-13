@@ -204,7 +204,7 @@ async function fetchResolvedCoordinates(place) {
 	return { mapLatitude: '', mapLongitude: '' };
 }
 
-async function fetchOpenRouteDirections(place, coords) {
+async function fetchOpenRouteDirections(place, coords, extras = {}) {
 	const path = window.rrze_direction?.restOpenRouteDirectionsPath;
 	if (!path) {
 		return null;
@@ -214,9 +214,13 @@ async function fetchOpenRouteDirections(place, coords) {
 		parseCoordinate(coords.mapLatitude) ?? parseCoordinate(place.latitude);
 	const lon =
 		parseCoordinate(coords.mapLongitude) ?? parseCoordinate(place.longitude);
-	const city = `${place.city ?? ''}`.trim();
+	const city =
+		`${place.city ?? ''}`.trim() ||
+		`${extras.addressCity ?? ''}`.trim();
+	const zip =
+		`${place.zip ?? ''}`.trim() || `${extras.zip ?? ''}`.trim();
 
-	if (lat === null || lon === null || !city) {
+	if (lat === null || lon === null || (!city && !zip)) {
 		return null;
 	}
 
@@ -228,6 +232,7 @@ async function fetchOpenRouteDirections(place, coords) {
 				latitude: lat,
 				longitude: lon,
 				city,
+				zip,
 			},
 		});
 	} catch (error) {
@@ -386,7 +391,10 @@ export default function Edit({ attributes, setAttributes }) {
 
 		(async () => {
 			const coords = await fetchResolvedCoordinates(place);
-			const dirs = await fetchOpenRouteDirections(place, coords);
+			const dirs = await fetchOpenRouteDirections(place, coords, {
+				addressCity,
+				zip: addressZip,
+			});
 
 			if (cancelled) {
 				return;
@@ -408,7 +416,7 @@ export default function Edit({ attributes, setAttributes }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [personId, workplaceKey, personRows]);
+	}, [personId, workplaceKey, personRows, addressCity, addressZip]);
 
 	const syncWorkplaceAttrs = (key) => {
 		if (!selectedRow?.places?.length) {

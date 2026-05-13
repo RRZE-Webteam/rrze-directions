@@ -53,6 +53,40 @@ final class RegionalStationOrigin
         return null;
     }
 
+    /**
+     * Resolve route start: city name first, then common FAU-region postal prefixes if city is missing.
+     *
+     * @return array{0: float, 1: float}|null longitude, latitude
+     */
+    public static function startLonLatForCityOrZip(string $city, string $zip): ?array
+    {
+        $byCity = self::startLonLatForCity($city);
+        if (null !== $byCity) {
+            return $byCity;
+        }
+
+        $digits = preg_replace('/\D+/', '', $zip) ?? '';
+        if (strlen($digits) < 3) {
+            return null;
+        }
+
+        $prefix3 = substr($digits, 0, 3);
+
+        if ($prefix3 === '910') {
+            return [self::ERLANGEN_HBF_LON, self::ERLANGEN_HBF_LAT];
+        }
+
+        if ($prefix3 === '907') {
+            return [self::FUERTH_HBF_LON, self::FUERTH_HBF_LAT];
+        }
+
+        if ($prefix3 === '904') {
+            return [self::NUERNBERG_HBF_LON, self::NUERNBERG_HBF_LAT];
+        }
+
+        return null;
+    }
+
     private static function normalizeCityToken(string $city): string
     {
         $city = trim($city);

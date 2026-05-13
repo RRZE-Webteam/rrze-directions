@@ -394,6 +394,15 @@ final class FaudirWorkplaceResolver
             return $w['addressLocality'];
         }
 
+        $addr = $w['address'] ?? null;
+        if (is_array($addr)) {
+            foreach (['addressLocality', 'locality', 'city'] as $key) {
+                if (!empty($addr[$key]) && is_string($addr[$key])) {
+                    return $addr[$key];
+                }
+            }
+        }
+
         return '';
     }
 
