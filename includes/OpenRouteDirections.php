@@ -16,6 +16,40 @@ final class OpenRouteDirections
     private const API_BASE = 'https://api.openrouteservice.org/v2/directions';
 
     /**
+     * Site language from Settings > General (not necessarily the current admin user locale).
+     */
+    public static function siteLocaleForDirections(): string
+    {
+        $locale = get_option('locale', '');
+        if (is_string($locale) && $locale !== '') {
+            return $locale;
+        }
+
+        $wplang = get_option('WPLANG', '');
+        if (is_string($wplang) && $wplang !== '') {
+            return $wplang;
+        }
+
+        return get_locale();
+    }
+
+    /**
+     * OpenRouteService `language` code: German for German locales, English otherwise.
+     *
+     * @see https://giscience.github.io/openrouteservice/api-reference/endpoints/directions/requests-and-return-types
+     */
+    public static function orsLanguageFromWpLocale(string $locale): string
+    {
+        $locale = strtolower(trim($locale));
+
+        if ($locale !== '' && str_starts_with($locale, 'de')) {
+            return 'de';
+        }
+
+        return 'en';
+    }
+
+    /**
      * @return array{bike: string, car: string, transit: string}
      */
     public static function fetchDirectionHtml(
@@ -23,19 +57,22 @@ final class OpenRouteDirections
         float $startLon,
         float $startLat,
         float $endLon,
-        float $endLat
+        float $endLat,
+        string $orsLanguage = 'en'
     ): array {
         if ($apiKey === '') {
             return ['bike' => '', 'car' => '', 'transit' => ''];
         }
 
-        $coords = [$startLon, $startLat, $endLon, $endLat];
+        $orsLanguage = $orsLanguage === 'de' ? 'de' : 'en';
+        $coords      = [$startLon, $startLat, $endLon, $endLat];
 
         return [
-            'bike'    => self::fetchProfileHtml($apiKey, 'cycling-regular', $coords),
-            'car'     => self::fetchProfileHtml($apiKey, 'driving-car', $coords),
+            'bike'    => self::fetchProfileHtml($apiKey, 'cycling-regular', $coords, $orsLanguage),
+            'car'     => self::fetchProfileHtml($apiKey, 'driving-car', $coords, $orsLanguage),
             'transit' => self::fetchTransitPlaceholderHtml(
-                self::fetchProfileHtml($apiKey, 'foot-walking', $coords)
+                self::fetchProfileHtml($apiKey, 'foot-walking', $coords, $orsLanguage),
+                $orsLanguage
             ),
         ];
     }
@@ -43,8 +80,12 @@ final class OpenRouteDirections
     /**
      * @param array{0: float, 1: float, 2: float, 3: float} $coords lon, lat, lon, lat
      */
-    private static function fetchProfileHtml(string $apiKey, string $profile, array $coords): string
-    {
+    private static function fetchProfileHtml(
+        string $apiKey,
+        string $profile,
+        array $coords,
+        string $orsLanguage
+    ): string {
         $url = self::API_BASE . '/' . rawurlencode($profile) . '/json';
 
         $body = wp_json_encode([
@@ -55,6 +96,7 @@ final class OpenRouteDirections
             // Required for turn-by-turn `steps` with `instruction` text (see ORS directions docs).
             'instructions' => true,
             'geometry'     => true,
+            'language'     => $orsLanguage,
         ]);
 
         if (!is_string($body)) {
@@ -90,13 +132,15 @@ final class OpenRouteDirections
 
         $decoded = json_decode($raw, true);
 
-        return is_array($decoded) ? self::directionsPayloadToHtml($decoded) : '';
+        return is_array($decoded)
+            ? self::directionsPayloadToHtml($decoded, $orsLanguage)
+            : '';
     }
 
     /**
      * @param array<string, mixed> $decoded JSON `routes` response or GeoJSON FeatureCollection (legacy).
      */
-    private static function directionsPayloadToHtml(array $decoded): string
+    private static function directionsPayloadToHtml(array $decoded, string $orsLanguage): string
     {
         $summary  = [];
         $segments = [];
@@ -123,15 +167,18 @@ final class OpenRouteDirections
             return '';
         }
 
-        return self::summaryAndSegmentsToHtml($summary, $segments);
+        return self::summaryAndSegmentsToHtml($summary, $segments, $orsLanguage);
     }
 
     /**
      * @param array<string, mixed>        $summary
      * @param array<int, array<mixed>> $segments
      */
-    private static function summaryAndSegmentsToHtml(array $summary, array $segments): string
-    {
+    private static function summaryAndSegmentsToHtml(
+        array $summary,
+        array $segments,
+        string $orsLanguage
+    ): string {
         $distanceM = isset($summary['distance']) && is_numeric($summary['distance'])
             ? (float) $summary['distance']
             : null;
@@ -167,16 +214,22 @@ final class OpenRouteDirections
         if (null !== $distanceM && null !== $durationS && $distanceM > 0 && $durationS >= 0) {
             $km  = round($distanceM / 1000, 1);
             $min = max(1, (int) round($durationS / 60));
-            $parts[] = '<p><strong>'
-                . esc_html(
-                    sprintf(
-                        /* translators: 1: distance in km, 2: duration in minutes */
-                        __('About %1$s km, %2$s min', 'rrze-direction'),
-                        (string) $km,
-                        (string) $min
-                    )
-                )
-                . '</strong></p>';
+            if ($orsLanguage === 'de') {
+                $summaryLine = sprintf(
+                    /* translators: 1: distance in km, 2: duration in minutes */
+                    __('Etwa %1$s km, %2$s Min.', 'rrze-direction'),
+                    (string) $km,
+                    (string) $min
+                );
+            } else {
+                $summaryLine = sprintf(
+                    /* translators: 1: distance in km, 2: duration in minutes */
+                    __('About %1$s km, %2$s min', 'rrze-direction'),
+                    (string) $km,
+                    (string) $min
+                );
+            }
+            $parts[] = '<p><strong>' . esc_html($summaryLine) . '</strong></p>';
         }
 
         $lis = [];
@@ -188,18 +241,25 @@ final class OpenRouteDirections
         return implode('', $parts);
     }
 
-    private static function fetchTransitPlaceholderHtml(string $walkingHtml): string
+    private static function fetchTransitPlaceholderHtml(string $walkingHtml, string $orsLanguage): string
     {
         if ($walkingHtml === '') {
             return '';
         }
 
-        $intro = '<p><em>'
-            . esc_html__(
+        if ($orsLanguage === 'de') {
+            $introText = __(
+                'Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn bitte aktuelle Fahrpläne nutzen).',
+                'rrze-direction'
+            );
+        } else {
+            $introText = __(
                 'Walking route from the main station (approximation — use local timetables for buses and trains).',
                 'rrze-direction'
-            )
-            . '</em></p>';
+            );
+        }
+
+        $intro = '<p><em>' . esc_html($introText) . '</em></p>';
 
         return $intro . $walkingHtml;
     }

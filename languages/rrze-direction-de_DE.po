@@ -155,5 +155,11 @@ msgstr "Bei Arbeitsplätzen in Erlangen, Nürnberg oder Fürth nutzen Entwurfsro
 msgid "About %1$s km, %2$s min"
 msgstr "Etwa %1$s km, %2$s Min."
 
+msgid "Etwa %1$s km, %2$s Min."
+msgstr "Etwa %1$s km, %2$s Min."
+
 msgid "Walking route from the main station (approximation — use local timetables for buses and trains)."
+msgstr "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn die örtlichen Fahrpläne nutzen)."
+
+msgid "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn bitte aktuelle Fahrpläne nutzen)."
 msgstr "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn die örtlichen Fahrpläne nutzen)."

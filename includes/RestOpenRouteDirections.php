@@ -89,12 +89,17 @@ final class RestOpenRouteDirections
 
         [$startLon, $startLat] = $start;
 
+        $orsLang = OpenRouteDirections::orsLanguageFromWpLocale(
+            OpenRouteDirections::siteLocaleForDirections()
+        );
+
         $dirs = OpenRouteDirections::fetchDirectionHtml(
             $apiKey,
             $startLon,
             $startLat,
             $lon,
-            $lat
+            $lat,
+            $orsLang
         );
 
         return new \WP_REST_Response(
