@@ -61,7 +61,6 @@ $class = trim('wp-block-rrze-direction rrze-direction');
         <h2 class="rrze-direction__title"><?php echo esc_html__('Directions', 'rrze-direction'); ?></h2>
 
         <address class="rrze-direction__address">
-            <?php echo esc_html__('Address', 'rrze-direction'); ?><br>
             <?php if ($organizationName !== '') : ?>
                 <span class="rrze-direction__org"><?php echo esc_html($organizationName); ?></span><br>
             <?php endif; ?>

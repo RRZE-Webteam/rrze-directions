@@ -627,8 +627,6 @@ export default function Edit({ attributes, setAttributes }) {
 
 					<section>
 						<address className="rrze-direction-editor__address">
-							{strings.addressLabel ?? __('Address', 'rrze-direction')}
-							<br />
 							{organizationName ? (
 								<span className="rrze-direction-editor__line">
 									{organizationName}
