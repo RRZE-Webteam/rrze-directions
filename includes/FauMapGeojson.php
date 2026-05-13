@@ -58,6 +58,45 @@ final class FauMapGeojson
     }
 
     /**
+     * Parse coordinates from a campus-map URL without HTTP (editor bulk payload).
+     * Only an explicit center/lat,lon path segment is used; famos segments are ignored here
+     * because resolving them would require the GeoJSON API.
+     *
+     * @return array{0: ?float, 1: ?float}
+     */
+    public static function parseLocalCoordinatesFromFaumap(string $faumap): array
+    {
+        $faumap = trim($faumap);
+        if ($faumap === '') {
+            return [null, null];
+        }
+
+        $parts = wp_parse_url($faumap);
+        if (!is_array($parts)) {
+            return [null, null];
+        }
+
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+        if ($path === '') {
+            return [null, null];
+        }
+
+        $segments = explode('/', $path);
+        $count    = count($segments);
+
+        for ($i = 0; $i < $count - 1; ++$i) {
+            $key = strtolower($segments[$i]);
+            $val = rawurldecode($segments[$i + 1]);
+
+            if ($key === 'center') {
+                return self::parseCenterPair($val);
+            }
+        }
+
+        return [null, null];
+    }
+
+    /**
      * @return array{0: ?float, 1: ?float}
      */
     private static function coordinatesFromFaumapUrl(string $faumap): array

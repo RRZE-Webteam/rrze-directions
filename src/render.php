@@ -14,7 +14,6 @@ $addressZip       = (string) ($attributes['addressZip'] ?? '');
 $addressCity      = (string) ($attributes['addressCity'] ?? '');
 $addressFormatted = (string) ($attributes['addressFormatted'] ?? '');
 
-$showMap    = !empty($attributes['showMap']);
 $mapUrl     = trim((string) ($attributes['mapUrl'] ?? ''));
 $mapImageId = isset($attributes['mapImageId']) ? (int) $attributes['mapImageId'] : 0;
 
@@ -121,51 +120,49 @@ $class = trim('wp-block-rrze-direction rrze-direction');
             </p>
         <?php endif; ?>
 
-        <?php if ($showMap) : ?>
-            <?php if ($mapImageId > 0) : ?>
-                <figure class="rrze-direction__map-image">
-                    <?php
-                    echo wp_get_attachment_image(
-                        $mapImageId,
-                        'large',
-                        false,
-                        [
-                            'class'    => 'rrze-direction__map-img',
-                            'decoding' => 'async',
-                            'loading'  => 'lazy',
-                        ]
-                    );
-                    ?>
-                </figure>
-            <?php endif; ?>
-
-            <div class="rrze-direction__map">
-                <h3 class="rrze-direction__map-title"><?php echo esc_html__('Arrival map', 'rrze-direction'); ?></h3>
-
-                <?php if ($karteIframeSrc !== '') : ?>
-                    <div class="rrze-direction__map-frame">
-                        <iframe
-                            title="<?php echo esc_attr__('FAU map service', 'rrze-direction'); ?>"
-                            src="<?php echo esc_url($karteIframeSrc, ['https']); ?>"
-                            class="rrze-direction__iframe"
-                            loading="lazy"
-                            referrerpolicy="no-referrer-when-downgrade"></iframe>
-                    </div>
-                    <?php if ($showExtraLink) : ?>
-                        <p class="rrze-direction__map-extra">
-                            <a href="<?php echo $mapLinkOnly; ?>"><?php echo esc_html__('Additional map link', 'rrze-direction'); ?></a>
-                        </p>
-                    <?php endif; ?>
-                <?php elseif ($mapLinkOnly !== '') : ?>
-                    <p class="rrze-direction__map-link">
-                        <a href="<?php echo $mapLinkOnly; ?>"><?php echo esc_html__('Open map link', 'rrze-direction'); ?></a>
-                    </p>
-                <?php else : ?>
-                    <p class="rrze-direction__map-empty">
-                        <?php echo esc_html__('No map parameters available (add FAUdir data or a Map URL).', 'rrze-direction'); ?></p>
-                <?php endif; ?>
-            </div>
+        <?php if ($mapImageId > 0) : ?>
+            <figure class="rrze-direction__map-image">
+                <?php
+                echo wp_get_attachment_image(
+                    $mapImageId,
+                    'large',
+                    false,
+                    [
+                        'class'    => 'rrze-direction__map-img',
+                        'decoding' => 'async',
+                        'loading'  => 'lazy',
+                    ]
+                );
+                ?>
+            </figure>
         <?php endif; ?>
+
+        <div class="rrze-direction__map">
+            <h3 class="rrze-direction__map-title"><?php echo esc_html__('Arrival map', 'rrze-direction'); ?></h3>
+
+            <?php if ($karteIframeSrc !== '') : ?>
+                <div class="rrze-direction__map-frame">
+                    <iframe
+                        title="<?php echo esc_attr__('FAU map service', 'rrze-direction'); ?>"
+                        src="<?php echo esc_url($karteIframeSrc, ['https']); ?>"
+                        class="rrze-direction__iframe"
+                        loading="lazy"
+                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <?php if ($showExtraLink) : ?>
+                    <p class="rrze-direction__map-extra">
+                        <a href="<?php echo $mapLinkOnly; ?>"><?php echo esc_html__('Additional map link', 'rrze-direction'); ?></a>
+                    </p>
+                <?php endif; ?>
+            <?php elseif ($mapLinkOnly !== '') : ?>
+                <p class="rrze-direction__map-link">
+                    <a href="<?php echo $mapLinkOnly; ?>"><?php echo esc_html__('Open map link', 'rrze-direction'); ?></a>
+                </p>
+            <?php else : ?>
+                <p class="rrze-direction__map-empty">
+                    <?php echo esc_html__('No map parameters available (add FAUdir data or a Map URL).', 'rrze-direction'); ?></p>
+            <?php endif; ?>
+        </div>
 
         <?php if (trim(wp_strip_all_tags($directionBike)) !== '') : ?>
             <section class="rrze-direction__text">

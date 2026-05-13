@@ -133,3 +133,27 @@ msgstr "FAUdir-API-Klassen sind nicht verfügbar."
 
 msgid "The configured FAUdir person post type does not exist."
 msgstr "Der konfigurierte FAUdir-Personenbeitragstyp existiert nicht."
+
+msgid "Settings"
+msgstr "Einstellungen"
+
+msgid "OpenRouteService API key"
+msgstr "OpenRouteService-API-Schlüssel"
+
+msgid "Request a key from %s (dashboard) and paste it here. Leave the field empty when saving to keep the current key."
+msgstr "Schlüssel unter %s (Dashboard) beantragen und hier einfügen. Beim Speichern leer lassen, um den aktuellen Schlüssel beizubehalten."
+
+msgid "Remove stored API key"
+msgstr "Gespeicherten API-Schlüssel entfernen"
+
+msgid "Route start"
+msgstr "Routenstart"
+
+msgid "For workplaces in Erlangen, Nuremberg, or Fürth, draft routes use the respective main station as the start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Fürth (main) station."
+msgstr "Bei Arbeitsplätzen in Erlangen, Nürnberg oder Fürth nutzen Entwurfsrouten jeweils den Hauptbahnhof als Start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof bzw. Fürth (Haupt-)bahnhof."
+
+msgid "About %1$s km, %2$s min"
+msgstr "Etwa %1$s km, %2$s Min."
+
+msgid "Walking route from the main station (approximation — use local timetables for buses and trains)."
+msgstr "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn die örtlichen Fahrpläne nutzen)."

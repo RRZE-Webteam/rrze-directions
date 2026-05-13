@@ -3,7 +3,6 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
-	ToggleControl,
 } from '@wordpress/components';
 import {
 	InspectorControls,
@@ -12,9 +11,10 @@ import {
 	RichText,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { Fragment, useMemo } from '@wordpress/element';
+import { Fragment, useEffect, useMemo } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
+import apiFetch from '@wordpress/api-fetch';
 
 const KARTE_HOST_SUFFIX = 'karte.fau.de';
 const KARTE_IFRAME_PATH = '/api/v1/iframe';
@@ -153,6 +153,88 @@ function appleMapsUrl(latitude, longitude) {
 	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
 }
 
+async function fetchResolvedCoordinates(place) {
+	if (!place) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	const lat0 = parseCoordinate(place.latitude);
+	const lon0 = parseCoordinate(place.longitude);
+	if (lat0 !== null && lon0 !== null) {
+		return { mapLatitude: String(lat0), mapLongitude: String(lon0) };
+	}
+
+	const path = window.rrze_direction?.restResolveCoordinatesPath;
+	if (!path) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	try {
+		const res = await apiFetch({
+			path,
+			method: 'POST',
+			data: {
+				organizationNumber: place.organizationNumber ?? '',
+				street: place.street ?? '',
+				zip: place.zip ?? '',
+				city: place.city ?? '',
+				faumap: place.faumap ?? '',
+				mapHints:
+					place.mapHints && typeof place.mapHints === 'object'
+						? place.mapHints
+						: {},
+			},
+		});
+
+		const la = res?.latitude;
+		const lo = res?.longitude;
+
+		if (
+			la != null &&
+			lo != null &&
+			Number.isFinite(Number(la)) &&
+			Number.isFinite(Number(lo))
+		) {
+			return { mapLatitude: String(la), mapLongitude: String(lo) };
+		}
+	} catch (error) {
+		// Leave coordinates empty on failure.
+	}
+
+	return { mapLatitude: '', mapLongitude: '' };
+}
+
+async function fetchOpenRouteDirections(place, coords) {
+	const path = window.rrze_direction?.restOpenRouteDirectionsPath;
+	if (!path) {
+		return null;
+	}
+
+	const lat =
+		parseCoordinate(coords.mapLatitude) ?? parseCoordinate(place.latitude);
+	const lon =
+		parseCoordinate(coords.mapLongitude) ?? parseCoordinate(place.longitude);
+	const city = `${place.city ?? ''}`.trim();
+
+	if (lat === null || lon === null || !city) {
+		return null;
+	}
+
+	try {
+		return await apiFetch({
+			path,
+			method: 'POST',
+			data: {
+				latitude: lat,
+				longitude: lon,
+				city,
+			},
+		});
+	} catch (error) {
+		return null;
+	}
+}
+
 function snapshotFromPlace(place) {
 	return {
 		workplaceKey: place.id ?? '',
@@ -226,7 +308,6 @@ export default function Edit({ attributes, setAttributes }) {
 		addressZip,
 		addressCity,
 		addressFormatted,
-		showMap,
 		mapUrl,
 		mapLatitude,
 		mapLongitude,
@@ -285,6 +366,50 @@ export default function Edit({ attributes, setAttributes }) {
 	const previewPersonLabel =
 		selectedRow?.label ?? __('Directions', 'rrze-direction');
 
+	useEffect(() => {
+		if (!personId || !personRows.length) {
+			return;
+		}
+
+		const row = personRows.find((r) => r.id === Number(personId));
+		if (!row?.places?.length) {
+			return;
+		}
+
+		const id = workplaceKey || row.places[0]?.id;
+		const place = id ? row.places.find((p) => p.id === id) : row.places[0];
+		if (!place) {
+			return;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			const coords = await fetchResolvedCoordinates(place);
+			const dirs = await fetchOpenRouteDirections(place, coords);
+
+			if (cancelled) {
+				return;
+			}
+
+			const payload = { ...coords };
+			if (dirs?.directionBike) {
+				payload.directionBike = dirs.directionBike;
+			}
+			if (dirs?.directionCar) {
+				payload.directionCar = dirs.directionCar;
+			}
+			if (dirs?.directionTransit) {
+				payload.directionTransit = dirs.directionTransit;
+			}
+			setAttributes(payload);
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [personId, workplaceKey, personRows]);
+
 	const syncWorkplaceAttrs = (key) => {
 		if (!selectedRow?.places?.length) {
 			setAttributes({
@@ -300,6 +425,9 @@ export default function Edit({ attributes, setAttributes }) {
 				mapUrl: '',
 				mapLatitude: '',
 				mapLongitude: '',
+				directionBike: '',
+				directionCar: '',
+				directionTransit: '',
 			});
 			return;
 		}
@@ -311,10 +439,13 @@ export default function Edit({ attributes, setAttributes }) {
 		setAttributes({
 			...snapshotFromPlace(place),
 			workplaceKey: place.id ?? '',
+			directionBike: '',
+			directionCar: '',
+			directionTransit: '',
 		});
 	};
 
-	const mapIllustration = showMap ? (
+	const mapIllustration = (
 		<p className="rrze-direction-block__media">
 			{mapImageId && imageSrc ? (
 				<Fragment>
@@ -374,7 +505,7 @@ export default function Edit({ attributes, setAttributes }) {
 				</MediaUploadCheck>
 			)}
 		</p>
-	) : null;
+	);
 
 	return (
 		<Fragment>
@@ -393,7 +524,6 @@ export default function Edit({ attributes, setAttributes }) {
 
 							setAttributes({
 								personId: nextId,
-								showMap: false,
 								mapImageId: 0,
 								workplaceKey: '',
 							});
@@ -411,6 +541,9 @@ export default function Edit({ attributes, setAttributes }) {
 									mapUrl: '',
 									mapLatitude: '',
 									mapLongitude: '',
+									directionBike: '',
+									directionCar: '',
+									directionTransit: '',
 								});
 								return;
 							}
@@ -430,6 +563,9 @@ export default function Edit({ attributes, setAttributes }) {
 								mapUrl: snapshot.mapUrl,
 								mapLatitude: snapshot.mapLatitude,
 								mapLongitude: snapshot.mapLongitude,
+								directionBike: '',
+								directionCar: '',
+								directionTransit: '',
 							});
 						}}
 					/>
@@ -448,44 +584,29 @@ export default function Edit({ attributes, setAttributes }) {
 				</PanelBody>
 
 				<PanelBody title={strings.mapSection ?? __('Map', 'rrze-direction')}>
-					<ToggleControl
+					<TextControl
 						label={
-							strings.showMap ??
-							__('Show arrival map section', 'rrze-direction')
+							strings.mapUrl ??
+							__('Map URL', 'rrze-direction')
 						}
-						checked={showMap}
-						onChange={(checked) =>
-							setAttributes({ showMap: Boolean(checked) })
+						help={
+							strings.mapUrlHelp ??
+							__(
+								'Taken from RRZE-FAUdir (campus map) but can be edited.',
+								'rrze-direction'
+							)
 						}
+						value={mapUrl}
+						onChange={(next) => setAttributes({ mapUrl: next })}
 					/>
 
-					{showMap ? (
-						<Fragment>
-							<TextControl
-								label={
-									strings.mapUrl ??
-									__('Map URL (preset from FAUdir)', 'rrze-direction')
-								}
-								help={
-									strings.mapUrlHelp ??
-									__(
-										'Taken from RRZE-FAUdir (campus map) but can be edited.',
-										'rrze-direction'
-									)
-								}
-								value={mapUrl}
-								onChange={(next) => setAttributes({ mapUrl: next })}
-							/>
+					<CoordinateLinks
+						latitude={mapLatitude}
+						longitude={mapLongitude}
+						strings={strings}
+					/>
 
-							<CoordinateLinks
-								latitude={mapLatitude}
-								longitude={mapLongitude}
-								strings={strings}
-							/>
-
-							{mapIllustration}
-						</Fragment>
-					) : null}
+					{mapIllustration}
 				</PanelBody>
 			</InspectorControls>
 
@@ -559,33 +680,31 @@ export default function Edit({ attributes, setAttributes }) {
 						/>
 					</section>
 
-					{showMap ? (
-						<section className="rrze-direction-editor__map">
-							<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
-							{mapIframeSrc ? (
-								<div className="rrze-direction__map-frame">
-									<iframe
-										title={
-											strings.mapServiceTitle ??
-											__('FAU map service', 'rrze-direction')
-										}
-										src={mapIframeSrc}
-										className="rrze-direction__iframe"
-										loading="lazy"
-										referrerPolicy="no-referrer-when-downgrade"
-									/>
-								</div>
-							) : (
-								<p className="rrze-direction-editor__muted">
-									{strings.mapUnavailable ??
-										__(
-											'No map parameters available (add FAUdir data or a Map URL).',
-											'rrze-direction'
-										)}
-								</p>
-							)}
-						</section>
-					) : null}
+					<section className="rrze-direction-editor__map">
+						<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
+						{mapIframeSrc ? (
+							<div className="rrze-direction__map-frame">
+								<iframe
+									title={
+										strings.mapServiceTitle ??
+										__('FAU map service', 'rrze-direction')
+									}
+									src={mapIframeSrc}
+									className="rrze-direction__iframe"
+									loading="lazy"
+									referrerPolicy="no-referrer-when-downgrade"
+								/>
+							</div>
+						) : (
+							<p className="rrze-direction-editor__muted">
+								{strings.mapUnavailable ??
+									__(
+										'No map parameters available (add FAUdir data or a Map URL).',
+										'rrze-direction'
+									)}
+							</p>
+						)}
+					</section>
 
 					<section>
 						<h4>

@@ -53,10 +53,6 @@
       "type": "string",
       "default": ""
     },
-    "showMap": {
-      "type": "boolean",
-      "default": false
-    },
     "mapUrl": {
       "type": "string",
       "default": ""

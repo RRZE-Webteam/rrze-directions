@@ -14,6 +14,8 @@ final class Main
     public function __construct()
     {
         add_action('enqueue_block_editor_assets', [$this, 'enqueueEditor']);
+        RestResolveCoordinates::register();
+        RestOpenRouteDirections::register();
     }
 
     /**
@@ -32,8 +34,10 @@ final class Main
         wp_add_inline_script(
             $handle,
             'window.rrze_direction = ' . wp_json_encode([
-                'persons'       => $payload,
-                'editorStrings' => [
+                'persons'                     => $payload,
+                'restResolveCoordinatesPath'  => '/rrze-direction/v1/resolve-coordinates',
+                'restOpenRouteDirectionsPath' => '/rrze-direction/v1/openroute-directions',
+                'editorStrings'               => [
                     'pleaseSelectPerson'         => __('Select a person from FAUdir first.', 'rrze-direction'),
                     'addressLabel'               => __('Address', 'rrze-direction'),
                     'roomLabel'                  => __('Room: %s', 'rrze-direction'),
@@ -42,7 +46,6 @@ final class Main
                     'selectPerson'               => __('FAUdir person entry', 'rrze-direction'),
                     'selectPersonWorkplace'      => __('Select person and workplace.', 'rrze-direction'),
                     'mapSection'                 => __('Directions map', 'rrze-direction'),
-                    'showMap'                    => __('Show arrival map section', 'rrze-direction'),
                     'mapUrl'                     => __('Map URL (FAU Campus Map preset)', 'rrze-direction'),
                     'mapUrlHelp'                 => __('Taken from RRZE-FAUdir (campus map) but can be edited.', 'rrze-direction'),
                     'mapCoordinates'             => __('Coordinates', 'rrze-direction'),

@@ -77,7 +77,8 @@ final class FaudirWorkplaceResolver
             $family = $person['familyName'] ?? '';
             $title  = trim("$given $family") ?: get_the_title((int) $postId);
 
-            $places = [];
+            $places       = [];
+            $seenWorkplaces = [];
 
             foreach ($person['contacts'] ?? [] as $contactStub) {
                 if (!is_array($contactStub)) {
@@ -115,14 +116,7 @@ final class FaudirWorkplaceResolver
                     $faumap      = isset($workplace['faumap']) && is_string($workplace['faumap']) ? trim($workplace['faumap']) : '';
 
                     if (null === $lat || null === $lon) {
-                        [$lat, $lon] = FauMapGeojson::resolveCoordinates(
-                            $workplace,
-                            $orgNumber,
-                            $street,
-                            $zip,
-                            $city,
-                            $faumap
-                        );
+                        [$lat, $lon] = FauMapGeojson::parseLocalCoordinatesFromFaumap($faumap);
                     }
 
                     $room  = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
@@ -132,7 +126,21 @@ final class FaudirWorkplaceResolver
                         continue;
                     }
 
+                    $fingerprint = self::workplaceFingerprint(
+                        $street,
+                        $zip,
+                        $city,
+                        $room,
+                        $floor,
+                        $faumap
+                    );
+                    if (isset($seenWorkplaces[$fingerprint])) {
+                        continue;
+                    }
+
                     $key = $contactId . '::' . (string) $wi;
+
+                    $seenWorkplaces[$fingerprint] = $key;
 
                     $parts     = array_filter([$street, trim($zip . ' ' . $city)]);
                     $formatted = implode(', ', $parts);
@@ -162,6 +170,7 @@ final class FaudirWorkplaceResolver
                         'city'             => $city,
                         'formattedAddress' => $formatted,
                         'faumap'           => $faumap,
+                        'mapHints'         => self::mapHintsFromWorkplace($workplace),
                         'latitude'         => $lat,
                         'longitude'        => $lon,
                     ];
@@ -181,14 +190,7 @@ final class FaudirWorkplaceResolver
                     $faumap      = isset($workplace['faumap']) && is_string($workplace['faumap']) ? trim($workplace['faumap']) : '';
 
                     if (null === $lat || null === $lon) {
-                        [$lat, $lon] = FauMapGeojson::resolveCoordinates(
-                            $workplace,
-                            '',
-                            $street,
-                            $zip,
-                            $city,
-                            $faumap
-                        );
+                        [$lat, $lon] = FauMapGeojson::parseLocalCoordinatesFromFaumap($faumap);
                     }
 
                     $room  = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
@@ -198,7 +200,22 @@ final class FaudirWorkplaceResolver
                         continue;
                     }
 
+                    $fingerprint = self::workplaceFingerprint(
+                        $street,
+                        $zip,
+                        $city,
+                        $room,
+                        $floor,
+                        $faumap
+                    );
+                    if (isset($seenWorkplaces[$fingerprint])) {
+                        continue;
+                    }
+
                     $key = '__person__::' . (string) $wi;
+
+                    $seenWorkplaces[$fingerprint] = $key;
+
                     $parts = array_filter([$street, trim($zip . ' ' . $city)]);
                     $formatted = implode(', ', $parts);
                     $places[$key] = [
@@ -215,6 +232,7 @@ final class FaudirWorkplaceResolver
                         'city'              => $city,
                         'formattedAddress'  => $formatted,
                         'faumap'            => $faumap,
+                        'mapHints'          => self::mapHintsFromWorkplace($workplace),
                         'latitude'          => $lat,
                         'longitude'         => $lon,
                     ];
@@ -277,6 +295,70 @@ final class FaudirWorkplaceResolver
         }
 
         return [null, null];
+    }
+
+    /**
+     * Stable fingerprint for deduplicating identical workplaces on one person (location + map link).
+     */
+    private static function workplaceFingerprint(
+        string $street,
+        string $zip,
+        string $city,
+        string $room,
+        string $floor,
+        string $faumap
+    ): string {
+        $normalize = static function (string $value): string {
+            $value = strtolower(trim($value));
+            if ($value === '') {
+                return '';
+            }
+            $value = remove_accents($value);
+
+            return preg_replace('/\s+/', '', $value) ?? '';
+        };
+
+        $faumapKey = strtolower(rtrim(trim($faumap), '/'));
+
+        return implode(
+            "\x1e",
+            [
+                $normalize($street),
+                $normalize($zip),
+                $normalize($city),
+                $normalize($room),
+                $normalize($floor),
+                $faumapKey,
+            ]
+        );
+    }
+
+    /**
+     * Minimal workplace hints for server-side map coordinate resolution (no PII beyond org/address).
+     *
+     * @param array<string,mixed> $w
+     *
+     * @return array<string, string>
+     */
+    private static function mapHintsFromWorkplace(array $w): array
+    {
+        $hints = [];
+
+        foreach (['famos', 'buildingNumber', 'building', 'famosNumber'] as $key) {
+            if (!array_key_exists($key, $w)) {
+                continue;
+            }
+            $value = $w[$key];
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (!is_string($value) && !is_int($value)) {
+                continue;
+            }
+            $hints[$key] = (string) $value;
+        }
+
+        return $hints;
     }
 
     /** @param array<string,mixed> $w API workplace fragment */
