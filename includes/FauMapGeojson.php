@@ -97,6 +97,16 @@ final class FauMapGeojson
     }
 
     /**
+     * Coordinates from a karte.fau.de iframe URL ({@code center/…} or {@code famos/…}).
+     *
+     * @return array{0: ?float, 1: ?float}
+     */
+    public static function coordinatesFromIframeUrl(string $faumap): array
+    {
+        return self::coordinatesFromFaumapUrl($faumap);
+    }
+
+    /**
      * @return array{0: ?float, 1: ?float}
      */
     private static function coordinatesFromFaumapUrl(string $faumap): array

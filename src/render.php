@@ -15,6 +15,16 @@ $addressCity      = (string) ($attributes['addressCity'] ?? '');
 $addressFormatted = (string) ($attributes['addressFormatted'] ?? '');
 
 $mapUrl     = trim((string) ($attributes['mapUrl'] ?? ''));
+if (
+    $mapUrl !== ''
+    && class_exists(\RRZE\Direction\FauMapIframe::class)
+    && \RRZE\Direction\FauMapIframe::isApiIframeUrl($mapUrl)
+) {
+    $mapUrlCanonical = \RRZE\Direction\FauMapIframe::canonicalIframeSrc($mapUrl);
+    if ($mapUrlCanonical !== '') {
+        $mapUrl = $mapUrlCanonical;
+    }
+}
 $mapImageId = isset($attributes['mapImageId']) ? (int) $attributes['mapImageId'] : 0;
 
 $directionBike    = (string) ($attributes['directionBike'] ?? '');

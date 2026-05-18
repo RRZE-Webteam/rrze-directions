@@ -82,9 +82,38 @@ function sanitizeOrganizationDigits(raw) {
 	return digits.length > 0 && digits.length <= 10 ? digits : '';
 }
 
+function iframePathHasSegment(url, segment) {
+	try {
+		const path = new URL(url, `https://${KARTE_HOST_SUFFIX}`).pathname.toLowerCase();
+
+		return path.split('/').includes(segment.toLowerCase());
+	} catch (error) {
+		return false;
+	}
+}
+
+function buildCenterIframeUrl(latitude, longitude) {
+	const pair = encodeURIComponent(`${latitude},${longitude}`);
+
+	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/center/${pair}/zoom/16/`;
+}
+
+function needsAsyncIframeCanonicalization(url) {
+	return isApiIframeUrl(url) && iframePathHasSegment(url, 'famos');
+}
+
 function resolveMapIframeSrc(attributes) {
+	const lat = parseCoordinate(attributes.mapLatitude);
+	const lon = parseCoordinate(attributes.mapLongitude);
+	const centerFromCoords =
+		lat !== null && lon !== null ? buildCenterIframeUrl(lat, lon) : '';
+
 	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
 	if (mapUrl && isApiIframeUrl(mapUrl)) {
+		if (iframePathHasSegment(mapUrl, 'famos') && centerFromCoords) {
+			return centerFromCoords;
+		}
+
 		return mapUrl;
 	}
 
@@ -93,12 +122,8 @@ function resolveMapIframeSrc(attributes) {
 		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/org/${org}/`;
 	}
 
-	const lat = parseCoordinate(attributes.mapLatitude);
-	const lon = parseCoordinate(attributes.mapLongitude);
-	if (lat !== null && lon !== null) {
-		const pair = encodeURIComponent(`${lat},${lon}`);
-
-		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/center/${pair}/zoom/16/`;
+	if (centerFromCoords) {
+		return centerFromCoords;
 	}
 
 	const addressQuery = buildAddressParam(
@@ -202,6 +227,37 @@ async function fetchResolvedCoordinates(place) {
 	}
 
 	return { mapLatitude: '', mapLongitude: '' };
+}
+
+async function fetchResolvedIframeSrc(candidateUrl) {
+	const trimmed = `${candidateUrl ?? ''}`.trim();
+	if (!trimmed || !isApiIframeUrl(trimmed)) {
+		return { iframeSrc: '', mapUrl: '' };
+	}
+
+	const path = window.rrze_direction?.restResolveIframeSrcPath;
+	if (!path) {
+		return { iframeSrc: trimmed, mapUrl: trimmed };
+	}
+
+	try {
+		const res = await apiFetch({
+			path,
+			method: 'POST',
+			data: { url: trimmed },
+		});
+
+		const iframeSrc = `${res?.iframeSrc ?? ''}`.trim();
+		const mapUrl = `${res?.mapUrl ?? iframeSrc}`.trim();
+
+		if (iframeSrc && isApiIframeUrl(iframeSrc)) {
+			return { iframeSrc, mapUrl };
+		}
+	} catch (error) {
+		// Fall back to the candidate URL.
+	}
+
+	return { iframeSrc: trimmed, mapUrl: trimmed };
 }
 
 async function fetchOpenRouteDirections(place, coords, extras = {}) {
@@ -331,7 +387,39 @@ export default function Edit({ attributes, setAttributes }) {
 		addressFormatted,
 		streetLine
 	);
-	const mapIframeSrc = resolveMapIframeSrc(attributes);
+	const mapIframeSrc = useMemo(
+		() => resolveMapIframeSrc(attributes),
+		[
+			mapUrl,
+			organizationNumber,
+			mapLatitude,
+			mapLongitude,
+			addressStreet,
+			addressZip,
+			addressCity,
+		]
+	);
+
+	// Persist famos → center in block attributes (GeoJSON); preview uses mapIframeSrc above.
+	useEffect(() => {
+		const trimmed = `${mapUrl ?? ''}`.trim();
+		if (!trimmed || !needsAsyncIframeCanonicalization(trimmed)) {
+			return undefined;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			const resolved = await fetchResolvedIframeSrc(trimmed);
+			if (!cancelled && resolved.mapUrl && resolved.mapUrl !== trimmed) {
+				setAttributes({ mapUrl: resolved.mapUrl });
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [mapUrl]);
 
 	const imageDetails = useSelect(
 		(select) => {
@@ -395,6 +483,19 @@ export default function Edit({ attributes, setAttributes }) {
 				addressCity,
 				zip: addressZip,
 			});
+			const iframeCandidate = resolveMapIframeSrc({
+				...attributes,
+				mapUrl: place.faumap ?? '',
+				organizationNumber: place.organizationNumber ?? '',
+				mapLatitude: coords.mapLatitude,
+				mapLongitude: coords.mapLongitude,
+				addressStreet: place.street ?? '',
+				addressZip: place.zip ?? '',
+				addressCity: place.city ?? '',
+			});
+			const iframe = iframeCandidate
+				? await fetchResolvedIframeSrc(iframeCandidate)
+				: { iframeSrc: '', mapUrl: '' };
 
 			if (cancelled) {
 				return;
@@ -409,6 +510,13 @@ export default function Edit({ attributes, setAttributes }) {
 			}
 			if (dirs?.directionTransit) {
 				payload.directionTransit = dirs.directionTransit;
+			}
+			const resolvedMapUrl =
+				iframe.mapUrl && isApiIframeUrl(iframe.mapUrl)
+					? iframe.mapUrl
+					: iframeCandidate;
+			if (resolvedMapUrl) {
+				payload.mapUrl = resolvedMapUrl;
 			}
 			setAttributes(payload);
 		})();
@@ -691,6 +799,7 @@ export default function Edit({ attributes, setAttributes }) {
 						{mapIframeSrc ? (
 							<div className="rrze-direction__map-frame">
 								<iframe
+									key={mapIframeSrc}
 									title={
 										strings.mapServiceTitle ??
 										__('FAU map service', 'rrze-direction')

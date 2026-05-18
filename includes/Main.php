@@ -15,6 +15,7 @@ final class Main
     {
         add_action('enqueue_block_editor_assets', [$this, 'enqueueEditor']);
         RestResolveCoordinates::register();
+        RestResolveIframeSrc::register();
         RestOpenRouteDirections::register();
     }
 
@@ -36,6 +37,7 @@ final class Main
             'window.rrze_direction = ' . wp_json_encode([
                 'persons'                     => $payload,
                 'restResolveCoordinatesPath'  => '/rrze-direction/v1/resolve-coordinates',
+                'restResolveIframeSrcPath'    => '/rrze-direction/v1/resolve-iframe-src',
                 'restOpenRouteDirectionsPath' => '/rrze-direction/v1/openroute-directions',
                 'editorStrings'               => [
                     'pleaseSelectPerson'         => __('Select a person from FAUdir first.', 'rrze-direction'),

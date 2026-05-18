@@ -73,9 +73,9 @@ final class FaudirWorkplaceResolver
                 continue;
             }
 
-            $given  = $person['givenName'] ?? '';
-            $family = $person['familyName'] ?? '';
-            $title  = trim("$given $family") ?: get_the_title((int) $postId);
+            $given  = is_string($person['givenName'] ?? null) ? trim($person['givenName']) : '';
+            $family = is_string($person['familyName'] ?? null) ? trim($person['familyName']) : '';
+            $title  = self::formatPersonLabel($family, $given, (int) $postId);
 
             $places       = [];
             $seenWorkplaces = [];
@@ -248,6 +248,13 @@ final class FaudirWorkplaceResolver
                 ];
             }
         }
+
+        usort(
+            $rows,
+            static function (array $a, array $b): int {
+                return strcasecmp((string) ($a['label'] ?? ''), (string) ($b['label'] ?? ''));
+            }
+        );
 
         return [
             'error'   => false,
@@ -430,5 +437,27 @@ final class FaudirWorkplaceResolver
         }
 
         return '';
+    }
+
+    /**
+     * Person label for editor dropdowns: “Nachname, Vorname”.
+     */
+    private static function formatPersonLabel(string $familyName, string $givenName, int $postId): string
+    {
+        if ($familyName !== '' && $givenName !== '') {
+            return $familyName . ', ' . $givenName;
+        }
+
+        if ($familyName !== '') {
+            return $familyName;
+        }
+
+        if ($givenName !== '') {
+            return $givenName;
+        }
+
+        $fallback = get_the_title($postId);
+
+        return is_string($fallback) ? trim($fallback) : '';
     }
 }
