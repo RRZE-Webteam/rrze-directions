@@ -112,7 +112,7 @@ final class Main
                     'selectPerson'               => __('Person', 'rrze-direction'),
                     'selectPersonWorkplace'      => __('Select person and workplace.', 'rrze-direction'),
                     'mapSection'                 => __('Directions map', 'rrze-direction'),
-                    'mapUrl'                     => __('URL to karte.fau.de', 'rrze-direction'),
+                    'mapUrl'                     => __('Link to', 'rrze-direction'),
                     'googleMaps'                 => __('Google Maps', 'rrze-direction'),
                     'appleMaps'                  => __('Apple Maps', 'rrze-direction'),
                     'mapImageLabel'              => __('Illustration', 'rrze-direction'),

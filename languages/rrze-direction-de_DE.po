@@ -77,8 +77,8 @@ msgstr "Anfahrtskarte anzeigen"
 msgid "Map URL (FAU Campus Map preset)"
 msgstr "URL zu karte.fau.de"
 
-msgid "URL to karte.fau.de"
-msgstr "URL zu karte.fau.de"
+msgid "Link to"
+msgstr "Link zu"
 
 msgid "Taken from RRZE-FAUdir (campus map) but can be edited."
 msgstr "Übernommen aus RRZE-FAUdir (Campuskarte), kann bearbeitet werden."

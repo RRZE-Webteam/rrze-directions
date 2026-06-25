@@ -664,9 +664,7 @@ function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false
 	return (
 		<>
 			{formatCoordinatePair(latitude, longitude)}
-			<span className="rrze-direction-editor__link-sep" aria-hidden="true">
-				{' · '}
-			</span>
+			<br />
 			<a href={googleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
 				{strings.googleMaps ?? __('Google Maps', 'rrze-direction')}
 			</a>
@@ -1010,29 +1008,28 @@ export default function Edit({ attributes, setAttributes }) {
 				<PanelBody title={strings.mapSection ?? __('Map', 'rrze-direction')}>
 					<TextControl
 						label={
-							strings.mapUrl ??
-							__('URL to karte.fau.de', 'rrze-direction')
+							<>
+								{strings.mapUrl ?? __('Link to', 'rrze-direction')}{' '}
+								<a
+									href="https://karte.fau.de/"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									karte.fau.de
+								</a>
+							</>
 						}
 						value={mapUrl}
 						onChange={(next) => setAttributes({ mapUrl: next })}
 					/>
 					<div className="rrze-direction-editor__map-meta">
-						<a
-							href="https://karte.fau.de/"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							karte.fau.de
-						</a>
-					</div>
-
-					<div className="rrze-direction-editor__map-meta">
 						<CoordinateLinks
-						latitude={mapLatitude}
-						longitude={mapLongitude}
-						strings={strings}
+							latitude={mapLatitude}
+							longitude={mapLongitude}
+							strings={strings}
 						/>
 					</div>
+					<br />
 
 					{mapIllustration}
 				</PanelBody>
