@@ -56,4 +56,16 @@ final class MapLinks
 
         return 'https://maps.apple.com/?ll=' . rawurlencode($pair) . '&q=' . rawurlencode($pair);
     }
+
+    public static function formatCoordinatePair(float $latitude, float $longitude): string
+    {
+        return self::formatCoordinateValue($latitude) . ', ' . self::formatCoordinateValue($longitude);
+    }
+
+    private static function formatCoordinateValue(float $value): string
+    {
+        $formatted = rtrim(rtrim(sprintf('%.8f', $value), '0'), '.');
+
+        return $formatted === '' ? '0' : $formatted;
+    }
 }

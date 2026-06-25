@@ -110,20 +110,20 @@ $class = trim('wp-block-rrze-direction rrze-direction');
             <?php if ($showFormattedAddress && $streetLine !== '') : ?>
                 <span class="rrze-direction__meta"><?php echo esc_html($addressFormatted); ?></span>
             <?php endif; ?>
-        </address>
 
-        <?php if (null !== $mapLatitude && null !== $mapLongitude) : ?>
-            <p class="rrze-direction__coordinates">
-                <?php echo esc_html__('Coordinates', 'rrze-direction'); ?>:
+            <?php if (null !== $mapLatitude && null !== $mapLongitude) : ?>
+                <br>
+                <?php echo esc_html(\RRZE\Direction\MapLinks::formatCoordinatePair($mapLatitude, $mapLongitude)); ?>
+                <span class="rrze-direction__link-sep" aria-hidden="true"> · </span>
                 <a href="<?php echo esc_url(\RRZE\Direction\MapLinks::googleMapsUrl($mapLatitude, $mapLongitude), ['https']); ?>">
                     <?php echo esc_html__('Google Maps', 'rrze-direction'); ?>
                 </a>
-                <span class="rrze-direction__coordinates-sep" aria-hidden="true">·</span>
+                <span class="rrze-direction__link-sep" aria-hidden="true"> · </span>
                 <a href="<?php echo esc_url(\RRZE\Direction\MapLinks::appleMapsUrl($mapLatitude, $mapLongitude), ['https']); ?>">
                     <?php echo esc_html__('Apple Maps', 'rrze-direction'); ?>
                 </a>
-            </p>
-        <?php endif; ?>
+            <?php endif; ?>
+        </address>
 
         <?php if ($mapImageId > 0) : ?>
             <figure class="rrze-direction__map-image">

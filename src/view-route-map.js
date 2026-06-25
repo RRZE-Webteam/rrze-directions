@@ -1,4 +1,5 @@
 import { initRouteMapsIn } from './route-map';
+import { attachMapWheelShield } from './map-wheel-shield';
 
 function injectTileFixStyles() {
 	if (document.getElementById('rrze-direction-leaflet-tile-fix')) {
@@ -21,6 +22,11 @@ function injectTileFixStyles() {
 
 function boot() {
 	injectTileFixStyles();
+
+	document.querySelectorAll('.rrze-direction__map-frame').forEach((frame) => {
+		attachMapWheelShield(frame);
+	});
+
 	initRouteMapsIn(document);
 }
 

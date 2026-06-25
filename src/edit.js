@@ -166,6 +166,19 @@ function shouldShowFormattedAddress(formatted, streetLine) {
 	return normalizeAddress(trimmed) !== normalizeAddress(streetLine);
 }
 
+function formatCoordinatePair(latitude, longitude) {
+	const formatValue = (value) => {
+		const normalized = `${value}`.trim().replace(',', '.');
+		if (!normalized.includes('.')) {
+			return normalized;
+		}
+
+		return normalized.replace(/\.?0+$/, '');
+	};
+
+	return `${formatValue(latitude)}, ${formatValue(longitude)}`;
+}
+
 function googleMapsUrl(latitude, longitude) {
 	const query = encodeURIComponent(`${latitude},${longitude}`);
 
@@ -552,7 +565,8 @@ function DirectionsEditorPreview({ attributes, strings }) {
 	const layoutLabel =
 		layout === 'columns'
 			? strings.directionsLayoutColumns ??
-				__('Columns (side by side)', 'rrze-direction')
+				strings.directionsLayoutColumns ??
+				__('Columns', 'rrze-direction')
 			: strings.directionsLayoutAccordion ??
 				__('Accordion', 'rrze-direction');
 
@@ -638,27 +652,29 @@ function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false
 		}
 
 		return (
-			<p className="rrze-direction-editor__coordinates">
-				{strings.coordinatesMissing ??
-					__('No coordinates detected in API data.', 'rrze-direction')}
-			</p>
+			<div className="rrze-direction-editor__map-meta">
+				<span className="rrze-direction-editor__muted">
+					{strings.coordinatesMissing ??
+						__('No coordinates detected in API data.', 'rrze-direction')}
+				</span>
+			</div>
 		);
 	}
 
 	return (
-		<p className="rrze-direction-editor__coordinates">
-			{strings.mapCoordinates ?? __('Coordinates', 'rrze-direction')}:{' '}
+		<>
+			{formatCoordinatePair(latitude, longitude)}
+			<br />
 			<a href={googleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
 				{strings.googleMaps ?? __('Google Maps', 'rrze-direction')}
 			</a>
-			<span className="rrze-direction-editor__coordinates-sep" aria-hidden="true">
-				{' '}
-				·{' '}
+			<span className="rrze-direction-editor__link-sep" aria-hidden="true">
+				{' · '}
 			</span>
 			<a href={appleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
 				{strings.appleMaps ?? __('Apple Maps', 'rrze-direction')}
 			</a>
-		</p>
+		</>
 	);
 }
 
@@ -908,7 +924,7 @@ export default function Edit({ attributes, setAttributes }) {
 								onClick={open}
 							>
 								{strings.mapImageLabel ??
-									__('Optional map illustration', 'rrze-direction')}
+									__('Illustration', 'rrze-direction')}
 							</button>
 						)}
 					/>
@@ -920,12 +936,9 @@ export default function Edit({ attributes, setAttributes }) {
 	return (
 		<Fragment>
 			<InspectorControls>
-				<PanelBody title={strings.selectPerson ?? __('FAUdir', 'rrze-direction')}>
+				<PanelBody title={strings.selectPersonPanel ?? __('FAUdir', 'rrze-direction')}>
 					<SelectControl
-						label={
-							strings.selectPerson ??
-							__('Published FAUdir person entry', 'rrze-direction')
-						}
+						label={strings.selectPerson ?? __('Person', 'rrze-direction')}
 						value={personId ? String(personId) : ''}
 						options={personOptions}
 						onChange={(next) => {
@@ -995,25 +1008,28 @@ export default function Edit({ attributes, setAttributes }) {
 				<PanelBody title={strings.mapSection ?? __('Map', 'rrze-direction')}>
 					<TextControl
 						label={
-							strings.mapUrl ??
-							__('Map URL', 'rrze-direction')
-						}
-						help={
-							strings.mapUrlHelp ??
-							__(
-								'Taken from RRZE-FAUdir (campus map) but can be edited.',
-								'rrze-direction'
-							)
+							<>
+								{strings.mapUrl ?? __('Link to', 'rrze-direction')}{' '}
+								<a
+									href="https://karte.fau.de/"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									karte.fau.de
+								</a>
+							</>
 						}
 						value={mapUrl}
 						onChange={(next) => setAttributes({ mapUrl: next })}
 					/>
-
-					<CoordinateLinks
-						latitude={mapLatitude}
-						longitude={mapLongitude}
-						strings={strings}
-					/>
+					<div className="rrze-direction-editor__map-meta">
+						<CoordinateLinks
+							latitude={mapLatitude}
+							longitude={mapLongitude}
+							strings={strings}
+						/>
+					</div>
+					<br />
 
 					{mapIllustration}
 				</PanelBody>
@@ -1021,7 +1037,7 @@ export default function Edit({ attributes, setAttributes }) {
 				<PanelBody
 					title={
 						strings.directionsSettings ??
-						__('Directions output', 'rrze-direction')
+						__('Arrival directions', 'rrze-direction')
 					}
 					initialOpen
 				>
@@ -1069,7 +1085,7 @@ export default function Edit({ attributes, setAttributes }) {
 							{
 								label:
 									strings.directionsLayoutColumns ??
-									__('Columns (side by side)', 'rrze-direction'),
+									__('Columns', 'rrze-direction'),
 								value: 'columns',
 							},
 						]}
@@ -1077,13 +1093,6 @@ export default function Edit({ attributes, setAttributes }) {
 							setAttributes({
 								directionsLayout: next === 'columns' ? 'columns' : 'accordion',
 							})
-						}
-						help={
-							strings.directionsLayoutHelp ??
-							__(
-								'Columns use one, two, or three columns depending on how many direction types are enabled and have content.',
-								'rrze-direction'
-							)
 						}
 					/>
 				</PanelBody>
@@ -1147,14 +1156,18 @@ export default function Edit({ attributes, setAttributes }) {
 										__('Select person and workplace.', 'rrze-direction')}
 								</span>
 							) : null}
+							{mapLatitude && mapLongitude ? (
+								<>
+									<br />
+									<CoordinateLinks
+										latitude={mapLatitude}
+										longitude={mapLongitude}
+										strings={strings}
+										hideWhenMissing
+									/>
+								</>
+							) : null}
 						</address>
-
-						<CoordinateLinks
-							latitude={mapLatitude}
-							longitude={mapLongitude}
-							strings={strings}
-							hideWhenMissing
-						/>
 					</section>
 
 					<section className="rrze-direction-editor__map">
