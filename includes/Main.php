@@ -11,12 +11,75 @@ defined('ABSPATH') || exit;
  */
 final class Main
 {
+    public const ACCORDION_SCRIPT_HANDLE = 'rrze-direction-accordion';
+
+    public const ROUTE_MAP_SCRIPT_HANDLE = 'rrze-direction-route-map';
+
+    public const ROUTE_MAP_STYLE_HANDLE = 'rrze-direction-route-map';
+
     public function __construct()
     {
+        add_action('init', [$this, 'registerAssets']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueueEditor']);
         RestResolveCoordinates::register();
         RestResolveIframeSrc::register();
         RestOpenRouteDirections::register();
+    }
+
+    public function registerAssets(): void
+    {
+        $accordionPath = plugin()->getPath() . 'build/view.js';
+        if (is_readable($accordionPath)) {
+            $assetFile = plugin()->getPath() . 'build/view.asset.php';
+            $asset     = is_readable($assetFile) ? require $assetFile : [];
+            $version   = is_array($asset) ? (string) ($asset['version'] ?? '') : '';
+
+            if ($version === '') {
+                $version = (string) filemtime($accordionPath);
+            }
+
+            wp_register_script(
+                self::ACCORDION_SCRIPT_HANDLE,
+                plugins_url('build/view.js', plugin()->getBasename()),
+                ['jquery'],
+                $version,
+                true
+            );
+        }
+
+        $routeMapPath = plugin()->getPath() . 'build/view-route-map.js';
+        if (!is_readable($routeMapPath)) {
+            return;
+        }
+
+        $assetFile = plugin()->getPath() . 'build/view-route-map.asset.php';
+        $asset     = is_readable($assetFile) ? require $assetFile : [];
+        $routeVersion = is_array($asset) ? (string) ($asset['version'] ?? '') : '';
+
+        if ($routeVersion === '') {
+            $routeVersion = (string) filemtime($routeMapPath);
+        }
+
+        // Fallback when block viewScript/viewStyle handles are unavailable (older WP).
+        if (!wp_script_is('rrze-direction-view-script', 'registered')) {
+            $routeStylePath = plugin()->getPath() . 'build/view-route-map.css';
+            if (is_readable($routeStylePath)) {
+                wp_register_style(
+                    self::ROUTE_MAP_STYLE_HANDLE,
+                    plugins_url('build/view-route-map.css', plugin()->getBasename()),
+                    [],
+                    $routeVersion
+                );
+            }
+
+            wp_register_script(
+                self::ROUTE_MAP_SCRIPT_HANDLE,
+                plugins_url('build/view-route-map.js', plugin()->getBasename()),
+                [],
+                $routeVersion,
+                true
+            );
+        }
     }
 
     /**
@@ -64,6 +127,19 @@ final class Main
                     'directionBikePlaceholder'   => __('Directions by foot / bike.', 'rrze-direction'),
                     'directionCarPlaceholder'    => __('Directions by car.', 'rrze-direction'),
                     'directionTransitPlaceholder'=> __('Public transport.', 'rrze-direction'),
+                    'directionsSettings'           => __('Directions output', 'rrze-direction'),
+                    'showDirectionBike'            => __('Show walking / cycling', 'rrze-direction'),
+                    'showDirectionCar'             => __('Show by car', 'rrze-direction'),
+                    'showDirectionTransit'         => __('Show bus / train', 'rrze-direction'),
+                    'directionsLayout'             => __('Layout', 'rrze-direction'),
+                    'directionsLayoutAccordion'    => __('Accordion', 'rrze-direction'),
+                    'directionsLayoutColumns'      => __('Columns (side by side)', 'rrze-direction'),
+                    'directionsLayoutHelp'         => __('Columns use one, two, or three columns depending on how many direction types are enabled and have content.', 'rrze-direction'),
+					'routeMapTitle'                => __('Route map', 'rrze-direction'),
+					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-direction'),
+					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-direction'),
+					'directionsLoading'            => __('Loading directions…', 'rrze-direction'),
+					'mapLoading'                   => __('Loading map…', 'rrze-direction'),
                     'coordinatesMissing'         => __('No coordinates detected in API data.', 'rrze-direction'),
                     'noneOption'                 => __('— Choose —', 'rrze-direction'),
                 ],

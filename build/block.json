@@ -80,9 +80,39 @@
     "directionTransit": {
       "type": "string",
       "default": ""
+    },
+    "directionBikeRoute": {
+      "type": "string",
+      "default": ""
+    },
+    "directionCarRoute": {
+      "type": "string",
+      "default": ""
+    },
+    "directionTransitRoute": {
+      "type": "string",
+      "default": ""
+    },
+    "showDirectionBike": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDirectionCar": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDirectionTransit": {
+      "type": "boolean",
+      "default": true
+    },
+    "directionsLayout": {
+      "type": "string",
+      "default": "accordion"
     }
   },
   "editorScript": "file:./index.js",
+  "viewScript": "file:./view-route-map.js",
+  "viewStyle": "file:./view-route-map.css",
   "render": "file:./render.php",
   "style": "file:./style-index.css",
   "textdomain": "rrze-direction"

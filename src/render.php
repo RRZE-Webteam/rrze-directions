@@ -27,10 +27,6 @@ if (
 }
 $mapImageId = isset($attributes['mapImageId']) ? (int) $attributes['mapImageId'] : 0;
 
-$directionBike    = (string) ($attributes['directionBike'] ?? '');
-$directionCar     = (string) ($attributes['directionCar'] ?? '');
-$directionTransit = (string) ($attributes['directionTransit'] ?? '');
-
 $karteIframeSrc = class_exists(\RRZE\Direction\FauMapIframe::class)
     ? \RRZE\Direction\FauMapIframe::resolveIframeSrc($attributes)
     : '';
@@ -173,26 +169,16 @@ $class = trim('wp-block-rrze-direction rrze-direction');
             <?php endif; ?>
         </div>
 
-        <?php if (trim(wp_strip_all_tags($directionBike)) !== '') : ?>
-            <section class="rrze-direction__text">
-                <h3><?php echo esc_html__('Walking / Cycling', 'rrze-direction'); ?></h3>
-                <div class="rrze-direction__rte"><?php echo wp_kses_post($directionBike); ?></div>
-            </section>
-        <?php endif; ?>
+        <?php
+        $directionsHtml = class_exists(\RRZE\Direction\DirectionsPresentation::class)
+            ? \RRZE\Direction\DirectionsPresentation::render($attributes)
+            : '';
 
-        <?php if (trim(wp_strip_all_tags($directionCar)) !== '') : ?>
-            <section class="rrze-direction__text">
-                <h3><?php echo esc_html__('By car', 'rrze-direction'); ?></h3>
-                <div class="rrze-direction__rte"><?php echo wp_kses_post($directionCar); ?></div>
-            </section>
-        <?php endif; ?>
-
-        <?php if (trim(wp_strip_all_tags($directionTransit)) !== '') : ?>
-            <section class="rrze-direction__text">
-                <h3><?php echo esc_html__('Bus / train', 'rrze-direction'); ?></h3>
-                <div class="rrze-direction__rte"><?php echo wp_kses_post($directionTransit); ?></div>
-            </section>
-        <?php endif; ?>
+        if ($directionsHtml !== '') {
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in DirectionsPresentation.
+            echo $directionsHtml;
+        }
+        ?>
 
     </div>
 </section>

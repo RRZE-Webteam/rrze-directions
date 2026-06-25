@@ -163,3 +163,57 @@ msgstr "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn die örtlichen 
 
 msgid "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn bitte aktuelle Fahrpläne nutzen)."
 msgstr "Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn die örtlichen Fahrpläne nutzen)."
+
+msgid "Erlangen Hauptbahnhof"
+msgstr "Erlangen Hauptbahnhof"
+
+msgid "Nürnberg Hauptbahnhof"
+msgstr "Nürnberg Hauptbahnhof"
+
+msgid "Fürth Hauptbahnhof"
+msgstr "Fürth Hauptbahnhof"
+
+msgid "Von %1$s nach %2$s"
+msgstr "Von %1$s nach %2$s"
+
+msgid "From %1$s to %2$s"
+msgstr "Von %1$s nach %2$s"
+
+msgid "Directions output"
+msgstr "Ausgabe Anfahrtsbeschreibungen"
+
+msgid "Show walking / cycling"
+msgstr "Zu Fuß / mit dem Rad anzeigen"
+
+msgid "Show by car"
+msgstr "Mit dem Auto anzeigen"
+
+msgid "Show bus / train"
+msgstr "Bus / Bahn anzeigen"
+
+msgid "Layout"
+msgstr "Darstellung"
+
+msgid "Accordion"
+msgstr "Akkordeon"
+
+msgid "Columns (side by side)"
+msgstr "Spalten (nebeneinander)"
+
+msgid "Columns use one, two, or three columns depending on how many direction types are enabled and have content."
+msgstr "Spalten: ein-, zwei- oder dreispaltig – je nachdem, wie viele Anfahrtsarten aktiviert sind und Inhalt haben."
+
+msgid "Route map"
+msgstr "Routenkarte"
+
+msgid "Interactive route map"
+msgstr "Interaktive Routenkarte"
+
+msgid "Click a numbered step in the directions list to highlight it on the map."
+msgstr "Klicken Sie auf einen nummerierten Schritt in der Anleitung, um ihn auf der Karte hervorzuheben."
+
+msgid "Show this step on the route map"
+msgstr "Diesen Schritt auf der Routenkarte anzeigen"
+
+msgid "Route map with numbered steps (shown on the site)."
+msgstr "Routenkarte mit nummerierten Schritten (wird auf der Website angezeigt)."
