@@ -319,29 +319,80 @@ function hasResolvedCoordinates(coords) {
 }
 
 async function loadWorkplaceData(place, extras = {}) {
-	let coords = await fetchResolvedCoordinates(place);
+	const coordDelays = [0, 600, 1500];
+	let coords = { mapLatitude: '', mapLongitude: '' };
 
-	if (!hasResolvedCoordinates(coords)) {
-		await new Promise((resolve) => {
-			window.setTimeout(resolve, 600);
-		});
+	for (const delay of coordDelays) {
+		if (delay > 0) {
+			await new Promise((resolve) => {
+				window.setTimeout(resolve, delay);
+			});
+		}
+
 		coords = await fetchResolvedCoordinates(place);
+		if (hasResolvedCoordinates(coords)) {
+			break;
+		}
 	}
 
 	if (!hasResolvedCoordinates(coords)) {
 		return { coords, dirs: null };
 	}
 
-	let dirs = await fetchOpenRouteDirections(place, coords, extras);
+	const dirDelays = [0, 1000, 2500];
+	let dirs = null;
 
-	if (!directionsResponseHasContent(dirs)) {
-		await new Promise((resolve) => {
-			window.setTimeout(resolve, 800);
-		});
+	for (const delay of dirDelays) {
+		if (delay > 0) {
+			await new Promise((resolve) => {
+				window.setTimeout(resolve, delay);
+			});
+		}
+
 		dirs = await fetchOpenRouteDirections(place, coords, extras);
+		if (directionsResponseHasContent(dirs)) {
+			break;
+		}
 	}
 
 	return { coords, dirs };
+}
+
+function applyDirectionPayload(payload, dirs) {
+	if (!dirs || !directionsResponseHasContent(dirs)) {
+		return;
+	}
+
+	payload.directionBike = dirs.directionBike ?? '';
+	payload.directionCar = dirs.directionCar ?? '';
+	payload.directionTransit = dirs.directionTransit ?? '';
+	payload.directionBikeRoute = dirs.directionBikeRoute ?? '';
+	payload.directionCarRoute = dirs.directionCarRoute ?? '';
+	payload.directionTransitRoute = dirs.directionTransitRoute ?? '';
+}
+
+async function resolvePersistedMapUrl(place, coords, currentMapUrl = '') {
+	const trimmedFaumap = `${place.faumap ?? ''}`.trim();
+	const candidateFromFaumap = trimmedFaumap || `${currentMapUrl ?? ''}`.trim();
+
+	if (candidateFromFaumap && needsAsyncIframeCanonicalization(candidateFromFaumap)) {
+		const resolved = await fetchResolvedIframeSrc(candidateFromFaumap);
+		if (resolved.mapUrl) {
+			return resolved.mapUrl;
+		}
+	}
+
+	const candidate = resolveMapIframeSrc({
+		mapUrl: candidateFromFaumap,
+		organizationNumber: place.organizationNumber ?? '',
+		mapLatitude: coords.mapLatitude,
+		mapLongitude: coords.mapLongitude,
+		addressStreet: place.street ?? '',
+		addressZip: place.zip ?? '',
+		addressCity: place.city ?? '',
+	});
+
+	return candidate || candidateFromFaumap;
 }
 
 function snapshotFromPlace(place) {
@@ -661,27 +712,6 @@ export default function Edit({ attributes, setAttributes }) {
 		]
 	);
 
-	// Persist famos → center in block attributes (GeoJSON); preview uses mapIframeSrc above.
-	useEffect(() => {
-		const trimmed = `${mapUrl ?? ''}`.trim();
-		if (!trimmed || !needsAsyncIframeCanonicalization(trimmed)) {
-			return undefined;
-		}
-
-		let cancelled = false;
-
-		(async () => {
-			const resolved = await fetchResolvedIframeSrc(trimmed);
-			if (!cancelled && resolved.mapUrl && resolved.mapUrl !== trimmed) {
-				setAttributes({ mapUrl: resolved.mapUrl });
-			}
-		})();
-
-		return () => {
-			cancelled = true;
-		};
-	}, [mapUrl]);
-
 	const imageDetails = useSelect(
 		(select) => {
 			if (!mapImageId) {
@@ -720,8 +750,15 @@ export default function Edit({ attributes, setAttributes }) {
 	const previewPersonLabel =
 		selectedRow?.label ?? __('Directions', 'rrze-direction');
 
-	const loadSignatureRef = useRef('');
+	const loadRequestIdRef = useRef(0);
 	const [isLoadingDirections, setIsLoadingDirections] = useState(false);
+	const [editorMapSrc, setEditorMapSrc] = useState('');
+
+	useEffect(() => {
+		if (!isLoadingDirections) {
+			setEditorMapSrc(mapIframeSrc);
+		}
+	}, [isLoadingDirections, mapIframeSrc]);
 
 	useEffect(() => {
 		if (!personId || !personRows.length) {
@@ -742,52 +779,39 @@ export default function Edit({ attributes, setAttributes }) {
 			return undefined;
 		}
 
-		const signature = `${personId}:${id}`;
-		loadSignatureRef.current = signature;
+		const requestId = ++loadRequestIdRef.current;
 		setIsLoadingDirections(true);
 
 		(async () => {
 			try {
 				const { coords, dirs } = await loadWorkplaceData(place, {
-					addressCity: place.city ?? '',
-					zip: place.zip ?? '',
+					addressCity: place.city ?? addressCity ?? '',
+					zip: place.zip ?? addressZip ?? '',
 				});
 
-				if (loadSignatureRef.current !== signature) {
+				if (loadRequestIdRef.current !== requestId) {
 					return;
 				}
-
-				const iframeCandidate = resolveMapIframeSrc({
-					mapUrl: place.faumap ?? '',
-					organizationNumber: place.organizationNumber ?? '',
-					mapLatitude: coords.mapLatitude,
-					mapLongitude: coords.mapLongitude,
-					addressStreet: place.street ?? '',
-					addressZip: place.zip ?? '',
-					addressCity: place.city ?? '',
-				});
 
 				const payload = {
 					mapLatitude: coords.mapLatitude,
 					mapLongitude: coords.mapLongitude,
 				};
 
-				if (iframeCandidate) {
-					payload.mapUrl = iframeCandidate;
+				applyDirectionPayload(payload, dirs);
+
+				const nextMapUrl = await resolvePersistedMapUrl(place, coords, mapUrl);
+				if (loadRequestIdRef.current !== requestId) {
+					return;
 				}
 
-				if (dirs) {
-					payload.directionBike = dirs.directionBike ?? '';
-					payload.directionCar = dirs.directionCar ?? '';
-					payload.directionTransit = dirs.directionTransit ?? '';
-					payload.directionBikeRoute = dirs.directionBikeRoute ?? '';
-					payload.directionCarRoute = dirs.directionCarRoute ?? '';
-					payload.directionTransitRoute = dirs.directionTransitRoute ?? '';
+				if (nextMapUrl) {
+					payload.mapUrl = nextMapUrl;
 				}
 
 				setAttributes(payload);
 			} finally {
-				if (loadSignatureRef.current === signature) {
+				if (loadRequestIdRef.current === requestId) {
 					setIsLoadingDirections(false);
 				}
 			}
@@ -1135,15 +1159,19 @@ export default function Edit({ attributes, setAttributes }) {
 
 					<section className="rrze-direction-editor__map">
 						<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
-						{mapIframeSrc ? (
+						{isLoadingDirections ? (
+							<p className="rrze-direction-editor__loading" aria-live="polite">
+								{strings.mapLoading ??
+									__('Loading map…', 'rrze-direction')}
+							</p>
+						) : editorMapSrc ? (
 							<div className="rrze-direction__map-frame">
 								<iframe
-									key={mapIframeSrc}
 									title={
 										strings.mapServiceTitle ??
 										__('FAU map service', 'rrze-direction')
 									}
-									src={mapIframeSrc}
+									src={editorMapSrc}
 									className="rrze-direction__iframe"
 									loading="lazy"
 									referrerPolicy="no-referrer-when-downgrade"

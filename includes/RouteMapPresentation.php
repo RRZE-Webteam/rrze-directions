@@ -11,16 +11,12 @@ defined('ABSPATH') || exit;
  */
 final class RouteMapPresentation
 {
-    private static bool $assetsEnqueued = false;
-
     public static function render(string $routeJson): string
     {
         $routeJson = trim($routeJson);
         if ($routeJson === '' || !self::isValidRouteJson($routeJson)) {
             return '';
         }
-
-        self::enqueueAssets();
 
         return '<div class="rrze-direction-route-map"'
             . ' data-route="' . esc_attr($routeJson) . '">'
@@ -54,22 +50,5 @@ final class RouteMapPresentation
             && count($coordinates) >= 2
             && is_array($steps)
             && $steps !== [];
-    }
-
-    private static function enqueueAssets(): void
-    {
-        if (self::$assetsEnqueued) {
-            return;
-        }
-
-        self::$assetsEnqueued = true;
-
-        if (wp_style_is(Main::ROUTE_MAP_STYLE_HANDLE, 'registered')) {
-            wp_enqueue_style(Main::ROUTE_MAP_STYLE_HANDLE);
-        }
-
-        if (wp_script_is(Main::ROUTE_MAP_SCRIPT_HANDLE, 'registered')) {
-            wp_enqueue_script(Main::ROUTE_MAP_SCRIPT_HANDLE);
-        }
     }
 }

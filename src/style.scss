@@ -73,12 +73,8 @@
 		border: 1px solid color-mix(in srgb, CanvasText 12%, Canvas);
 		height: clamp(220px, 35vw, 360px);
 		min-height: 220px;
+		position: relative;
 		width: 100%;
-		z-index: 0;
-
-		&.leaflet-container {
-			font: inherit;
-		}
 	}
 
 	&__hint {
@@ -101,15 +97,6 @@
 			width: 100%;
 		}
 	}
-}
-
-.leaflet-container {
-	background: #ddd;
-}
-
-.leaflet-div-icon {
-	background: transparent;
-	border: 0;
 }
 
 .rrze-direction-route-marker {

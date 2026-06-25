@@ -111,6 +111,8 @@
     }
   },
   "editorScript": "file:./index.js",
+  "viewScript": "file:./view-route-map.js",
+  "viewStyle": "file:./view-route-map.css",
   "render": "file:./render.php",
   "style": "file:./style-index.css",
   "textdomain": "rrze-direction"

@@ -60,23 +60,26 @@ final class Main
             $routeVersion = (string) filemtime($routeMapPath);
         }
 
-        $routeStylePath = plugin()->getPath() . 'build/view-route-map.css';
-        if (is_readable($routeStylePath)) {
-            wp_register_style(
-                self::ROUTE_MAP_STYLE_HANDLE,
-                plugins_url('build/view-route-map.css', plugin()->getBasename()),
+        // Fallback when block viewScript/viewStyle handles are unavailable (older WP).
+        if (!wp_script_is('rrze-direction-view-script', 'registered')) {
+            $routeStylePath = plugin()->getPath() . 'build/view-route-map.css';
+            if (is_readable($routeStylePath)) {
+                wp_register_style(
+                    self::ROUTE_MAP_STYLE_HANDLE,
+                    plugins_url('build/view-route-map.css', plugin()->getBasename()),
+                    [],
+                    $routeVersion
+                );
+            }
+
+            wp_register_script(
+                self::ROUTE_MAP_SCRIPT_HANDLE,
+                plugins_url('build/view-route-map.js', plugin()->getBasename()),
                 [],
-                $routeVersion
+                $routeVersion,
+                true
             );
         }
-
-        wp_register_script(
-            self::ROUTE_MAP_SCRIPT_HANDLE,
-            plugins_url('build/view-route-map.js', plugin()->getBasename()),
-            [],
-            $routeVersion,
-            true
-        );
     }
 
     /**
@@ -136,6 +139,7 @@ final class Main
 					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-direction'),
 					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-direction'),
 					'directionsLoading'            => __('Loading directions…', 'rrze-direction'),
+					'mapLoading'                   => __('Loading map…', 'rrze-direction'),
                     'coordinatesMissing'         => __('No coordinates detected in API data.', 'rrze-direction'),
                     'noneOption'                 => __('— Choose —', 'rrze-direction'),
                 ],

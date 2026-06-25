@@ -1,9 +1,37 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import './route-map.scss';
 
 const ACTIVE_STEP_CLASS = 'is-route-step-active';
 const ROUTE_COLOR = '#04316a';
-const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const MAP_MAX_ZOOM = 19;
+const MAP_OVERVIEW_MAX_ZOOM = 17;
+const TILE_MAX_NATIVE_ZOOM = 19;
+
+const TILE_LAYER_DEFAULTS = {
+	detectRetina: false,
+	maxZoom: MAP_MAX_ZOOM,
+	maxNativeZoom: TILE_MAX_NATIVE_ZOOM,
+};
+
+const TILE_LAYERS = [
+	{
+		url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+		options: {
+			subdomains: 'abcd',
+			attribution:
+				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+		},
+	},
+	{
+		url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+		options: {
+			subdomains: 'abc',
+			attribution:
+				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+		},
+	},
+];
 
 function parseRoute(container) {
 	const raw = container.getAttribute('data-route');
@@ -45,12 +73,22 @@ function findStepContainer(routeMapEl) {
 	);
 }
 
-function scheduleMapResize(map) {
+function refreshMapTiles(map, tileLayer) {
+	if (!map || map._removed) {
+		return;
+	}
+
+	map.invalidateSize({ animate: false });
+
+	if (tileLayer) {
+		tileLayer.redraw();
+	}
+}
+
+function scheduleMapResize(map, tileLayer) {
 	[0, 120, 350, 700].forEach((delay) => {
 		window.setTimeout(() => {
-			if (map && !map._removed) {
-				map.invalidateSize({ animate: false });
-			}
+			refreshMapTiles(map, tileLayer);
 		}, delay);
 	});
 }
@@ -76,7 +114,7 @@ function wireStepClicks(routeMapEl, map, markersByStep) {
 				return;
 			}
 
-			map.setView(marker.getLatLng(), Math.max(map.getZoom(), 16), {
+			map.setView(marker.getLatLng(), Math.min(Math.max(map.getZoom(), 16), MAP_OVERVIEW_MAX_ZOOM), {
 				animate: true,
 			});
 			marker.openPopup();
@@ -111,6 +149,54 @@ export function destroyRouteMap(container) {
 	delete container.dataset.routeMapDeferred;
 }
 
+function fixTileImage(img, tileLayer) {
+	if (!img || !img.style) {
+		return;
+	}
+
+	const size = tileLayer.getTileSize();
+	const width = size?.x ?? 256;
+	const height = size?.y ?? 256;
+
+	img.style.setProperty('width', `${width}px`, 'important');
+	img.style.setProperty('height', `${height}px`, 'important');
+	img.style.setProperty('mix-blend-mode', 'normal', 'important');
+	img.style.setProperty('max-width', 'none', 'important');
+	img.style.setProperty('max-height', 'none', 'important');
+	img.style.setProperty('visibility', 'visible', 'important');
+	img.style.setProperty('opacity', '1', 'important');
+	img.classList.add('leaflet-tile-loaded');
+}
+
+function addTileLayerWithFallback(map, layerIndex = 0) {
+	const layerDef = TILE_LAYERS[layerIndex];
+	if (!layerDef) {
+		return null;
+	}
+
+	const tileLayer = L.tileLayer(layerDef.url, {
+		...TILE_LAYER_DEFAULTS,
+		...layerDef.options,
+	}).addTo(map);
+	let errorCount = 0;
+
+	tileLayer.on('tileload', (event) => {
+		fixTileImage(event.tile, tileLayer);
+	});
+
+	tileLayer.on('tileerror', () => {
+		errorCount += 1;
+		if (errorCount < 4 || layerIndex >= TILE_LAYERS.length - 1) {
+			return;
+		}
+
+		map.removeLayer(tileLayer);
+		addTileLayerWithFallback(map, layerIndex + 1);
+	});
+
+	return tileLayer;
+}
+
 function createRouteMap(container, data) {
 	const canvas = container.querySelector('.rrze-direction-route-map__canvas');
 	if (!canvas) {
@@ -123,14 +209,10 @@ function createRouteMap(container, data) {
 	const map = L.map(canvas, {
 		scrollWheelZoom: false,
 		attributionControl: true,
+		detectRetina: false,
+		maxZoom: MAP_MAX_ZOOM,
 	});
 	container._rrzeLeafletMap = map;
-
-	L.tileLayer(TILE_URL, {
-		maxZoom: 19,
-		attribution:
-			'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-	}).addTo(map);
 
 	const latLngs = data.coordinates.map((point) => [point.lat, point.lon]);
 	const polyline = L.polyline(latLngs, {
@@ -150,24 +232,42 @@ function createRouteMap(container, data) {
 		markersByStep[step.n] = marker;
 	});
 
-	if (data.bounds) {
-		const bounds = L.latLngBounds(
-			[data.bounds.south, data.bounds.west],
-			[data.bounds.north, data.bounds.east]
-		);
-		map.fitBounds(bounds, { padding: [24, 24] });
-	} else {
-		map.fitBounds(polyline.getBounds(), { padding: [24, 24] });
-	}
+	const bounds = data.bounds
+		? L.latLngBounds(
+				[data.bounds.south, data.bounds.west],
+				[data.bounds.north, data.bounds.east]
+			)
+		: polyline.getBounds();
+
+	map.fitBounds(bounds, {
+		padding: [24, 24],
+		animate: false,
+		maxZoom: MAP_OVERVIEW_MAX_ZOOM,
+	});
+	map.invalidateSize({ animate: false });
+
+	const tileLayer = addTileLayerWithFallback(map);
 
 	wireStepClicks(container, map, markersByStep);
-	scheduleMapResize(map);
+	scheduleMapResize(map, tileLayer);
+
+	map.whenReady(() => {
+		if (map._removed) {
+			return;
+		}
+
+		refreshMapTiles(map, tileLayer);
+
+		if (tileLayer) {
+			container.querySelectorAll('.leaflet-tile-pane img').forEach((img) => {
+				fixTileImage(img, tileLayer);
+			});
+		}
+	});
 
 	if (typeof ResizeObserver !== 'undefined') {
 		const observer = new ResizeObserver(() => {
-			if (!map._removed) {
-				map.invalidateSize({ animate: false });
-			}
+			refreshMapTiles(map, tileLayer);
 		});
 		observer.observe(canvas);
 		container._rrzeResizeObserver = observer;

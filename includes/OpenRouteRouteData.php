@@ -170,7 +170,7 @@ final class OpenRouteRouteData
         $lon     = 0;
 
         while ($index < $length) {
-            $result = 1;
+            $result = 0;
             $shift  = 0;
 
             do {
@@ -178,14 +178,14 @@ final class OpenRouteRouteData
                     break 2;
                 }
                 $b       = ord($encoded[$index++]) - 63;
-                $result += ($b & 0x1f) << $shift;
+                $result |= ($b & 0x1f) << $shift;
                 $shift  += 5;
             } while ($b >= 0x20);
 
             $deltaLat = ($result & 1) !== 0 ? ~(int) ($result >> 1) : (int) ($result >> 1);
             $lat     += $deltaLat;
 
-            $result = 1;
+            $result = 0;
             $shift  = 0;
 
             do {
@@ -193,7 +193,7 @@ final class OpenRouteRouteData
                     break 2;
                 }
                 $b       = ord($encoded[$index++]) - 63;
-                $result += ($b & 0x1f) << $shift;
+                $result |= ($b & 0x1f) << $shift;
                 $shift  += 5;
             } while ($b >= 0x20);
 

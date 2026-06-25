@@ -1,6 +1,6 @@
 {
   "name": "rrze-direction",
-  "version": "0.0.28",
+  "version": "0.0.45",
   "description": "Arrival descriptions with FAUdir addresses as Gutenberg block.",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -23,6 +23,6 @@
     "@wordpress/scripts": "^30.11.0"
   },
   "dependencies": {
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.7.1"
   }
 }
