@@ -3,7 +3,7 @@
 /*
 Plugin Name:        RRZE Direction
 Plugin URI:         https://github.com/RRZE-Webteam/
-Version:            0.0.10
+Version:            0.0.28
 Description:        Arrival and directions content as a block, using address data from RRZE-FAUdir.
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/

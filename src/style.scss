@@ -34,11 +34,109 @@
 		font-style: italic;
 	}
 
+	&__loading {
+		color: color-mix(in srgb, CanvasText 72%, Canvas);
+		font-size: 0.875rem;
+		font-style: italic;
+		margin: 0 0 1rem;
+	}
+
 	&__richtext {
 		border: 1px dashed var(--rd-border);
 		min-height: 2.75rem;
 		padding: 0.5rem;
 		margin-bottom: 1rem;
+	}
+
+	&__directions-preview {
+		margin-top: 0.5rem;
+	}
+
+	&__directions-preview-label {
+		color: color-mix(in srgb, CanvasText 72%, Canvas);
+		font-size: 0.875rem;
+		font-style: italic;
+		margin: 0 0 0.5rem;
+	}
+}
+
+.rrze-direction-route-map {
+	margin: 0 0 1rem;
+
+	&__title {
+		font-size: 1rem;
+		font-weight: 600;
+		margin: 0 0 0.5rem;
+	}
+
+	&__canvas {
+		border: 1px solid color-mix(in srgb, CanvasText 12%, Canvas);
+		height: clamp(220px, 35vw, 360px);
+		min-height: 220px;
+		width: 100%;
+		z-index: 0;
+
+		&.leaflet-container {
+			font: inherit;
+		}
+	}
+
+	&__hint {
+		color: color-mix(in srgb, CanvasText 72%, Canvas);
+		font-size: 0.875rem;
+		margin: 0.5rem 0 0;
+	}
+
+	&--editor-placeholder {
+		.rrze-direction-route-map__preview {
+			background: color-mix(in srgb, CanvasText 4%, Canvas);
+			border: 1px solid color-mix(in srgb, CanvasText 12%, Canvas);
+			height: clamp(160px, 28vw, 240px);
+			overflow: hidden;
+		}
+
+		.rrze-direction-route-map__preview-svg {
+			display: block;
+			height: 100%;
+			width: 100%;
+		}
+	}
+}
+
+.leaflet-container {
+	background: #ddd;
+}
+
+.leaflet-div-icon {
+	background: transparent;
+	border: 0;
+}
+
+.rrze-direction-route-marker {
+	background: transparent;
+	border: 0;
+
+	&__label {
+		align-items: center;
+		background: #04316a;
+		border: 2px solid #fff;
+		border-radius: 50%;
+		box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+		color: #fff;
+		display: flex;
+		font-size: 0.75rem;
+		font-weight: 700;
+		height: 30px;
+		justify-content: center;
+		width: 30px;
+	}
+}
+
+.rrze-direction-ors-step {
+	cursor: pointer;
+
+	&.is-route-step-active {
+		font-weight: 600;
 	}
 }
 
@@ -85,6 +183,109 @@
 		img {
 			height: auto;
 			max-width: 100%;
+		}
+	}
+
+	&__directions {
+		margin-top: 1rem;
+	}
+
+	&__directions-grid {
+		display: grid;
+		gap: 1.5rem;
+		grid-template-columns: 1fr;
+
+		&--cols-2 {
+			@media (min-width: 600px) {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+		}
+
+		&--cols-3 {
+			@media (min-width: 600px) {
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+			}
+
+			@media (min-width: 900px) {
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+			}
+		}
+	}
+
+	&__text--column h3 {
+		font-size: 1rem;
+		margin: 0 0 0.5rem;
+	}
+
+	/* Accordion fallback when rrze-answers CSS is not loaded */
+	.rrze-answers {
+		--rrze-answers-accordion-bg-default: var(--color-ContentBorders, #d2ddeb);
+		--rrze-answers-accordion-text-default: var(--color-Text, #444);
+		--rrze-answers-accordion-bg-active: var(--color-primary-ci-hell, #04316a);
+		--rrze-answers-accordion-text-active: var(--color-primary-ci-hell-kontrast, #fff);
+		--rrze-answers-accordion-bg-active-hover: var(--color-primary-dunkler, #041e42);
+		--rrze-answers-accordion-text-active-hover: var(--color-primary-dunkler-kontrast, #fff);
+		--rrze-answers-accent: var(--rrze-answers-accordion-bg-active);
+		--rrze-answers-accent-dark: var(--rrze-answers-accordion-bg-active-hover);
+
+		details.rrze-answers-item {
+			border: 1px solid #dfe6ec;
+			margin-bottom: 5px;
+
+			> summary {
+				background: var(--rrze-answers-accordion-bg-default);
+				box-shadow: inset 10px 0 0 0 var(--rrze-answers-accent) !important;
+				color: var(--rrze-answers-accordion-text-default);
+				cursor: pointer;
+				display: block;
+				font-size: 1rem;
+				font-weight: 700;
+				list-style: none;
+				margin: 0;
+				outline: none;
+				padding: 8px 35px 8px 20px;
+				position: relative;
+				text-align: left;
+
+				&::marker {
+					content: '';
+				}
+
+				&::after {
+					background: currentColor;
+					content: '';
+					height: 2rem;
+					mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20320%20512%22%3E%3Cpath%20d%3D%22M137.4%20374.6c12.5%2012.5%2032.8%2012.5%2045.3%200l128-128c9.2-9.2%2011.9-22.9%206.9-34.9s-16.6-19.8-29.6-19.8L32%20192c-12.9%200-24.6%207.8-29.6%2019.8s-2.2%2025.7%206.9%2034.9l128%20128z%22%2F%3E%3C%2Fsvg%3E")
+						center / 60% 60% no-repeat;
+					position: absolute;
+					right: 0;
+					top: 50%;
+					transform: translateY(-50%);
+					transform-origin: center;
+					transition: all 0.2s ease;
+					width: 2rem;
+				}
+
+				&:hover,
+				&:focus {
+					background: var(--rrze-answers-accordion-bg-active);
+					color: var(--rrze-answers-accordion-text-active-hover);
+				}
+			}
+
+			&[open] > summary {
+				background: var(--rrze-answers-accordion-bg-active-hover);
+				box-shadow: inset 10px 0 0 0 var(--rrze-answers-accent-dark) !important;
+				color: var(--rrze-answers-accordion-text-active-hover);
+
+				&::after {
+					transform: translateY(-50%) rotate(180deg);
+				}
+			}
+		}
+
+		.rrze-answers-content {
+			padding: 1rem 1rem 0.5rem;
 		}
 	}
 }

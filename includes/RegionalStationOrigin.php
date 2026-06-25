@@ -33,24 +33,9 @@ final class RegionalStationOrigin
      */
     public static function startLonLatForCity(string $city): ?array
     {
-        $normalized = self::normalizeCityToken($city);
-        if ($normalized === '') {
-            return null;
-        }
+        $region = self::regionKeyForCityOrZip($city, '');
 
-        if (str_contains($normalized, 'fuerth')) {
-            return [self::FUERTH_HBF_LON, self::FUERTH_HBF_LAT];
-        }
-
-        if (str_contains($normalized, 'nuernberg') || str_contains($normalized, 'nurnberg')) {
-            return [self::NUERNBERG_HBF_LON, self::NUERNBERG_HBF_LAT];
-        }
-
-        if (str_contains($normalized, 'erlangen')) {
-            return [self::ERLANGEN_HBF_LON, self::ERLANGEN_HBF_LAT];
-        }
-
-        return null;
+        return null !== $region ? self::lonLatForRegion($region) : null;
     }
 
     /**
@@ -60,9 +45,48 @@ final class RegionalStationOrigin
      */
     public static function startLonLatForCityOrZip(string $city, string $zip): ?array
     {
-        $byCity = self::startLonLatForCity($city);
-        if (null !== $byCity) {
-            return $byCity;
+        $region = self::regionKeyForCityOrZip($city, $zip);
+
+        return null !== $region ? self::lonLatForRegion($region) : null;
+    }
+
+    /**
+     * Human-readable main station label for the resolved regional route start.
+     */
+    public static function labelForCityOrZip(string $city, string $zip): ?string
+    {
+        $region = self::regionKeyForCityOrZip($city, $zip);
+
+        if (null === $region) {
+            return null;
+        }
+
+        return match ($region) {
+            'erlangen'  => __('Erlangen Hauptbahnhof', 'rrze-direction'),
+            'nuernberg' => __('Nürnberg Hauptbahnhof', 'rrze-direction'),
+            'fuerth'    => __('Fürth Hauptbahnhof', 'rrze-direction'),
+            default     => null,
+        };
+    }
+
+    /**
+     * @return 'erlangen'|'nuernberg'|'fuerth'|null
+     */
+    private static function regionKeyForCityOrZip(string $city, string $zip): ?string
+    {
+        $normalized = self::normalizeCityToken($city);
+        if ($normalized !== '') {
+            if (str_contains($normalized, 'fuerth')) {
+                return 'fuerth';
+            }
+
+            if (str_contains($normalized, 'nuernberg') || str_contains($normalized, 'nurnberg')) {
+                return 'nuernberg';
+            }
+
+            if (str_contains($normalized, 'erlangen')) {
+                return 'erlangen';
+            }
         }
 
         $digits = preg_replace('/\D+/', '', $zip) ?? '';
@@ -70,21 +94,26 @@ final class RegionalStationOrigin
             return null;
         }
 
-        $prefix3 = substr($digits, 0, 3);
+        return match (substr($digits, 0, 3)) {
+            '910'   => 'erlangen',
+            '907'   => 'fuerth',
+            '904'   => 'nuernberg',
+            default => null,
+        };
+    }
 
-        if ($prefix3 === '910') {
-            return [self::ERLANGEN_HBF_LON, self::ERLANGEN_HBF_LAT];
-        }
-
-        if ($prefix3 === '907') {
-            return [self::FUERTH_HBF_LON, self::FUERTH_HBF_LAT];
-        }
-
-        if ($prefix3 === '904') {
-            return [self::NUERNBERG_HBF_LON, self::NUERNBERG_HBF_LAT];
-        }
-
-        return null;
+    /**
+     * @param 'erlangen'|'nuernberg'|'fuerth' $region
+     *
+     * @return array{0: float, 1: float}
+     */
+    private static function lonLatForRegion(string $region): array
+    {
+        return match ($region) {
+            'fuerth'    => [self::FUERTH_HBF_LON, self::FUERTH_HBF_LAT],
+            'nuernberg' => [self::NUERNBERG_HBF_LON, self::NUERNBERG_HBF_LAT],
+            default     => [self::ERLANGEN_HBF_LON, self::ERLANGEN_HBF_LAT],
+        };
     }
 
     private static function normalizeCityToken(string $city): string

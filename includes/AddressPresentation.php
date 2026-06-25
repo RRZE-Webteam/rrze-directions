@@ -21,6 +21,25 @@ final class AddressPresentation
         return implode(', ', $parts);
     }
 
+    public static function destinationLine(
+        string $street,
+        string $zip,
+        string $city,
+        string $formatted = ''
+    ): string {
+        $streetLine = self::streetLine($street, $zip, $city);
+        if ($streetLine !== '') {
+            return $streetLine;
+        }
+
+        $formatted = trim($formatted);
+        if ($formatted !== '') {
+            return $formatted;
+        }
+
+        return trim($city);
+    }
+
     public static function shouldShowFormattedAddress(string $formatted, string $streetLine): bool
     {
         $formatted = trim($formatted);

@@ -31,60 +31,50 @@ final class RestOpenRouteDirections
 
     public static function handle(\WP_REST_Request $request): \WP_REST_Response
     {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(90);
+        }
+
         $params = $request->get_json_params();
         if (!is_array($params)) {
             $params = [];
         }
 
-        $city = sanitize_text_field((string) ($params['city'] ?? ''));
-        $zip  = sanitize_text_field((string) ($params['zip'] ?? ''));
-        $lat  = MapLinks::parseCoordinate($params['latitude'] ?? null);
-        $lon  = MapLinks::parseCoordinate($params['longitude'] ?? null);
+        $city             = sanitize_text_field((string) ($params['city'] ?? ''));
+        $zip              = sanitize_text_field((string) ($params['zip'] ?? ''));
+        $street           = sanitize_text_field((string) ($params['street'] ?? ''));
+        $formattedAddress = sanitize_text_field((string) ($params['formattedAddress'] ?? ''));
+        $lat              = MapLinks::parseCoordinate($params['latitude'] ?? null);
+        $lon              = MapLinks::parseCoordinate($params['longitude'] ?? null);
+
+        $empty = static fn(): \WP_REST_Response => new \WP_REST_Response(
+            [
+                'directionBike'        => '',
+                'directionCar'         => '',
+                'directionTransit'     => '',
+                'directionBikeRoute'   => '',
+                'directionCarRoute'    => '',
+                'directionTransitRoute'=> '',
+            ],
+            200
+        );
 
         if (null === $lat || null === $lon) {
-            return new \WP_REST_Response(
-                [
-                    'directionBike'    => '',
-                    'directionCar'     => '',
-                    'directionTransit' => '',
-                ],
-                200
-            );
+            return $empty();
         }
 
         if ($city === '' && $zip === '') {
-            return new \WP_REST_Response(
-                [
-                    'directionBike'    => '',
-                    'directionCar'     => '',
-                    'directionTransit' => '',
-                ],
-                200
-            );
+            return $empty();
         }
 
         $start = RegionalStationOrigin::startLonLatForCityOrZip($city, $zip);
         if (null === $start) {
-            return new \WP_REST_Response(
-                [
-                    'directionBike'    => '',
-                    'directionCar'     => '',
-                    'directionTransit' => '',
-                ],
-                200
-            );
+            return $empty();
         }
 
         $apiKey = Settings::getOpenRouteServiceApiKey();
         if ($apiKey === '') {
-            return new \WP_REST_Response(
-                [
-                    'directionBike'    => '',
-                    'directionCar'     => '',
-                    'directionTransit' => '',
-                ],
-                200
-            );
+            return $empty();
         }
 
         [$startLon, $startLat] = $start;
@@ -93,20 +83,28 @@ final class RestOpenRouteDirections
             OpenRouteDirections::siteLocaleForDirections()
         );
 
-        $dirs = OpenRouteDirections::fetchDirectionHtml(
+        $fromLabel = RegionalStationOrigin::labelForCityOrZip($city, $zip) ?? '';
+        $toLabel   = AddressPresentation::destinationLine($street, $zip, $city, $formattedAddress);
+
+        $dirs = OpenRouteDirections::fetchDirections(
             $apiKey,
             $startLon,
             $startLat,
             $lon,
             $lat,
-            $orsLang
+            $orsLang,
+            $fromLabel,
+            $toLabel
         );
 
         return new \WP_REST_Response(
             [
-                'directionBike'    => $dirs['bike'],
-                'directionCar'     => $dirs['car'],
-                'directionTransit' => $dirs['transit'],
+                'directionBike'         => $dirs['bike']['html'],
+                'directionCar'          => $dirs['car']['html'],
+                'directionTransit'      => $dirs['transit']['html'],
+                'directionBikeRoute'    => $dirs['bike']['route'],
+                'directionCarRoute'     => $dirs['car']['route'],
+                'directionTransitRoute' => $dirs['transit']['route'],
             ],
             200
         );
