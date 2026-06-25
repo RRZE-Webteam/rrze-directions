@@ -25,6 +25,10 @@
       "type": "string",
       "default": ""
     },
+    "organizationNumber": {
+      "type": "string",
+      "default": ""
+    },
     "addressRoom": {
       "type": "string",
       "default": ""
@@ -48,10 +52,6 @@
     "addressFormatted": {
       "type": "string",
       "default": ""
-    },
-    "showMap": {
-      "type": "boolean",
-      "default": false
     },
     "mapUrl": {
       "type": "string",

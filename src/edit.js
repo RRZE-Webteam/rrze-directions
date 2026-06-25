@@ -1,9 +1,8 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	PanelBody,
 	SelectControl,
 	TextControl,
-	ToggleControl,
 } from '@wordpress/components';
 import {
 	InspectorControls,
@@ -12,9 +11,13 @@ import {
 	RichText,
 	useBlockProps,
 } from '@wordpress/block-editor';
-import { Fragment, useMemo } from '@wordpress/element';
+import { Fragment, useEffect, useMemo } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
+import apiFetch from '@wordpress/api-fetch';
+
+const KARTE_HOST_SUFFIX = 'karte.fau.de';
+const KARTE_IFRAME_PATH = '/api/v1/iframe';
 
 function getPersonRows() {
 	if (typeof window === 'undefined' || !window.rrze_direction) {
@@ -34,21 +37,270 @@ function getEditorStrings() {
 	return window.rrze_direction?.editorStrings ?? {};
 }
 
-function coordsLabel(latRaw, lngRaw, noneLabel) {
-	const la = `${latRaw ?? ''}`.trim();
-	const lo = `${lngRaw ?? ''}`.trim();
-
-	if (!la || !lo) {
-		return noneLabel;
+function parseCoordinate(value) {
+	if (value === null || value === undefined || `${value}`.trim() === '') {
+		return null;
 	}
 
-	return `${la}, ${lo}`;
+	const normalized = `${value}`.trim().replace(',', '.');
+	if (normalized === '' || Number.isNaN(Number(normalized))) {
+		return null;
+	}
+
+	const parsed = Number(normalized);
+
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildAddressParam(street, zip, city) {
+	const cityLine = [zip, city].filter(Boolean).join(' ').trim();
+	const parts = [street.trim(), cityLine].filter(Boolean);
+
+	return parts.join(',');
+}
+
+function isApiIframeUrl(url) {
+	const trimmed = `${url ?? ''}`.trim();
+	if (!trimmed) {
+		return false;
+	}
+
+	try {
+		const parsed = new URL(trimmed, 'https://karte.fau.de');
+		const host = parsed.hostname.toLowerCase();
+		const path = parsed.pathname;
+
+		return host.endsWith(KARTE_HOST_SUFFIX) && path.includes(KARTE_IFRAME_PATH);
+	} catch (error) {
+		return false;
+	}
+}
+
+function sanitizeOrganizationDigits(raw) {
+	const digits = `${raw ?? ''}`.replace(/\D+/g, '');
+
+	return digits.length > 0 && digits.length <= 10 ? digits : '';
+}
+
+function iframePathHasSegment(url, segment) {
+	try {
+		const path = new URL(url, `https://${KARTE_HOST_SUFFIX}`).pathname.toLowerCase();
+
+		return path.split('/').includes(segment.toLowerCase());
+	} catch (error) {
+		return false;
+	}
+}
+
+function buildCenterIframeUrl(latitude, longitude) {
+	const pair = encodeURIComponent(`${latitude},${longitude}`);
+
+	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/center/${pair}/zoom/16/`;
+}
+
+function needsAsyncIframeCanonicalization(url) {
+	return isApiIframeUrl(url) && iframePathHasSegment(url, 'famos');
+}
+
+function resolveMapIframeSrc(attributes) {
+	const lat = parseCoordinate(attributes.mapLatitude);
+	const lon = parseCoordinate(attributes.mapLongitude);
+	const centerFromCoords =
+		lat !== null && lon !== null ? buildCenterIframeUrl(lat, lon) : '';
+
+	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
+	if (mapUrl && isApiIframeUrl(mapUrl)) {
+		if (iframePathHasSegment(mapUrl, 'famos') && centerFromCoords) {
+			return centerFromCoords;
+		}
+
+		return mapUrl;
+	}
+
+	const org = sanitizeOrganizationDigits(attributes.organizationNumber);
+	if (org) {
+		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/org/${org}/`;
+	}
+
+	if (centerFromCoords) {
+		return centerFromCoords;
+	}
+
+	const addressQuery = buildAddressParam(
+		attributes.addressStreet ?? '',
+		attributes.addressZip ?? '',
+		attributes.addressCity ?? ''
+	);
+	if (addressQuery) {
+		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/address/${encodeURIComponent(addressQuery)}/`;
+	}
+
+	return '';
+}
+
+function formatStreetLine(street, zip, city) {
+	const cityLine = [zip, city].filter(Boolean).join(' ').trim();
+	const parts = [street, cityLine].filter(Boolean);
+
+	return parts.join(', ');
+}
+
+function normalizeAddress(value) {
+	return `${value ?? ''}`
+		.trim()
+		.toLowerCase()
+		.replace(/\s+/g, ' ');
+}
+
+function shouldShowFormattedAddress(formatted, streetLine) {
+	const trimmed = `${formatted ?? ''}`.trim();
+	if (!trimmed) {
+		return false;
+	}
+
+	if (!streetLine) {
+		return true;
+	}
+
+	return normalizeAddress(trimmed) !== normalizeAddress(streetLine);
+}
+
+function googleMapsUrl(latitude, longitude) {
+	const query = encodeURIComponent(`${latitude},${longitude}`);
+
+	return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
+function appleMapsUrl(latitude, longitude) {
+	const pair = `${latitude},${longitude}`;
+	const encoded = encodeURIComponent(pair);
+
+	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
+}
+
+async function fetchResolvedCoordinates(place) {
+	if (!place) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	const lat0 = parseCoordinate(place.latitude);
+	const lon0 = parseCoordinate(place.longitude);
+	if (lat0 !== null && lon0 !== null) {
+		return { mapLatitude: String(lat0), mapLongitude: String(lon0) };
+	}
+
+	const path = window.rrze_direction?.restResolveCoordinatesPath;
+	if (!path) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	try {
+		const res = await apiFetch({
+			path,
+			method: 'POST',
+			data: {
+				organizationNumber: place.organizationNumber ?? '',
+				street: place.street ?? '',
+				zip: place.zip ?? '',
+				city: place.city ?? '',
+				faumap: place.faumap ?? '',
+				mapHints:
+					place.mapHints && typeof place.mapHints === 'object'
+						? place.mapHints
+						: {},
+			},
+		});
+
+		const la = res?.latitude;
+		const lo = res?.longitude;
+
+		if (
+			la != null &&
+			lo != null &&
+			Number.isFinite(Number(la)) &&
+			Number.isFinite(Number(lo))
+		) {
+			return { mapLatitude: String(la), mapLongitude: String(lo) };
+		}
+	} catch (error) {
+		// Leave coordinates empty on failure.
+	}
+
+	return { mapLatitude: '', mapLongitude: '' };
+}
+
+async function fetchResolvedIframeSrc(candidateUrl) {
+	const trimmed = `${candidateUrl ?? ''}`.trim();
+	if (!trimmed || !isApiIframeUrl(trimmed)) {
+		return { iframeSrc: '', mapUrl: '' };
+	}
+
+	const path = window.rrze_direction?.restResolveIframeSrcPath;
+	if (!path) {
+		return { iframeSrc: trimmed, mapUrl: trimmed };
+	}
+
+	try {
+		const res = await apiFetch({
+			path,
+			method: 'POST',
+			data: { url: trimmed },
+		});
+
+		const iframeSrc = `${res?.iframeSrc ?? ''}`.trim();
+		const mapUrl = `${res?.mapUrl ?? iframeSrc}`.trim();
+
+		if (iframeSrc && isApiIframeUrl(iframeSrc)) {
+			return { iframeSrc, mapUrl };
+		}
+	} catch (error) {
+		// Fall back to the candidate URL.
+	}
+
+	return { iframeSrc: trimmed, mapUrl: trimmed };
+}
+
+async function fetchOpenRouteDirections(place, coords, extras = {}) {
+	const path = window.rrze_direction?.restOpenRouteDirectionsPath;
+	if (!path) {
+		return null;
+	}
+
+	const lat =
+		parseCoordinate(coords.mapLatitude) ?? parseCoordinate(place.latitude);
+	const lon =
+		parseCoordinate(coords.mapLongitude) ?? parseCoordinate(place.longitude);
+	const city =
+		`${place.city ?? ''}`.trim() ||
+		`${extras.addressCity ?? ''}`.trim();
+	const zip =
+		`${place.zip ?? ''}`.trim() || `${extras.zip ?? ''}`.trim();
+
+	if (lat === null || lon === null || (!city && !zip)) {
+		return null;
+	}
+
+	try {
+		return await apiFetch({
+			path,
+			method: 'POST',
+			data: {
+				latitude: lat,
+				longitude: lon,
+				city,
+				zip,
+			},
+		});
+	} catch (error) {
+		return null;
+	}
 }
 
 function snapshotFromPlace(place) {
 	return {
 		workplaceKey: place.id ?? '',
 		organizationName: place.organizationName ?? '',
+		organizationNumber: place.organizationNumber ?? '',
 		addressRoom: place.room ?? '',
 		addressFloor: place.floor ?? '',
 		addressStreet: place.street ?? '',
@@ -71,18 +323,52 @@ function snapshotFromPlace(place) {
 	};
 }
 
+function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false }) {
+	const lat = parseCoordinate(latitude);
+	const lon = parseCoordinate(longitude);
+
+	if (lat === null || lon === null) {
+		if (hideWhenMissing) {
+			return null;
+		}
+
+		return (
+			<p className="rrze-direction-editor__coordinates">
+				{strings.coordinatesMissing ??
+					__('No coordinates detected in API data.', 'rrze-direction')}
+			</p>
+		);
+	}
+
+	return (
+		<p className="rrze-direction-editor__coordinates">
+			{strings.mapCoordinates ?? __('Coordinates', 'rrze-direction')}:{' '}
+			<a href={googleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
+				{strings.googleMaps ?? __('Google Maps', 'rrze-direction')}
+			</a>
+			<span className="rrze-direction-editor__coordinates-sep" aria-hidden="true">
+				{' '}
+				·{' '}
+			</span>
+			<a href={appleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
+				{strings.appleMaps ?? __('Apple Maps', 'rrze-direction')}
+			</a>
+		</p>
+	);
+}
+
 export default function Edit({ attributes, setAttributes }) {
 	const {
 		personId,
 		workplaceKey,
 		organizationName,
+		organizationNumber,
 		addressRoom,
 		addressFloor,
 		addressStreet,
 		addressZip,
 		addressCity,
 		addressFormatted,
-		showMap,
 		mapUrl,
 		mapLatitude,
 		mapLongitude,
@@ -96,12 +382,44 @@ export default function Edit({ attributes, setAttributes }) {
 	const strings = getEditorStrings();
 	const personRows = useMemo(() => getPersonRows(), []);
 
-	const coordReadout = coordsLabel(
-		mapLatitude,
-		mapLongitude,
-		strings.coordinatesMissing ??
-			__('No coordinates detected in API data.', 'rrze-direction'),
+	const streetLine = formatStreetLine(addressStreet, addressZip, addressCity);
+	const showFormattedAddress = shouldShowFormattedAddress(
+		addressFormatted,
+		streetLine
 	);
+	const mapIframeSrc = useMemo(
+		() => resolveMapIframeSrc(attributes),
+		[
+			mapUrl,
+			organizationNumber,
+			mapLatitude,
+			mapLongitude,
+			addressStreet,
+			addressZip,
+			addressCity,
+		]
+	);
+
+	// Persist famos → center in block attributes (GeoJSON); preview uses mapIframeSrc above.
+	useEffect(() => {
+		const trimmed = `${mapUrl ?? ''}`.trim();
+		if (!trimmed || !needsAsyncIframeCanonicalization(trimmed)) {
+			return undefined;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			const resolved = await fetchResolvedIframeSrc(trimmed);
+			if (!cancelled && resolved.mapUrl && resolved.mapUrl !== trimmed) {
+				setAttributes({ mapUrl: resolved.mapUrl });
+			}
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [mapUrl]);
 
 	const imageDetails = useSelect(
 		(select) => {
@@ -111,7 +429,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 			return select(coreStore).getMedia(mapImageId, { context: 'view' });
 		},
-		[mapImageId],
+		[mapImageId]
 	);
 
 	const imageSrc =
@@ -141,11 +459,79 @@ export default function Edit({ attributes, setAttributes }) {
 	const previewPersonLabel =
 		selectedRow?.label ?? __('Directions', 'rrze-direction');
 
+	useEffect(() => {
+		if (!personId || !personRows.length) {
+			return;
+		}
+
+		const row = personRows.find((r) => r.id === Number(personId));
+		if (!row?.places?.length) {
+			return;
+		}
+
+		const id = workplaceKey || row.places[0]?.id;
+		const place = id ? row.places.find((p) => p.id === id) : row.places[0];
+		if (!place) {
+			return;
+		}
+
+		let cancelled = false;
+
+		(async () => {
+			const coords = await fetchResolvedCoordinates(place);
+			const dirs = await fetchOpenRouteDirections(place, coords, {
+				addressCity,
+				zip: addressZip,
+			});
+			const iframeCandidate = resolveMapIframeSrc({
+				...attributes,
+				mapUrl: place.faumap ?? '',
+				organizationNumber: place.organizationNumber ?? '',
+				mapLatitude: coords.mapLatitude,
+				mapLongitude: coords.mapLongitude,
+				addressStreet: place.street ?? '',
+				addressZip: place.zip ?? '',
+				addressCity: place.city ?? '',
+			});
+			const iframe = iframeCandidate
+				? await fetchResolvedIframeSrc(iframeCandidate)
+				: { iframeSrc: '', mapUrl: '' };
+
+			if (cancelled) {
+				return;
+			}
+
+			const payload = { ...coords };
+			if (dirs?.directionBike) {
+				payload.directionBike = dirs.directionBike;
+			}
+			if (dirs?.directionCar) {
+				payload.directionCar = dirs.directionCar;
+			}
+			if (dirs?.directionTransit) {
+				payload.directionTransit = dirs.directionTransit;
+			}
+			const resolvedMapUrl =
+				iframe.mapUrl && isApiIframeUrl(iframe.mapUrl)
+					? iframe.mapUrl
+					: iframeCandidate;
+			if (resolvedMapUrl) {
+				payload.mapUrl = resolvedMapUrl;
+			}
+			setAttributes(payload);
+		})();
+
+		return () => {
+			cancelled = true;
+		};
+	}, [personId, workplaceKey, personRows, addressCity, addressZip]);
+
 	const syncWorkplaceAttrs = (key) => {
 		if (!selectedRow?.places?.length) {
 			setAttributes({
 				workplaceKey: '',
 				organizationName: '',
+				organizationNumber: '',
 				addressRoom: '',
 				addressFloor: '',
 				addressStreet: '',
@@ -155,6 +541,9 @@ export default function Edit({ attributes, setAttributes }) {
 				mapUrl: '',
 				mapLatitude: '',
 				mapLongitude: '',
+				directionBike: '',
+				directionCar: '',
+				directionTransit: '',
 			});
 			return;
 		}
@@ -166,10 +555,13 @@ export default function Edit({ attributes, setAttributes }) {
 		setAttributes({
 			...snapshotFromPlace(place),
 			workplaceKey: place.id ?? '',
+			directionBike: '',
+			directionCar: '',
+			directionTransit: '',
 		});
 	};
 
-	const mapIllustration = showMap ? (
+	const mapIllustration = (
 		<p className="rrze-direction-block__media">
 			{mapImageId && imageSrc ? (
 				<Fragment>
@@ -190,7 +582,8 @@ export default function Edit({ attributes, setAttributes }) {
 									type="button"
 									onClick={open}
 								>
-									{__('Replace illustration', 'rrze-direction')}
+									{strings.replaceIllustration ??
+										__('Replace illustration', 'rrze-direction')}
 								</button>
 							)}
 						/>
@@ -199,7 +592,8 @@ export default function Edit({ attributes, setAttributes }) {
 							className="components-button is-link is-destructive is-small"
 							onClick={() => setAttributes({ mapImageId: 0 })}
 						>
-							{__('Remove illustration', 'rrze-direction')}
+							{strings.removeIllustration ??
+								__('Remove illustration', 'rrze-direction')}
 						</button>
 					</MediaUploadCheck>
 				</Fragment>
@@ -214,15 +608,20 @@ export default function Edit({ attributes, setAttributes }) {
 						value={0}
 						allowedTypes={['image']}
 						render={({ open }) => (
-							<button className="components-button is-primary" type="button" onClick={open}>
-								{__('Optional map illustration', 'rrze-direction')}
+							<button
+								className="components-button is-primary"
+								type="button"
+								onClick={open}
+							>
+								{strings.mapImageLabel ??
+									__('Optional map illustration', 'rrze-direction')}
 							</button>
 						)}
 					/>
 				</MediaUploadCheck>
 			)}
 		</p>
-	) : null;
+	);
 
 	return (
 		<Fragment>
@@ -241,7 +640,6 @@ export default function Edit({ attributes, setAttributes }) {
 
 							setAttributes({
 								personId: nextId,
-								showMap: false,
 								mapImageId: 0,
 								workplaceKey: '',
 							});
@@ -249,6 +647,7 @@ export default function Edit({ attributes, setAttributes }) {
 							if (!row?.places?.length) {
 								setAttributes({
 									organizationName: '',
+									organizationNumber: '',
 									addressRoom: '',
 									addressFloor: '',
 									addressStreet: '',
@@ -258,6 +657,9 @@ export default function Edit({ attributes, setAttributes }) {
 									mapUrl: '',
 									mapLatitude: '',
 									mapLongitude: '',
+									directionBike: '',
+									directionCar: '',
+									directionTransit: '',
 								});
 								return;
 							}
@@ -267,6 +669,7 @@ export default function Edit({ attributes, setAttributes }) {
 							setAttributes({
 								workplaceKey: snapshot.workplaceKey,
 								organizationName: snapshot.organizationName,
+								organizationNumber: snapshot.organizationNumber,
 								addressRoom: snapshot.addressRoom,
 								addressFloor: snapshot.addressFloor,
 								addressStreet: snapshot.addressStreet,
@@ -276,6 +679,9 @@ export default function Edit({ attributes, setAttributes }) {
 								mapUrl: snapshot.mapUrl,
 								mapLatitude: snapshot.mapLatitude,
 								mapLongitude: snapshot.mapLongitude,
+								directionBike: '',
+								directionCar: '',
+								directionTransit: '',
 							});
 						}}
 					/>
@@ -286,11 +692,7 @@ export default function Edit({ attributes, setAttributes }) {
 								strings.selectWorkplace ??
 								__('Office / workplace', 'rrze-direction')
 							}
-							value={
-								workplaceKey ||
-								selectedRow?.places?.[0]?.id ||
-								''
-							}
+							value={workplaceKey || selectedRow?.places?.[0]?.id || ''}
 							options={wpSelectOptions}
 							onChange={(key) => syncWorkplaceAttrs(key)}
 						/>
@@ -298,45 +700,29 @@ export default function Edit({ attributes, setAttributes }) {
 				</PanelBody>
 
 				<PanelBody title={strings.mapSection ?? __('Map', 'rrze-direction')}>
-					<ToggleControl
+					<TextControl
 						label={
-							strings.showMap ??
-							__('Show arrival map section', 'rrze-direction')
+							strings.mapUrl ??
+							__('Map URL', 'rrze-direction')
 						}
-						checked={showMap}
-						onChange={(checked) =>
-							setAttributes({ showMap: Boolean(checked) })
+						help={
+							strings.mapUrlHelp ??
+							__(
+								'Taken from RRZE-FAUdir (campus map) but can be edited.',
+								'rrze-direction'
+							)
 						}
+						value={mapUrl}
+						onChange={(next) => setAttributes({ mapUrl: next })}
 					/>
 
-					{showMap ? (
-						<Fragment>
-							<TextControl
-								label={
-									strings.mapUrl ??
-									__('Map URL (preset from FAUdir)', 'rrze-direction')
-								}
-								help={__(
-									'Taken from RRZE-FAUdir (campus map) but can be edited.',
-									'rrze-direction',
-								)}
-								value={mapUrl}
-								onChange={(next) =>
-									setAttributes({ mapUrl: next })
-								}
-							/>
+					<CoordinateLinks
+						latitude={mapLatitude}
+						longitude={mapLongitude}
+						strings={strings}
+					/>
 
-							<p className="description">
-								<strong>
-									{strings.mapCoordinates ?? __('Coordinates', 'rrze-direction')}
-								</strong>
-								<br />
-								{coordReadout}
-							</p>
-
-							{mapIllustration}
-						</Fragment>
-					) : null}
+					{mapIllustration}
 				</PanelBody>
 			</InspectorControls>
 
@@ -348,55 +734,92 @@ export default function Edit({ attributes, setAttributes }) {
 					</h3>
 
 					<section>
-						<h4>
-							{strings.addressFromFaudir ??
-								__('Address (from FAUdir)', 'rrze-direction')}
-						</h4>
-						{organizationName ? (
-							<p className="rrze-direction-editor__line">{organizationName}</p>
-						) : null}
-						{addressRoom || addressFloor ? (
-							<p className="rrze-direction-editor__line">
-								{[addressRoom, addressFloor].filter(Boolean).join(' · ')}
-							</p>
-						) : null}
-
-						<p className="rrze-direction-editor__line">
-							{[addressStreet, [addressZip, addressCity].filter(Boolean).join(' ')]
-								.filter(Boolean)
-								.join(', ')}
-							{!personId ||
-							(!addressStreet && !addressZip && !addressCity) ? (
-								<>
-									<span className="rrze-direction-editor__muted">
-										{' '}
-										{__('Select person + workplace.', 'rrze-direction')}
-									</span>
-								</>
+						<address className="rrze-direction-editor__address">
+							{organizationName ? (
+								<span className="rrze-direction-editor__line">
+									{organizationName}
+									<br />
+								</span>
 							) : null}
-						</p>
-						{addressFormatted ? (
-							<p className="rrze-direction-editor__muted">
-								<em>{addressFormatted}</em>
-							</p>
-						) : null}
+							{addressRoom ? (
+								<span className="rrze-direction-editor__line">
+									{sprintf(
+										/* translators: %s: room number */
+										strings.roomLabel ?? __('Room: %s', 'rrze-direction'),
+										addressRoom
+									)}
+									<br />
+								</span>
+							) : null}
+							{addressFloor ? (
+								<span className="rrze-direction-editor__line">
+									{sprintf(
+										/* translators: %s: floor */
+										strings.floorLabel ?? __('Floor: %s', 'rrze-direction'),
+										addressFloor
+									)}
+									<br />
+								</span>
+							) : null}
+							{streetLine ? (
+								<span className="rrze-direction-editor__line">
+									{streetLine}
+									<br />
+								</span>
+							) : showFormattedAddress ? (
+								<span className="rrze-direction-editor__line">
+									{addressFormatted}
+									<br />
+								</span>
+							) : null}
+							{showFormattedAddress && streetLine ? (
+								<span className="rrze-direction-editor__meta">
+									{addressFormatted}
+								</span>
+							) : null}
+							{!personId ||
+							(!streetLine && !showFormattedAddress && !organizationName) ? (
+								<span className="rrze-direction-editor__muted">
+									{strings.selectPersonWorkplace ??
+										__('Select person and workplace.', 'rrze-direction')}
+								</span>
+							) : null}
+						</address>
+
+						<CoordinateLinks
+							latitude={mapLatitude}
+							longitude={mapLongitude}
+							strings={strings}
+							hideWhenMissing
+						/>
 					</section>
 
-					{showMap ? (
-						<section className="rrze-direction-editor__muted">
-							<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
-							<p>
-								<strong>{__('Embedded map:', 'rrze-direction')}</strong>{' '}
-								{mapLatitude &&
-								mapLongitude &&
-								`${mapLatitude}`.trim() !== '' &&
-								`${mapLongitude}`.trim() !== ''
-									? __('OpenStreetMap frame on the frontend', 'rrze-direction')
-									: __('link to campus map URL if coordinates are unavailable', 'rrze-direction')}
+					<section className="rrze-direction-editor__map">
+						<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
+						{mapIframeSrc ? (
+							<div className="rrze-direction__map-frame">
+								<iframe
+									key={mapIframeSrc}
+									title={
+										strings.mapServiceTitle ??
+										__('FAU map service', 'rrze-direction')
+									}
+									src={mapIframeSrc}
+									className="rrze-direction__iframe"
+									loading="lazy"
+									referrerPolicy="no-referrer-when-downgrade"
+								/>
+							</div>
+						) : (
+							<p className="rrze-direction-editor__muted">
+								{strings.mapUnavailable ??
+									__(
+										'No map parameters available (add FAUdir data or a Map URL).',
+										'rrze-direction'
+									)}
 							</p>
-							{mapUrl ? <p>{mapUrl}</p> : null}
-						</section>
-					) : null}
+						)}
+					</section>
 
 					<section>
 						<h4>
@@ -406,15 +829,12 @@ export default function Edit({ attributes, setAttributes }) {
 							tagName="div"
 							className="rrze-direction-editor__richtext"
 							value={directionBike}
-							onChange={(value) =>
-								setAttributes({ directionBike: value })
+							onChange={(value) => setAttributes({ directionBike: value })}
+							allowedFormats={['core/bold', 'core/italic', 'core/link']}
+							placeholder={
+								strings.directionBikePlaceholder ??
+								__('Directions by foot / bike.', 'rrze-direction')
 							}
-							allowedFormats={[
-								'core/bold',
-								'core/italic',
-								'core/link',
-							]}
-							placeholder={__('Directions by foot / bike.', 'rrze-direction')}
 						/>
 
 						<h4>
@@ -424,34 +844,27 @@ export default function Edit({ attributes, setAttributes }) {
 							tagName="div"
 							className="rrze-direction-editor__richtext"
 							value={directionCar}
-							onChange={(value) =>
-								setAttributes({ directionCar: value })
+							onChange={(value) => setAttributes({ directionCar: value })}
+							allowedFormats={['core/bold', 'core/italic', 'core/link']}
+							placeholder={
+								strings.directionCarPlaceholder ??
+								__('Directions by car.', 'rrze-direction')
 							}
-							allowedFormats={[
-								'core/bold',
-								'core/italic',
-								'core/link',
-							]}
-							placeholder={__('Directions by car.', 'rrze-direction')}
 						/>
 
 						<h4>
-							{strings.directionTransit ??
-								__('Bus / train', 'rrze-direction')}
+							{strings.directionTransit ?? __('Bus / train', 'rrze-direction')}
 						</h4>
 						<RichText
 							tagName="div"
 							className="rrze-direction-editor__richtext"
 							value={directionTransit}
-							onChange={(value) =>
-								setAttributes({ directionTransit: value })
+							onChange={(value) => setAttributes({ directionTransit: value })}
+							allowedFormats={['core/bold', 'core/italic', 'core/link']}
+							placeholder={
+								strings.directionTransitPlaceholder ??
+								__('Public transport.', 'rrze-direction')
 							}
-							allowedFormats={[
-								'core/bold',
-								'core/italic',
-								'core/link',
-							]}
-							placeholder={__('Public transport.', 'rrze-direction')}
 						/>
 					</section>
 				</div>

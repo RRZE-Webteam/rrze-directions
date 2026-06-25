@@ -73,11 +73,12 @@ final class FaudirWorkplaceResolver
                 continue;
             }
 
-            $given  = $person['givenName'] ?? '';
-            $family = $person['familyName'] ?? '';
-            $title  = trim("$given $family") ?: get_the_title((int) $postId);
+            $given  = is_string($person['givenName'] ?? null) ? trim($person['givenName']) : '';
+            $family = is_string($person['familyName'] ?? null) ? trim($person['familyName']) : '';
+            $title  = self::formatPersonLabel($family, $given, (int) $postId);
 
-            $places = [];
+            $places       = [];
+            $seenWorkplaces = [];
 
             foreach ($person['contacts'] ?? [] as $contactStub) {
                 if (!is_array($contactStub)) {
@@ -100,6 +101,9 @@ final class FaudirWorkplaceResolver
                     $orgName = $contactStub['organization']['name'];
                 }
 
+                $orgPayload = (array) ($contactDetail['organization'] ?? $contactStub['organization'] ?? []);
+                $orgNumber  = self::organizationNumberFromOrg($orgPayload);
+
                 foreach ($contactDetail['workplaces'] ?? [] as $wi => $workplace) {
                     if (!is_array($workplace)) {
                         continue;
@@ -109,15 +113,34 @@ final class FaudirWorkplaceResolver
                     $street      = self::streetLine($workplace);
                     $zip         = self::zip($workplace);
                     $city        = self::city($workplace);
-                    $room        = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
-                    $floor       = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
                     $faumap      = isset($workplace['faumap']) && is_string($workplace['faumap']) ? trim($workplace['faumap']) : '';
+
+                    if (null === $lat || null === $lon) {
+                        [$lat, $lon] = FauMapGeojson::parseLocalCoordinatesFromFaumap($faumap);
+                    }
+
+                    $room  = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
+                    $floor = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
 
                     if ($street === '' && $zip === '' && $city === '') {
                         continue;
                     }
 
+                    $fingerprint = self::workplaceFingerprint(
+                        $street,
+                        $zip,
+                        $city,
+                        $room,
+                        $floor,
+                        $faumap
+                    );
+                    if (isset($seenWorkplaces[$fingerprint])) {
+                        continue;
+                    }
+
                     $key = $contactId . '::' . (string) $wi;
+
+                    $seenWorkplaces[$fingerprint] = $key;
 
                     $parts     = array_filter([$street, trim($zip . ' ' . $city)]);
                     $formatted = implode(', ', $parts);
@@ -138,14 +161,16 @@ final class FaudirWorkplaceResolver
                             $roomFlo ?: null,
                             $formatted ?: null,
                         ])))),
-                        'organizationName' => $orgName,
-                        'room'             => $room,
+                        'organizationName'   => $orgName,
+                        'organizationNumber' => $orgNumber,
+                        'room'               => $room,
                         'floor'            => $floor,
                         'street'           => self::streetLine($workplace),
                         'zip'              => $zip,
                         'city'             => $city,
                         'formattedAddress' => $formatted,
                         'faumap'           => $faumap,
+                        'mapHints'         => self::mapHintsFromWorkplace($workplace),
                         'latitude'         => $lat,
                         'longitude'        => $lon,
                     ];
@@ -162,15 +187,35 @@ final class FaudirWorkplaceResolver
                     $street      = self::streetLine($workplace);
                     $zip         = self::zip($workplace);
                     $city        = self::city($workplace);
-                    $room        = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
-                    $floor       = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
                     $faumap      = isset($workplace['faumap']) && is_string($workplace['faumap']) ? trim($workplace['faumap']) : '';
+
+                    if (null === $lat || null === $lon) {
+                        [$lat, $lon] = FauMapGeojson::parseLocalCoordinatesFromFaumap($faumap);
+                    }
+
+                    $room  = isset($workplace['room']) && is_string($workplace['room']) ? $workplace['room'] : '';
+                    $floor = isset($workplace['floor']) && is_string($workplace['floor']) ? $workplace['floor'] : '';
 
                     if ($street === '' && $zip === '' && $city === '') {
                         continue;
                     }
 
+                    $fingerprint = self::workplaceFingerprint(
+                        $street,
+                        $zip,
+                        $city,
+                        $room,
+                        $floor,
+                        $faumap
+                    );
+                    if (isset($seenWorkplaces[$fingerprint])) {
+                        continue;
+                    }
+
                     $key = '__person__::' . (string) $wi;
+
+                    $seenWorkplaces[$fingerprint] = $key;
+
                     $parts = array_filter([$street, trim($zip . ' ' . $city)]);
                     $formatted = implode(', ', $parts);
                     $places[$key] = [
@@ -179,6 +224,7 @@ final class FaudirWorkplaceResolver
                         'workplaceIndex'    => (int) $wi,
                         'label'             => $formatted,
                         'organizationName'  => '',
+                        'organizationNumber' => '',
                         'room'              => $room,
                         'floor'             => $floor,
                         'street'            => $street,
@@ -186,6 +232,7 @@ final class FaudirWorkplaceResolver
                         'city'              => $city,
                         'formattedAddress'  => $formatted,
                         'faumap'            => $faumap,
+                        'mapHints'          => self::mapHintsFromWorkplace($workplace),
                         'latitude'          => $lat,
                         'longitude'         => $lon,
                     ];
@@ -201,6 +248,13 @@ final class FaudirWorkplaceResolver
                 ];
             }
         }
+
+        usort(
+            $rows,
+            static function (array $a, array $b): int {
+                return strcasecmp((string) ($a['label'] ?? ''), (string) ($b['label'] ?? ''));
+            }
+        );
 
         return [
             'error'   => false,
@@ -250,6 +304,70 @@ final class FaudirWorkplaceResolver
         return [null, null];
     }
 
+    /**
+     * Stable fingerprint for deduplicating identical workplaces on one person (location + map link).
+     */
+    private static function workplaceFingerprint(
+        string $street,
+        string $zip,
+        string $city,
+        string $room,
+        string $floor,
+        string $faumap
+    ): string {
+        $normalize = static function (string $value): string {
+            $value = strtolower(trim($value));
+            if ($value === '') {
+                return '';
+            }
+            $value = remove_accents($value);
+
+            return preg_replace('/\s+/', '', $value) ?? '';
+        };
+
+        $faumapKey = strtolower(rtrim(trim($faumap), '/'));
+
+        return implode(
+            "\x1e",
+            [
+                $normalize($street),
+                $normalize($zip),
+                $normalize($city),
+                $normalize($room),
+                $normalize($floor),
+                $faumapKey,
+            ]
+        );
+    }
+
+    /**
+     * Minimal workplace hints for server-side map coordinate resolution (no PII beyond org/address).
+     *
+     * @param array<string,mixed> $w
+     *
+     * @return array<string, string>
+     */
+    private static function mapHintsFromWorkplace(array $w): array
+    {
+        $hints = [];
+
+        foreach (['famos', 'buildingNumber', 'building', 'famosNumber'] as $key) {
+            if (!array_key_exists($key, $w)) {
+                continue;
+            }
+            $value = $w[$key];
+            if ($value === null || $value === '') {
+                continue;
+            }
+            if (!is_string($value) && !is_int($value)) {
+                continue;
+            }
+            $hints[$key] = (string) $value;
+        }
+
+        return $hints;
+    }
+
     /** @param array<string,mixed> $w API workplace fragment */
     private static function streetLine(array $w): string
     {
@@ -283,6 +401,63 @@ final class FaudirWorkplaceResolver
             return $w['addressLocality'];
         }
 
+        $addr = $w['address'] ?? null;
+        if (is_array($addr)) {
+            foreach (['addressLocality', 'locality', 'city'] as $key) {
+                if (!empty($addr[$key]) && is_string($addr[$key])) {
+                    return $addr[$key];
+                }
+            }
+        }
+
         return '';
+    }
+
+    /**
+     * FAU organisation number for karte.fau.de (API parameter “org”).
+     *
+     * @link https://karte.fau.de/api/doc
+     *
+     * @param array<string,mixed> $org Organization fragment from FAUdir contact JSON.
+     */
+    private static function organizationNumberFromOrg(array $org): string
+    {
+        if (isset($org['disambiguatingDescription']) && is_string($org['disambiguatingDescription'])) {
+            $digits = preg_replace('/\D+/', '', $org['disambiguatingDescription']);
+
+            return is_string($digits) && $digits !== '' && strlen($digits) <= 10 ? $digits : '';
+        }
+
+        if (isset($org['orgnr'])) {
+            $raw = (is_string($org['orgnr']) || is_int($org['orgnr'])) ? (string) $org['orgnr'] : '';
+            $raw = trim($raw);
+            if ($raw !== '' && ctype_digit($raw) && strlen($raw) <= 10) {
+                return $raw;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Person label for editor dropdowns: “Nachname, Vorname”.
+     */
+    private static function formatPersonLabel(string $familyName, string $givenName, int $postId): string
+    {
+        if ($familyName !== '' && $givenName !== '') {
+            return $familyName . ', ' . $givenName;
+        }
+
+        if ($familyName !== '') {
+            return $familyName;
+        }
+
+        if ($givenName !== '') {
+            return $givenName;
+        }
+
+        $fallback = get_the_title($postId);
+
+        return is_string($fallback) ? trim($fallback) : '';
     }
 }
