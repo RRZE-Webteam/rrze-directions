@@ -166,6 +166,19 @@ function shouldShowFormattedAddress(formatted, streetLine) {
 	return normalizeAddress(trimmed) !== normalizeAddress(streetLine);
 }
 
+function formatCoordinatePair(latitude, longitude) {
+	const formatValue = (value) => {
+		const normalized = `${value}`.trim().replace(',', '.');
+		if (!normalized.includes('.')) {
+			return normalized;
+		}
+
+		return normalized.replace(/\.?0+$/, '');
+	};
+
+	return `${formatValue(latitude)}, ${formatValue(longitude)}`;
+}
+
 function googleMapsUrl(latitude, longitude) {
 	const query = encodeURIComponent(`${latitude},${longitude}`);
 
@@ -648,12 +661,15 @@ function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false
 	return (
 		<p className="rrze-direction-editor__coordinates">
 			{strings.mapCoordinates ?? __('Coordinates', 'rrze-direction')}:{' '}
+			{formatCoordinatePair(latitude, longitude)}
+			<span className="rrze-direction-editor__coordinates-sep" aria-hidden="true">
+				{' · '}
+			</span>
 			<a href={googleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
 				{strings.googleMaps ?? __('Google Maps', 'rrze-direction')}
 			</a>
 			<span className="rrze-direction-editor__coordinates-sep" aria-hidden="true">
-				{' '}
-				·{' '}
+				{' · '}
 			</span>
 			<a href={appleMapsUrl(lat, lon)} target="_blank" rel="noopener noreferrer">
 				{strings.appleMaps ?? __('Apple Maps', 'rrze-direction')}
