@@ -23,9 +23,6 @@ msgstr "Stockwerk: %s"
 msgid "Address data unavailable."
 msgstr "Keine Anschrift verfügbar."
 
-msgid "Coordinates"
-msgstr "Koordinaten"
-
 msgid "Google Maps"
 msgstr "Google Maps"
 
@@ -66,7 +63,10 @@ msgid "Office / workplace"
 msgstr "Büro / Arbeitsplatz"
 
 msgid "FAUdir person entry"
-msgstr "FAUdir-Personeneintrag"
+msgstr "FAUdir"
+
+msgid "Person"
+msgstr "Person"
 
 msgid "Directions map"
 msgstr "Anfahrtskarte"
@@ -75,13 +75,19 @@ msgid "Show arrival map section"
 msgstr "Anfahrtskarte anzeigen"
 
 msgid "Map URL (FAU Campus Map preset)"
-msgstr "Karten-URL (Voreinstellung aus FAUdir)"
+msgstr "URL zu karte.fau.de"
+
+msgid "URL to karte.fau.de"
+msgstr "URL zu karte.fau.de"
 
 msgid "Taken from RRZE-FAUdir (campus map) but can be edited."
 msgstr "Übernommen aus RRZE-FAUdir (Campuskarte), kann bearbeitet werden."
 
 msgid "Optional map illustration"
-msgstr "Optionale Kartenillustration"
+msgstr "Illustration"
+
+msgid "Illustration"
+msgstr "Illustration"
 
 msgid "Replace illustration"
 msgstr "Illustration ersetzen"
@@ -108,13 +114,13 @@ msgid "FAUdir"
 msgstr "FAUdir"
 
 msgid "Published FAUdir person entry"
-msgstr "Veröffentlichter FAUdir-Personeneintrag"
+msgstr "Person"
 
 msgid "Map"
 msgstr "Karte"
 
 msgid "Map URL (preset from FAUdir)"
-msgstr "Karten-URL (Voreinstellung aus FAUdir)"
+msgstr "URL zu karte.fau.de"
 
 msgid "RRZE Direction has been deactivated because RRZE-FAUdir is installed but failed to initialize fully."
 msgstr "RRZE Direction wurde deaktiviert, weil RRZE-FAUdir installiert ist, aber nicht vollständig initialisiert werden konnte."
@@ -180,7 +186,10 @@ msgid "From %1$s to %2$s"
 msgstr "Von %1$s nach %2$s"
 
 msgid "Directions output"
-msgstr "Ausgabe Anfahrtsbeschreibungen"
+msgstr "Anfahrtsbeschreibungen"
+
+msgid "Arrival directions"
+msgstr "Anfahrtsbeschreibungen"
 
 msgid "Show walking / cycling"
 msgstr "Zu Fuß / mit dem Rad anzeigen"
@@ -198,10 +207,10 @@ msgid "Accordion"
 msgstr "Akkordeon"
 
 msgid "Columns (side by side)"
-msgstr "Spalten (nebeneinander)"
+msgstr "Spalten"
 
-msgid "Columns use one, two, or three columns depending on how many direction types are enabled and have content."
-msgstr "Spalten: ein-, zwei- oder dreispaltig – je nachdem, wie viele Anfahrtsarten aktiviert sind und Inhalt haben."
+msgid "Columns"
+msgstr "Spalten"
 
 msgid "Route map"
 msgstr "Routenkarte"

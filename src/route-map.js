@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './route-map.scss';
+import { attachMapWheelShield, detachMapWheelShield } from './map-wheel-shield';
 
 const ACTIVE_STEP_CLASS = 'is-route-step-active';
 const ROUTE_COLOR = '#04316a';
@@ -140,6 +141,11 @@ export function destroyRouteMap(container) {
 		container._rrzeResizeObserver = null;
 	}
 
+	const canvas = container.querySelector('.rrze-direction-route-map__canvas');
+	if (canvas) {
+		detachMapWheelShield(canvas);
+	}
+
 	if (container._rrzeLeafletMap) {
 		container._rrzeLeafletMap.remove();
 		container._rrzeLeafletMap = null;
@@ -212,6 +218,9 @@ function createRouteMap(container, data) {
 		detectRetina: false,
 		maxZoom: MAP_MAX_ZOOM,
 	});
+	if (map.scrollWheelZoom) {
+		map.scrollWheelZoom.disable();
+	}
 	container._rrzeLeafletMap = map;
 
 	const latLngs = data.coordinates.map((point) => [point.lat, point.lon]);
@@ -247,6 +256,8 @@ function createRouteMap(container, data) {
 	map.invalidateSize({ animate: false });
 
 	const tileLayer = addTileLayerWithFallback(map);
+
+	attachMapWheelShield(canvas);
 
 	wireStepClicks(container, map, markersByStep);
 	scheduleMapResize(map, tileLayer);

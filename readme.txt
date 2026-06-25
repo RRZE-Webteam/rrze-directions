@@ -2,7 +2,7 @@
 Contributors: rrze-webteam
 Requires at least: 6.8
 Requires PHP: 8.2
-Stable tag: 0.0.47
+Stable tag: 0.0.61
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
