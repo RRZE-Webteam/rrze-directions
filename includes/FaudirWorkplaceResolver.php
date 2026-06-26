@@ -48,7 +48,21 @@ final class FaudirWorkplaceResolver
             ];
         }
 
-        $api = $api ?? new \RRZE\FAUdir\API($config);
+        return ApiCache::remember(
+            'faudir',
+            'persons_' . (string) get_current_blog_id() . '_' . $ptype,
+            static fn (): array => self::loadPersonsWithWorkplaces($api, $ptype),
+            static fn (array $payload): bool => (bool) ($payload['error'] ?? false)
+        );
+    }
+
+    /**
+     * @return array{error:bool, message:string, data:array<int, array<string, mixed>>}
+     */
+    private static function loadPersonsWithWorkplaces(?\RRZE\FAUdir\API $api, string $ptype): array
+    {
+        $config = new \RRZE\FAUdir\Config();
+        $api    = $api ?? new \RRZE\FAUdir\API($config);
 
         $posts = get_posts([
             'post_type'      => $ptype,

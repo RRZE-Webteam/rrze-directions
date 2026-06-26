@@ -14,11 +14,23 @@ final class OpenRouteRouteData
     /**
      * Compact JSON for block attributes and the Leaflet route map script.
      */
-    public static function toJson(array $decoded): string
-    {
+    public static function toJson(
+        array $decoded,
+        ?float $destinationLat = null,
+        ?float $destinationLon = null,
+        string $destinationLabel = ''
+    ): string {
         $route = self::fromDecoded($decoded);
         if ($route === null) {
             return '';
+        }
+
+        if (null !== $destinationLat && null !== $destinationLon) {
+            $route['destination'] = [
+                'lat'   => $destinationLat,
+                'lon'   => $destinationLon,
+                'label' => trim($destinationLabel),
+            ];
         }
 
         $json = wp_json_encode($route);

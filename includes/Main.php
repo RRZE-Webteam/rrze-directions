@@ -21,6 +21,7 @@ final class Main
     {
         add_action('init', [$this, 'registerAssets']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueueEditor']);
+        add_action('save_post', [$this, 'invalidateFaudirCacheOnPersonSave'], 10, 3);
         RestResolveCoordinates::register();
         RestResolveIframeSrc::register();
         RestOpenRouteDirections::register();
@@ -133,6 +134,7 @@ final class Main
                     'directionsLayout'             => __('Layout', 'rrze-direction'),
                     'directionsLayoutAccordion'    => __('Accordion', 'rrze-direction'),
                     'directionsLayoutColumns'      => __('Columns', 'rrze-direction'),
+                    'directionsLayoutTabs'         => __('Tabs', 'rrze-direction'),
 					'routeMapTitle'                => __('Route map', 'rrze-direction'),
 					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-direction'),
 					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-direction'),
@@ -144,5 +146,29 @@ final class Main
             ], JSON_HEX_TAG | JSON_HEX_AMP),
             'before'
         );
+    }
+
+    public function invalidateFaudirCacheOnPersonSave(int $postId, \WP_Post $post, bool $update): void
+    {
+        unset($update);
+
+        if (wp_is_post_revision($postId) || wp_is_post_autosave($postId)) {
+            return;
+        }
+
+        $ptype = 'custom_person';
+        if (class_exists(\RRZE\FAUdir\Config::class)) {
+            $config = new \RRZE\FAUdir\Config();
+            $configured = (string) $config->get('person_post_type');
+            if ($configured !== '') {
+                $ptype = $configured;
+            }
+        }
+
+        if ($post->post_type !== $ptype) {
+            return;
+        }
+
+        ApiCache::flushGroup('faudir');
     }
 }

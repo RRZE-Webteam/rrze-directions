@@ -1,0 +1,135 @@
+/* Shared tab helpers inside the direction block. */
+.rrze-direction .rrze-elements-tabs.primary,
+.rrze-direction-editor .rrze-elements-tabs.primary {
+	margin-bottom: 1em;
+
+	[role='tabpanel'].is-hidden {
+		display: none;
+	}
+
+	[role='tab'],
+	[role='tab']:focus,
+	[role='tab']:hover {
+		outline: none;
+		overflow: visible;
+		position: relative;
+		z-index: 2;
+	}
+
+	[role='tab'] {
+		appearance: none;
+		cursor: pointer;
+		display: block;
+		font-size: 1rem;
+		margin: 0 5px 0 0;
+		padding: var(--Spacing-2x, 0.5rem) var(--Spacing-4x, 1rem);
+		text-align: left;
+		width: 100%;
+
+		@media (min-width: 550px) {
+			display: inline-block;
+			width: auto;
+		}
+
+		span.focus {
+			display: inline;
+			margin: 2px;
+			padding: 4px 6px;
+		}
+	}
+
+	[role='tabpanel'] {
+		min-height: 10em;
+		overflow: auto;
+
+		> .rrze-direction__rte > :first-child,
+		> .rrze-direction-route-map:first-child {
+			margin-top: 0;
+			padding-top: 0;
+		}
+	}
+}
+
+/* FAU Elemental: flat tabs — inactive white, active + panel light blue-grey, no borders. */
+body.wp-theme-FAU-Elemental {
+	.rrze-direction .rrze-elements-tabs.primary,
+	.rrze-direction-editor .rrze-elements-tabs.primary {
+		[role='tablist'] {
+			margin: 0;
+		}
+
+		[role='tab'] {
+			background-color: #fff;
+			border: 0;
+			border-radius: 0;
+			color: #000;
+
+			&[aria-selected='true'] {
+				background-color: var(--FAU-Col-FAU-Dunkelblau-12_5, #dfe2e7);
+				font-weight: bold;
+			}
+		}
+
+		[role='tabpanel'] {
+			background-color: var(--FAU-Col-FAU-Dunkelblau-12_5, #dfe2e7);
+			border: none;
+			color: #000;
+			margin-bottom: 0.125rem;
+			padding: var(--Spacing-6x, 2.5rem);
+		}
+	}
+}
+
+/* All other themes: RRZE Elements Blocks .primary — bordered tabs, white active tab + panel. */
+body:not(.wp-theme-FAU-Elemental) {
+	.rrze-direction .rrze-elements-tabs.primary,
+	.rrze-direction-editor .rrze-elements-tabs.primary {
+		[role='tablist'] {
+			margin: 0;
+
+			@media (min-width: 550px) {
+				padding: 0;
+				position: relative;
+				top: 1px;
+			}
+		}
+
+		[role='tab'] {
+			background-color: var(--color-primary-ci-hell2, #d2ddeb);
+			border: 1px solid var(--color-primary-ci-hell, #04316a);
+			border-bottom-color: var(--color-primary-ci-hell, #04316a);
+			border-radius: 0;
+			color: inherit;
+
+			@media (min-width: 550px) {
+				border-radius: 4px 4px 0 0;
+				top: 1px;
+			}
+
+			&[aria-selected='true'] {
+				font-weight: bold;
+				z-index: 3;
+
+				@media (min-width: 550px) {
+					background: #fff;
+					border-bottom-color: #fff;
+				}
+			}
+
+			span.focus {
+				display: inline-block;
+			}
+		}
+
+		[role='tabpanel'] {
+			background: #fff;
+			border: 1px solid var(--color-primary-ci-hell, #04316a);
+			border-top: 0;
+			padding: 1.5rem;
+
+			@media (min-width: 550px) {
+				border-top: 1px solid var(--color-primary-ci-hell, #04316a);
+			}
+		}
+	}
+}

@@ -3,7 +3,7 @@ Contributors: rrze-webteam
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 1.0.37
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -26,7 +26,7 @@ The block is intended for “Anfahrt” / directions pages: select a person and 
 * Numbered route steps; clicking a step highlights the corresponding segment on the map
 * Rich-text direction sections, editable in the block editor
 * Show or hide individual direction types per block
-* Layout choice: accordion (rrze-answers) or multi-column grid
+* Layout choice: accordion (rrze-answers), tabs, or multi-column grid
 * Editor preview with SVG placeholders instead of live maps
 * Scroll-friendly FAU iframe: page scrolls by default; map controls remain clickable
 * German translation (de_DE)

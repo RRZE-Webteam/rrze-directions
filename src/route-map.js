@@ -66,9 +66,40 @@ function numberedIcon(number) {
 	});
 }
 
+function destinationIcon() {
+	return L.divIcon({
+		className: 'rrze-direction-route-marker rrze-direction-route-marker--destination',
+		html: '<span class="rrze-direction-route-marker__pin" aria-hidden="true"></span>',
+		iconSize: [32, 40],
+		iconAnchor: [16, 40],
+	});
+}
+
+function resolveDestination(data, latLngs) {
+	if (
+		data.destination &&
+		typeof data.destination.lat === 'number' &&
+		typeof data.destination.lon === 'number'
+	) {
+		return data.destination;
+	}
+
+	if (latLngs.length === 0) {
+		return null;
+	}
+
+	const last = latLngs[latLngs.length - 1];
+
+	return {
+		lat: last[0],
+		lon: last[1],
+		label: '',
+	};
+}
+
 function findStepContainer(routeMapEl) {
 	return (
-		routeMapEl.closest('.rrze-answers-content') ||
+		routeMapEl.closest('.rrze-direction__accordion-inner') ||
 		routeMapEl.closest('.rrze-direction__text--column') ||
 		routeMapEl.parentElement
 	);
@@ -241,6 +272,23 @@ function createRouteMap(container, data) {
 		markersByStep[step.n] = marker;
 	});
 
+	const destination = resolveDestination(data, latLngs);
+	if (destination) {
+		const destinationMarker = L.marker([destination.lat, destination.lon], {
+			icon: destinationIcon(),
+			zIndexOffset: 500,
+		}).addTo(map);
+
+		const label = destination.label?.trim() || '';
+		const popupTitle =
+			document.documentElement.lang?.toLowerCase().startsWith('de')
+				? 'Ziel'
+				: 'Destination';
+		destinationMarker.bindPopup(
+			label ? `<strong>${label}</strong>` : `<strong>${popupTitle}</strong>`
+		);
+	}
+
 	const bounds = data.bounds
 		? L.latLngBounds(
 				[data.bounds.south, data.bounds.west],
@@ -299,6 +347,45 @@ export function initRouteMap(container) {
 					initRouteMap(container);
 				}
 			});
+		}
+		return;
+	}
+
+	const tabPanel = container.closest('[role="tabpanel"]');
+	if (tabPanel?.classList.contains('is-hidden')) {
+		if (container.dataset.routeMapDeferred !== '1') {
+			container.dataset.routeMapDeferred = '1';
+			const observer = new MutationObserver(() => {
+				if (!tabPanel.classList.contains('is-hidden')) {
+					observer.disconnect();
+					delete container.dataset.routeMapDeferred;
+					initRouteMap(container);
+				}
+			});
+			observer.observe(tabPanel, {
+				attributes: true,
+				attributeFilter: ['class'],
+			});
+		}
+		return;
+	}
+
+	const accordionPanel = container.closest('.rrze-direction__accordion-panel');
+	if (
+		accordionPanel &&
+		(accordionPanel.hidden || !accordionPanel.classList.contains('open'))
+	) {
+		if (container.dataset.routeMapDeferred !== '1') {
+			container.dataset.routeMapDeferred = '1';
+			accordionPanel.addEventListener(
+				'rrze-direction-accordion-panel',
+				(event) => {
+					if (event.detail?.open) {
+						delete container.dataset.routeMapDeferred;
+						initRouteMap(container);
+					}
+				}
+			);
 		}
 		return;
 	}
