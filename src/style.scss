@@ -1,3 +1,6 @@
+@use 'direction-tabs';
+@use 'direction-accordion';
+
 .rrze-direction-editor {
 	--rd-border: color-mix(in srgb, CanvasText 12%, Canvas);
 
@@ -190,76 +193,6 @@
 
 	&__text--column h3 {
 		margin: 0 0 0.5rem;
-	}
-
-	/* Accordion fallback when rrze-answers CSS is not loaded */
-	.rrze-answers {
-		--rrze-answers-accordion-bg-default: var(--color-ContentBorders, #d2ddeb);
-		--rrze-answers-accordion-text-default: var(--color-Text, #444);
-		--rrze-answers-accordion-bg-active: var(--color-primary-ci-hell, #04316a);
-		--rrze-answers-accordion-text-active: var(--color-primary-ci-hell-kontrast, #fff);
-		--rrze-answers-accordion-bg-active-hover: var(--color-primary-dunkler, #041e42);
-		--rrze-answers-accordion-text-active-hover: var(--color-primary-dunkler-kontrast, #fff);
-		--rrze-answers-accent: var(--rrze-answers-accordion-bg-active);
-		--rrze-answers-accent-dark: var(--rrze-answers-accordion-bg-active-hover);
-
-		details.rrze-answers-item {
-			border: 1px solid #dfe6ec;
-			margin-bottom: 5px;
-
-			> summary {
-				background: var(--rrze-answers-accordion-bg-default);
-				box-shadow: inset 10px 0 0 0 var(--rrze-answers-accent) !important;
-				color: var(--rrze-answers-accordion-text-default);
-				cursor: pointer;
-				display: block;
-				list-style: none;
-				margin: 0;
-				outline: none;
-				padding: 8px 35px 8px 20px;
-				position: relative;
-				text-align: left;
-
-				&::marker {
-					content: '';
-				}
-
-				&::after {
-					background: currentColor;
-					content: '';
-					height: 2rem;
-					mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20320%20512%22%3E%3Cpath%20d%3D%22M137.4%20374.6c12.5%2012.5%2032.8%2012.5%2045.3%200l128-128c9.2-9.2%2011.9-22.9%206.9-34.9s-16.6-19.8-29.6-19.8L32%20192c-12.9%200-24.6%207.8-29.6%2019.8s-2.2%2025.7%206.9%2034.9l128%20128z%22%2F%3E%3C%2Fsvg%3E")
-						center / 60% 60% no-repeat;
-					position: absolute;
-					right: 0;
-					top: 50%;
-					transform: translateY(-50%);
-					transform-origin: center;
-					transition: all 0.2s ease;
-					width: 2rem;
-				}
-
-				&:hover,
-				&:focus {
-					background: var(--rrze-answers-accordion-bg-active);
-					color: var(--rrze-answers-accordion-text-active-hover);
-				}
-			}
-
-			&[open] > summary {
-				background: var(--rrze-answers-accordion-bg-active-hover);
-				box-shadow: inset 10px 0 0 0 var(--rrze-answers-accent-dark) !important;
-				color: var(--rrze-answers-accordion-text-active-hover);
-
-				&::after {
-					transform: translateY(-50%) rotate(180deg);
-				}
-			}
-		}
-
-		.rrze-answers-content {
-			padding: 1rem 1rem 0.5rem;
-		}
 	}
 }
 

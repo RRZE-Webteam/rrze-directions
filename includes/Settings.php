@@ -27,6 +27,7 @@ final class Settings
 
         add_action('admin_menu', [self::class, 'addMenuPage']);
         add_action('admin_init', [self::class, 'registerSetting']);
+        add_action('admin_init', [self::class, 'handleCacheFlush']);
         add_filter(
             'plugin_action_links_' . plugin_basename(plugin()->getFile()),
             [self::class, 'actionLinks']
@@ -101,7 +102,42 @@ final class Settings
             return is_string($old) ? $old : '';
         }
 
+        $old = get_option(self::OPTION_KEY, '');
+        $old = is_string($old) ? trim($old) : '';
+        if ($new !== $old) {
+            ApiCache::flushGroup('openroute');
+        }
+
         return sanitize_text_field($new);
+    }
+
+    public static function handleCacheFlush(): void
+    {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        if (
+            !isset($_POST['rrze_direction_flush_api_cache'])
+            || (string) wp_unslash($_POST['rrze_direction_flush_api_cache']) !== '1'
+        ) {
+            return;
+        }
+
+        check_admin_referer('rrze_direction_flush_api_cache');
+
+        $count = ApiCache::flushAll();
+
+        add_settings_error(
+            'rrze_direction_settings',
+            'cache_flushed',
+            sprintf(
+                /* translators: %d: number of removed cache entries */
+                __('API cache cleared (%d entries removed).', 'rrze-direction'),
+                $count
+            ),
+            'updated'
+        );
     }
 
     public static function renderPage(): void
@@ -111,9 +147,12 @@ final class Settings
         }
 
         $hasKey = self::getOpenRouteServiceApiKey() !== '';
+        $apiKey = self::getOpenRouteServiceApiKey();
+        $cacheEntries = ApiCache::entryCount();
         ?>
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <?php settings_errors('rrze_direction_settings'); ?>
             <form action="options.php" method="post">
                 <?php settings_fields(self::OPTION_GROUP); ?>
                 <table class="form-table" role="presentation">
@@ -125,19 +164,19 @@ final class Settings
                         </th>
                         <td>
                             <input
-                                type="password"
+                                type="text"
                                 name="<?php echo esc_attr(self::OPTION_KEY); ?>"
                                 id="rrze_direction_openrouteservice_api_key"
-                                value=""
+                                value="<?php echo esc_attr($apiKey); ?>"
                                 class="regular-text code"
-                                autocomplete="new-password"
+                                autocomplete="off"
                             />
                             <p class="description">
                                 <?php
                                 echo esc_html(
                                     sprintf(
                                         /* translators: %s: URL to openrouteservice.org */
-                                        __('Request a key from %s (dashboard) and paste it here. Leave the field empty when saving to keep the current key.', 'rrze-direction'),
+                                        __('Request a key from %s (dashboard) and paste it here.', 'rrze-direction'),
                                         'https://openrouteservice.org'
                                     )
                                 );
@@ -167,6 +206,39 @@ final class Settings
                     </tr>
                 </table>
                 <?php submit_button(); ?>
+            </form>
+
+            <h2><?php esc_html_e('API cache', 'rrze-direction'); ?></h2>
+            <p>
+                <?php
+                echo esc_html(
+                    sprintf(
+                        /* translators: %d: number of cached API responses */
+                        _n(
+                            '%d cached API response is stored permanently for faster loading.',
+                            '%d cached API responses are stored permanently for faster loading.',
+                            $cacheEntries,
+                            'rrze-direction'
+                        ),
+                        $cacheEntries
+                    )
+                );
+                ?>
+            </p>
+            <p class="description">
+                <?php esc_html_e('Responses from karte.fau.de, OpenRouteService, and FAUdir are cached until you clear the cache or relevant data changes.', 'rrze-direction'); ?>
+            </p>
+            <form method="post">
+                <?php wp_nonce_field('rrze_direction_flush_api_cache'); ?>
+                <input type="hidden" name="rrze_direction_flush_api_cache" value="1" />
+                <?php
+                submit_button(
+                    __('Clear API cache', 'rrze-direction'),
+                    'secondary',
+                    'submit',
+                    false
+                );
+                ?>
             </form>
         </div>
         <?php

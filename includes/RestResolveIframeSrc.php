@@ -7,7 +7,7 @@ namespace RRZE\Direction;
 defined('ABSPATH') || exit;
 
 /**
- * Resolves karte.fau.de iframe URLs to their canonical form (redirects, famos → center).
+ * Resolves karte.fau.de iframe URLs to their canonical form (HTTP redirects only).
  */
 final class RestResolveIframeSrc
 {

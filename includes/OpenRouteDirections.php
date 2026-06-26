@@ -94,18 +94,24 @@ final class OpenRouteDirections
         return [
             'bike' => [
                 'html'  => self::withRouteTitle($bikeHtml, $routeTitle),
-                'route' => $bikeDecoded ? OpenRouteRouteData::toJson($bikeDecoded) : '',
+                'route' => $bikeDecoded
+                    ? OpenRouteRouteData::toJson($bikeDecoded, $endLat, $endLon, $toLabel)
+                    : '',
             ],
             'car' => [
                 'html'  => self::withRouteTitle($carHtml, $routeTitle),
-                'route' => $carDecoded ? OpenRouteRouteData::toJson($carDecoded) : '',
+                'route' => $carDecoded
+                    ? OpenRouteRouteData::toJson($carDecoded, $endLat, $endLon, $toLabel)
+                    : '',
             ],
             'transit' => [
                 'html'  => self::withRouteTitle(
                     self::fetchTransitPlaceholderHtml($walkingHtml, $orsLanguage),
                     $routeTitle
                 ),
-                'route' => $walkingDecoded ? OpenRouteRouteData::toJson($walkingDecoded) : '',
+                'route' => $walkingDecoded
+                    ? OpenRouteRouteData::toJson($walkingDecoded, $endLat, $endLon, $toLabel)
+                    : '',
             ],
         ];
     }
@@ -155,6 +161,28 @@ final class OpenRouteDirections
      * @return array{bike: ?array<string, mixed>, car: ?array<string, mixed>, walking: ?array<string, mixed>}
      */
     private static function fetchProfilesDecoded(
+        string $apiKey,
+        array $coords,
+        string $orsLanguage
+    ): array {
+        return ApiCache::remember(
+            'openroute',
+            ApiCache::hashKey($coords, $orsLanguage),
+            static fn (): array => self::requestProfilesDecoded($apiKey, $coords, $orsLanguage),
+            static function (array $decoded): bool {
+                return null === ($decoded['bike'] ?? null)
+                    && null === ($decoded['car'] ?? null)
+                    && null === ($decoded['walking'] ?? null);
+            }
+        );
+    }
+
+    /**
+     * @param array{0: float, 1: float, 2: float, 3: float} $coords lon, lat, lon, lat
+     *
+     * @return array{bike: ?array<string, mixed>, car: ?array<string, mixed>, walking: ?array<string, mixed>}
+     */
+    private static function requestProfilesDecoded(
         string $apiKey,
         array $coords,
         string $orsLanguage

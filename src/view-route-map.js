@@ -1,5 +1,22 @@
-import { initRouteMapsIn } from './route-map';
+import { initRouteMapsIn, destroyRouteMap } from './route-map';
 import { attachMapWheelShield } from './map-wheel-shield';
+import { initDirectionTabsIn } from './direction-tabs';
+
+function handleAccordionPanel(event) {
+	const panel = event.target;
+	if (!panel?.classList?.contains('rrze-direction__accordion-panel')) {
+		return;
+	}
+
+	if (event.detail?.open) {
+		initRouteMapsIn(panel);
+		return;
+	}
+
+	panel.querySelectorAll('.rrze-direction-route-map').forEach((map) => {
+		destroyRouteMap(map);
+	});
+}
 
 function injectTileFixStyles() {
 	if (document.getElementById('rrze-direction-leaflet-tile-fix')) {
@@ -28,6 +45,23 @@ function boot() {
 	});
 
 	initRouteMapsIn(document);
+	initDirectionTabsIn(document);
+
+	document.addEventListener('rrze-direction-accordion-panel', handleAccordionPanel);
+
+	document
+		.querySelectorAll(
+			'.rrze-direction [data-external-tabs-script="1"] [role=tab]'
+		)
+		.forEach((tab) => {
+			tab.addEventListener('click', () => {
+				const panelId = tab.getAttribute('aria-controls');
+				const panel = panelId ? document.getElementById(panelId) : null;
+				if (panel) {
+					initRouteMapsIn(panel);
+				}
+			});
+		});
 }
 
 if (document.readyState === 'loading') {

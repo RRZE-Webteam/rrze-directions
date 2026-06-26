@@ -103,28 +103,80 @@ function needsAsyncIframeCanonicalization(url) {
 	return isApiIframeUrl(url) && iframePathHasSegment(url, 'famos');
 }
 
-function resolveMapIframeSrc(attributes) {
-	const lat = parseCoordinate(attributes.mapLatitude);
-	const lon = parseCoordinate(attributes.mapLongitude);
-	const centerFromCoords =
-		lat !== null && lon !== null ? buildCenterIframeUrl(lat, lon) : '';
+function sanitizeFamosDigits(raw) {
+	const digits = `${raw ?? ''}`.replace(/\D+/g, '');
 
-	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
-	if (mapUrl && isApiIframeUrl(mapUrl)) {
-		if (iframePathHasSegment(mapUrl, 'famos') && centerFromCoords) {
-			return centerFromCoords;
+	return digits.length > 0 && digits.length <= 5 ? digits : '';
+}
+
+function famosFromIframeUrl(url) {
+	const trimmed = `${url ?? ''}`.trim();
+	if (!isApiIframeUrl(trimmed)) {
+		return '';
+	}
+
+	try {
+		const segments = new URL(trimmed, `https://${KARTE_HOST_SUFFIX}`).pathname
+			.split('/')
+			.filter(Boolean);
+
+		for (let i = 0; i < segments.length - 1; i += 1) {
+			if (segments[i].toLowerCase() !== 'famos') {
+				continue;
+			}
+
+			return sanitizeFamosDigits(decodeURIComponent(segments[i + 1]));
 		}
+	} catch (error) {
+		return '';
+	}
 
+	return '';
+}
+
+function iframeHasMarkerSegment(url) {
+	return ['famos', 'org', 'address', 'term'].some((segment) =>
+		iframePathHasSegment(url, segment)
+	);
+}
+
+function buildFamosIframeUrl(famos) {
+	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/famos/${encodeURIComponent(famos)}/`;
+}
+
+function buildOrgIframeUrl(org, attributes) {
+	const addressQuery = buildAddressParam(
+		attributes.addressStreet ?? '',
+		attributes.addressZip ?? '',
+		attributes.addressCity ?? ''
+	);
+
+	if (addressQuery) {
+		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/org/${org}/address/${encodeURIComponent(addressQuery)}/`;
+	}
+
+	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/org/${org}/`;
+}
+
+function buildAddressIframeUrl(addressQuery) {
+	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/address/${encodeURIComponent(addressQuery)}/`;
+}
+
+function resolveMapIframeSrc(attributes) {
+	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
+
+	if (mapUrl && isApiIframeUrl(mapUrl) && iframeHasMarkerSegment(mapUrl)) {
 		return mapUrl;
+	}
+
+	const famos = famosFromIframeUrl(mapUrl);
+	if (famos) {
+		return buildFamosIframeUrl(famos);
 	}
 
 	const org = sanitizeOrganizationDigits(attributes.organizationNumber);
 	if (org) {
-		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/org/${org}/`;
-	}
-
-	if (centerFromCoords) {
-		return centerFromCoords;
+		return buildOrgIframeUrl(org, attributes);
 	}
 
 	const addressQuery = buildAddressParam(
@@ -133,7 +185,17 @@ function resolveMapIframeSrc(attributes) {
 		attributes.addressCity ?? ''
 	);
 	if (addressQuery) {
-		return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/address/${encodeURIComponent(addressQuery)}/`;
+		return buildAddressIframeUrl(addressQuery);
+	}
+
+	const lat = parseCoordinate(attributes.mapLatitude);
+	const lon = parseCoordinate(attributes.mapLongitude);
+	if (lat !== null && lon !== null) {
+		return buildCenterIframeUrl(lat, lon);
+	}
+
+	if (mapUrl && isApiIframeUrl(mapUrl)) {
+		return mapUrl;
 	}
 
 	return '';
@@ -496,6 +558,36 @@ function getVisibleDirectionSections(attributes, strings) {
 	);
 }
 
+function normalizeDirectionsLayout(layout) {
+	if (layout === 'columns' || layout === 'tabs') {
+		return layout;
+	}
+
+	return 'accordion';
+}
+
+function DirectionSectionPreviewBody({ section, strings }) {
+	return (
+		<>
+			<RouteMapEditorPlaceholder
+				routeJson={section.route}
+				title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
+				hint={
+					strings.routeMapPreview ??
+					__(
+						'Interactive route map with numbered steps is shown on the published page.',
+						'rrze-direction'
+					)
+				}
+			/>
+			<div
+				className="rrze-direction__rte"
+				dangerouslySetInnerHTML={{ __html: section.content }}
+			/>
+		</>
+	);
+}
+
 function RouteMapEditorPlaceholder({ routeJson, title, hint }) {
 	if (!hasRouteData(routeJson)) {
 		return null;
@@ -554,9 +646,15 @@ function RouteMapEditorPlaceholder({ routeJson, title, hint }) {
 }
 
 function DirectionsEditorPreview({ attributes, strings }) {
-	const layout =
-		attributes.directionsLayout === 'columns' ? 'columns' : 'accordion';
+	const layout = normalizeDirectionsLayout(attributes.directionsLayout);
 	const sections = getVisibleDirectionSections(attributes, strings);
+	const [activeKey, setActiveKey] = useState(sections[0]?.key ?? '');
+
+	useEffect(() => {
+		if (!sections.some((section) => section.key === activeKey)) {
+			setActiveKey(sections[0]?.key ?? '');
+		}
+	}, [sections, activeKey]);
 
 	if (sections.length === 0) {
 		return null;
@@ -564,80 +662,126 @@ function DirectionsEditorPreview({ attributes, strings }) {
 
 	const layoutLabel =
 		layout === 'columns'
-			? strings.directionsLayoutColumns ??
-				strings.directionsLayoutColumns ??
-				__('Columns', 'rrze-direction')
-			: strings.directionsLayoutAccordion ??
-				__('Accordion', 'rrze-direction');
+			? strings.directionsLayoutColumns ?? __('Columns', 'rrze-direction')
+			: layout === 'tabs'
+				? strings.directionsLayoutTabs ?? __('Tabs', 'rrze-direction')
+				: strings.directionsLayoutAccordion ?? __('Accordion', 'rrze-direction');
+
+	let preview = null;
+
+	if (layout === 'accordion') {
+		preview = (
+			<div className="rrze-direction__directions rrze-direction__accordions">
+				<div className="rrze-direction__accordion">
+					{sections.map((section, index) => (
+						<div
+							key={section.key}
+							className="rrze-direction__accordion-item"
+						>
+							<div className="rrze-direction__accordion-group">
+								<h3 className="rrze-direction__accordion-heading">
+									<button
+										type="button"
+										className={
+											index === 0
+												? 'rrze-direction__accordion-toggle active'
+												: 'rrze-direction__accordion-toggle'
+										}
+										aria-expanded={index === 0}
+									>
+										{section.title}
+									</button>
+								</h3>
+								<div
+									className={
+										index === 0
+											? 'rrze-direction__accordion-panel open'
+											: 'rrze-direction__accordion-panel'
+									}
+									role="region"
+									hidden={index !== 0 ? true : undefined}
+								>
+									<div className="rrze-direction__accordion-inner clearfix">
+										<DirectionSectionPreviewBody
+											section={section}
+											strings={strings}
+										/>
+									</div>
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	} else if (layout === 'tabs') {
+		const activeIndex = Math.max(
+			0,
+			sections.findIndex((section) => section.key === activeKey)
+		);
+
+		preview = (
+			<div className="rrze-direction__directions">
+				<div className="rrze-elements-tabs primary">
+					<div role="tablist" className="manual">
+						{sections.map((section, index) => (
+							<button
+								key={section.key}
+								type="button"
+								role="tab"
+								aria-selected={index === activeIndex}
+								onClick={() => setActiveKey(section.key)}
+							>
+								<span className="focus" tabIndex={-1}>
+									{section.title}
+								</span>
+							</button>
+						))}
+					</div>
+					{sections.map((section, index) => (
+						<div
+							key={section.key}
+							role="tabpanel"
+							className={index !== activeIndex ? 'is-hidden' : undefined}
+						>
+							<DirectionSectionPreviewBody
+								section={section}
+								strings={strings}
+							/>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	} else {
+		preview = (
+			<div
+				className={`rrze-direction__directions rrze-direction__directions-grid rrze-direction__directions-grid--cols-${
+					sections.length >= 3 ? 3 : sections.length
+				}`}
+			>
+				{sections.map((section) => (
+					<section
+						key={section.key}
+						className="rrze-direction__text rrze-direction__text--column"
+					>
+						<h3>{section.title}</h3>
+						<DirectionSectionPreviewBody
+							section={section}
+							strings={strings}
+						/>
+					</section>
+				))}
+			</div>
+		);
+	}
 
 	return (
 		<div className="rrze-direction-editor__directions-preview">
 			<p className="rrze-direction-editor__directions-preview-label">
 				{layoutLabel}
 			</p>
-			{layout === 'accordion' ? (
-				<div
-					className="rrze-direction__directions rrze-answers"
-					data-accordion="single"
-				>
-					{sections.map((section, index) => (
-						<details
-							key={section.key}
-							className="rrze-answers-item is-fau"
-							open={index === 0}
-						>
-							<summary>{section.title}</summary>
-							<div className="rrze-answers-content">
-								<RouteMapEditorPlaceholder
-									routeJson={section.route}
-									title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
-									hint={
-										strings.routeMapPreview ??
-										__(
-											'Interactive route map with numbered steps is shown on the published page.',
-											'rrze-direction'
-										)
-									}
-								/>
-								<div
-									className="rrze-direction__rte"
-									dangerouslySetInnerHTML={{ __html: section.content }}
-								/>
-							</div>
-						</details>
-					))}
-				</div>
-			) : (
-				<div
-					className={`rrze-direction__directions rrze-direction__directions-grid rrze-direction__directions-grid--cols-${
-						sections.length >= 3 ? 3 : sections.length
-					}`}
-				>
-					{sections.map((section) => (
-						<section
-							key={section.key}
-							className="rrze-direction__text rrze-direction__text--column"
-						>
-							<h3>{section.title}</h3>
-							<RouteMapEditorPlaceholder
-								routeJson={section.route}
-								title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
-								hint={
-									strings.routeMapPreview ??
-									__(
-										'Interactive route map with numbered steps is shown on the published page.',
-										'rrze-direction'
-									)
-								}
-							/>
-							<div
-								className="rrze-direction__rte"
-								dangerouslySetInnerHTML={{ __html: section.content }}
-							/>
-						</section>
-					))}
-				</div>
-			)}
+			{preview}
 		</div>
 	);
 }
@@ -1074,7 +1218,7 @@ export default function Edit({ attributes, setAttributes }) {
 							strings.directionsLayout ??
 							__('Layout', 'rrze-direction')
 						}
-						value={directionsLayout === 'columns' ? 'columns' : 'accordion'}
+						value={normalizeDirectionsLayout(directionsLayout)}
 						options={[
 							{
 								label:
@@ -1088,10 +1232,16 @@ export default function Edit({ attributes, setAttributes }) {
 									__('Columns', 'rrze-direction'),
 								value: 'columns',
 							},
+							{
+								label:
+									strings.directionsLayoutTabs ??
+									__('Tabs', 'rrze-direction'),
+								value: 'tabs',
+							},
 						]}
 						onChange={(next) =>
 							setAttributes({
-								directionsLayout: next === 'columns' ? 'columns' : 'accordion',
+								directionsLayout: normalizeDirectionsLayout(next),
 							})
 						}
 					/>
@@ -1171,7 +1321,6 @@ export default function Edit({ attributes, setAttributes }) {
 					</section>
 
 					<section className="rrze-direction-editor__map">
-						<h4>{strings.mapSection ?? __('Directions map', 'rrze-direction')}</h4>
 						{isLoadingDirections ? (
 							<p className="rrze-direction-editor__loading" aria-live="polite">
 								{strings.mapLoading ??

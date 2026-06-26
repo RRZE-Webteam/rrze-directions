@@ -146,8 +146,8 @@ msgstr "Einstellungen"
 msgid "OpenRouteService API key"
 msgstr "OpenRouteService-API-Schlüssel"
 
-msgid "Request a key from %s (dashboard) and paste it here. Leave the field empty when saving to keep the current key."
-msgstr "Schlüssel unter %s (Dashboard) beantragen und hier einfügen. Beim Speichern leer lassen, um den aktuellen Schlüssel beizubehalten."
+msgid "Request a key from %s (dashboard) and paste it here."
+msgstr "Schlüssel unter %s (Dashboard) beantragen und hier einfügen."
 
 msgid "Remove stored API key"
 msgstr "Gespeicherten API-Schlüssel entfernen"
@@ -212,6 +212,9 @@ msgstr "Spalten"
 msgid "Columns"
 msgstr "Spalten"
 
+msgid "Tabs"
+msgstr "Tabs"
+
 msgid "Route map"
 msgstr "Routenkarte"
 
@@ -226,3 +229,20 @@ msgstr "Diesen Schritt auf der Routenkarte anzeigen"
 
 msgid "Route map with numbered steps (shown on the site)."
 msgstr "Routenkarte mit nummerierten Schritten (wird auf der Website angezeigt)."
+
+msgid "API cache"
+msgstr "API-Cache"
+
+msgid "%d cached API response is stored permanently for faster loading."
+msgid_plural "%d cached API responses are stored permanently for faster loading."
+msgstr[0] "%d gespeicherte API-Antwort wird dauerhaft für schnelleres Laden vorgehalten."
+msgstr[1] "%d gespeicherte API-Antworten werden dauerhaft für schnelleres Laden vorgehalten."
+
+msgid "Responses from karte.fau.de, OpenRouteService, and FAUdir are cached until you clear the cache or relevant data changes."
+msgstr "Antworten von karte.fau.de, OpenRouteService und FAUdir werden zwischengespeichert, bis Sie den Cache leeren oder sich relevante Daten ändern."
+
+msgid "Clear API cache"
+msgstr "API-Cache leeren"
+
+msgid "API cache cleared (%d entries removed)."
+msgstr "API-Cache geleert (%d Einträge entfernt)."

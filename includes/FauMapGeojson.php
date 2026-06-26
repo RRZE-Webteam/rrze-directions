@@ -17,9 +17,6 @@ final class FauMapGeojson
 
     private const API_GEOJSON_PATH = '/api/v1/geojson';
 
-    /** @var array<string, array<int, array<string, mixed>>> */
-    private static array $featureCache = [];
-
     /**
      * Resolve latitude/longitude for a workplace using karte.fau.de when FAUdir has none.
      *
@@ -267,10 +264,22 @@ final class FauMapGeojson
     private static function fetchFeatures(string $apiPath): array
     {
         $apiPath = '/' . trim($apiPath, '/');
-        if (isset(self::$featureCache[$apiPath])) {
-            return self::$featureCache[$apiPath];
-        }
 
+        return ApiCache::remember(
+            'geojson',
+            $apiPath,
+            static function () use ($apiPath): array {
+                return self::fetchFeaturesFromRemote($apiPath);
+            },
+            static fn (array $features): bool => $features === []
+        );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private static function fetchFeaturesFromRemote(string $apiPath): array
+    {
         $url = sprintf('https://%s%s', self::HOST_SUFFIX, $apiPath);
 
         $response = wp_remote_get(
@@ -285,30 +294,22 @@ final class FauMapGeojson
         );
 
         if (is_wp_error($response)) {
-            self::$featureCache[$apiPath] = [];
-
             return [];
         }
 
         $code = (int) wp_remote_retrieve_response_code($response);
         if ($code < 200 || $code >= 300) {
-            self::$featureCache[$apiPath] = [];
-
             return [];
         }
 
         $body = wp_remote_retrieve_body($response);
         if (!is_string($body) || $body === '') {
-            self::$featureCache[$apiPath] = [];
-
             return [];
         }
 
         $decoded = json_decode($body, true);
-        $features = self::decodeFeatures($decoded);
-        self::$featureCache[$apiPath] = $features;
 
-        return $features;
+        return self::decodeFeatures($decoded);
     }
 
     /**

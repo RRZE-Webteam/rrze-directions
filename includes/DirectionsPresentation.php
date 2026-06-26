@@ -7,7 +7,7 @@ namespace RRZE\Direction;
 defined('ABSPATH') || exit;
 
 /**
- * Renders direction sections (foot, car, transit) as accordion or column grid.
+ * Renders direction sections (foot, car, transit) as accordion, tabs, or column grid.
  */
 final class DirectionsPresentation
 {
@@ -72,6 +72,10 @@ final class DirectionsPresentation
             return self::renderColumns($sections);
         }
 
+        if ($layout === 'tabs') {
+            return self::renderTabs($sections);
+        }
+
         return self::renderAccordion($sections);
     }
 
@@ -91,7 +95,11 @@ final class DirectionsPresentation
 
     private static function normalizeLayout(string $layout): string
     {
-        return $layout === 'columns' ? 'columns' : 'accordion';
+        return match ($layout) {
+            'columns' => 'columns',
+            'tabs'    => 'tabs',
+            default   => 'accordion',
+        };
     }
 
     /**
@@ -104,27 +112,42 @@ final class DirectionsPresentation
         $items = '';
 
         foreach ($sections as $index => $section) {
-            $anchor = wp_unique_id('rrze-direction-' . $section['key'] . '-');
-            $open   = $index === 0 ? ' open' : '';
+            $panelId   = wp_unique_id('rrze-direction-' . $section['key'] . '-');
+            $regionId  = $panelId . '-section';
+            $isOpen    = $index === 0;
+            $toggleCls = 'rrze-direction__accordion-toggle' . ($isOpen ? ' active' : '');
+            $bodyCls   = 'rrze-direction__accordion-panel' . ($isOpen ? ' open' : '');
 
-            $items .= '<details'
-                . $open
-                . ' id="' . esc_attr($anchor) . '"'
-                . ' class="rrze-answers-item is-fau">'
-                . '<summary>' . esc_html($section['title']) . '</summary>'
-                . '<div class="rrze-answers-content">'
-                . self::renderSectionBody($section)
-                . '</div>'
-                . '</details>';
+            $items .= '<div class="rrze-direction__accordion-item">';
+            $items .= '<div class="rrze-direction__accordion-group">';
+            $items .= '<h3 class="rrze-direction__accordion-heading">';
+            $items .= '<button'
+                . ' class="' . esc_attr($toggleCls) . '"'
+                . ' type="button"'
+                . ' aria-expanded="' . ($isOpen ? 'true' : 'false') . '"'
+                . ' aria-controls="' . esc_attr($regionId) . '"'
+                . ' id="' . esc_attr($panelId) . '"'
+                . '>';
+            $items .= esc_html($section['title']);
+            $items .= '</button>';
+            $items .= '</h3>';
+            $items .= '<div'
+                . ' id="' . esc_attr($regionId) . '"'
+                . ' class="' . esc_attr($bodyCls) . '"'
+                . ' aria-labelledby="' . esc_attr($panelId) . '"'
+                . ' role="region"'
+                . '>';
+            $items .= '<div class="rrze-direction__accordion-inner clearfix">';
+            $items .= self::renderSectionBody($section);
+            $items .= '</div></div></div></div>';
         }
 
-        return '<div class="rrze-direction__directions rrze-answers"'
-            . ' data-accordion="single"'
-            . ' data-scroll-offset="96"'
+        return '<div class="rrze-direction__directions rrze-direction__accordions"'
             . ' role="region"'
             . ' aria-label="' . esc_attr__('Directions', 'rrze-direction') . '">'
+            . '<div class="rrze-direction__accordion">'
             . $items
-            . '</div>';
+            . '</div></div>';
     }
 
     /**
@@ -157,6 +180,60 @@ final class DirectionsPresentation
     }
 
     /**
+     * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     */
+    private static function renderTabs(array $sections): string
+    {
+        self::enqueueTabsAssets();
+
+        $groupId = wp_unique_id('rrze-direction-tabs-');
+        $nav     = '';
+        $panels  = '';
+
+        foreach ($sections as $index => $section) {
+            $tabId   = $groupId . '-' . $section['key'];
+            $panelId = 'tab-' . $groupId . '_tabpanel_tab-label-' . $section['key'];
+            $active  = $index === 0;
+
+            $nav .= '<button'
+                . ' id="' . esc_attr($tabId) . '"'
+                . ' type="button"'
+                . ' role="tab"'
+                . ' aria-selected="' . ($active ? 'true' : 'false') . '"'
+                . ' aria-controls="' . esc_attr($panelId) . '"'
+                . ($active ? '' : ' tabindex="-1"')
+                . '>';
+            $nav .= '<span class="focus" tabindex="-1">' . esc_html($section['title']) . '</span>';
+            $nav .= '</button>';
+
+            $panels .= '<div'
+                . ' id="' . esc_attr($panelId) . '"'
+                . ' role="tabpanel"'
+                . ' aria-labelledby="' . esc_attr($tabId) . '"'
+                . ($active ? '' : ' class="is-hidden"')
+                . '>';
+            $panels .= self::renderSectionBody($section);
+            $panels .= '</div>';
+        }
+
+        $externalTabs = '';
+        if (wp_script_is('rrze-tabs', 'registered')) {
+            $externalTabs = ' data-external-tabs-script="1"';
+        }
+
+        return '<div class="rrze-direction__directions"'
+            . ' role="region"'
+            . ' aria-label="' . esc_attr__('Directions', 'rrze-direction') . '">'
+            . '<div class="rrze-elements-tabs primary" id="tabs-' . esc_attr($groupId) . '"' . $externalTabs . '>'
+            . '<div role="tablist" class="manual">'
+            . $nav
+            . '</div>'
+            . $panels
+            . '</div>'
+            . '</div>';
+    }
+
+    /**
      * @param array{key: string, title: string, html: string, route: string} $section
      */
     private static function renderSectionBody(array $section): string
@@ -169,18 +246,16 @@ final class DirectionsPresentation
 
     private static function enqueueAccordionAssets(): void
     {
-        if (wp_style_is('rrze-answers-css', 'registered')) {
-            wp_enqueue_style('rrze-answers-css');
-        }
-
-        if (wp_script_is('rrze-answers-accordion', 'registered')) {
-            wp_enqueue_script('rrze-answers-accordion');
-
-            return;
-        }
-
+        // view.js is loaded via block.json viewScript; keep handle for older WP fallbacks.
         if (wp_script_is(Main::ACCORDION_SCRIPT_HANDLE, 'registered')) {
             wp_enqueue_script(Main::ACCORDION_SCRIPT_HANDLE);
+        }
+    }
+
+    private static function enqueueTabsAssets(): void
+    {
+        if (wp_script_is('rrze-tabs', 'registered')) {
+            wp_enqueue_script('rrze-tabs');
         }
     }
 }

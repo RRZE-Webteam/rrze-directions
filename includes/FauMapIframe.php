@@ -9,6 +9,8 @@ defined('ABSPATH') || exit;
 /**
  * Builds embeddable map URLs for https://karte.fau.de (see API documentation).
  *
+ * Marker pins require famos, org, address, or term — not center/… alone.
+ *
  * @link https://karte.fau.de/api/doc
  */
 final class FauMapIframe
@@ -17,8 +19,8 @@ final class FauMapIframe
 
     private const API_IFRAME_PATH = '/api/v1/iframe';
 
-    /** @var array<string, string> */
-    private static array $canonicalCache = [];
+    /** @var list<string> */
+    private const MARKER_PATH_SEGMENTS = ['famos', 'org', 'address', 'term'];
 
     /**
      * Whether $url is a karte.fau.de iframe API URL (safe to use as iframe src).
@@ -37,7 +39,7 @@ final class FauMapIframe
     }
 
     /**
-     * Resolve HTTP redirects and famos aliases to the final iframe API URL.
+     * Follow HTTP redirects only — keep famos/org/address URLs (they show map pins).
      */
     public static function canonicalIframeSrc(string $url): string
     {
@@ -46,15 +48,11 @@ final class FauMapIframe
             return $url;
         }
 
-        if (isset(self::$canonicalCache[$url])) {
-            return self::$canonicalCache[$url];
-        }
-
-        $resolved = self::followHttpRedirects($url);
-        $resolved = self::preferCenterIframeUrl($resolved);
-        self::$canonicalCache[$url] = $resolved;
-
-        return $resolved;
+        return ApiCache::remember(
+            'iframe',
+            $url,
+            static fn (): string => self::followHttpRedirects($url)
+        );
     }
 
     /**
@@ -94,32 +92,26 @@ final class FauMapIframe
     }
 
     /**
-     * Resolve the best iframe src from block attributes (priority: explicit API URL → org → center → address).
+     * Resolve iframe src that shows a location marker when possible.
      *
      * @param array<string,mixed> $attributes
      */
     public static function resolveIframeSrc(array $attributes): string
     {
-        $lat = self::parseCoordinate($attributes['mapLatitude'] ?? null);
-        $lon = self::parseCoordinate($attributes['mapLongitude'] ?? null);
-        $centerFromCoords = null !== $lat && null !== $lon
-            ? sprintf(
-                'https://%s/api/v1/iframe/center/%s/zoom/16/',
-                self::HOST_SUFFIX,
-                rawurlencode($lat . ',' . $lon)
-            )
-            : '';
-
         $mapUrl = trim((string) ($attributes['mapUrl'] ?? ''));
-        if ($mapUrl !== '') {
-            if ($centerFromCoords !== '' && self::iframePathHasSegment($mapUrl, 'famos')) {
-                $direct = self::escIframeSrc($centerFromCoords);
+
+        if ($mapUrl !== '' && self::isApiIframeUrl($mapUrl)) {
+            if (self::iframeHasMarkerSegment($mapUrl)) {
+                $direct = self::escIframeSrc($mapUrl);
                 if ($direct !== '') {
                     return $direct;
                 }
             }
+        }
 
-            $direct = self::escIframeSrc($mapUrl);
+        $famos = self::famosFromIframeUrl($mapUrl);
+        if ($famos !== '') {
+            $direct = self::escIframeSrc(self::buildFamosIframeUrl($famos));
             if ($direct !== '') {
                 return $direct;
             }
@@ -127,13 +119,10 @@ final class FauMapIframe
 
         $org = self::sanitizeOrganizationDigits((string) ($attributes['organizationNumber'] ?? ''));
         if ($org !== '') {
-            $candidate = sprintf('https://%s/api/v1/iframe/org/%s/', self::HOST_SUFFIX, $org);
-
-            return self::escIframeSrc($candidate);
-        }
-
-        if ($centerFromCoords !== '') {
-            return self::escIframeSrc($centerFromCoords);
+            $direct = self::escIframeSrc(self::buildOrgIframeUrl($org, $attributes));
+            if ($direct !== '') {
+                return $direct;
+            }
         }
 
         $street = (string) ($attributes['addressStreet'] ?? '');
@@ -142,16 +131,127 @@ final class FauMapIframe
 
         $addressQuery = self::buildAddressParam($street, $zip, $city);
         if ($addressQuery !== '') {
-            $candidate = sprintf(
-                'https://%s/api/v1/iframe/address/%s/',
-                self::HOST_SUFFIX,
-                rawurlencode($addressQuery)
-            );
+            $direct = self::escIframeSrc(self::buildAddressIframeUrl($addressQuery));
+            if ($direct !== '') {
+                return $direct;
+            }
+        }
 
-            return self::escIframeSrc($candidate);
+        $lat = self::parseCoordinate($attributes['mapLatitude'] ?? null);
+        $lon = self::parseCoordinate($attributes['mapLongitude'] ?? null);
+        if (null !== $lat && null !== $lon) {
+            $direct = self::escIframeSrc(self::buildCenterIframeUrl($lat, $lon));
+            if ($direct !== '') {
+                return $direct;
+            }
+        }
+
+        if ($mapUrl !== '' && self::isApiIframeUrl($mapUrl)) {
+            return self::escIframeSrc($mapUrl);
         }
 
         return '';
+    }
+
+    private static function buildFamosIframeUrl(string $famos): string
+    {
+        return sprintf(
+            'https://%s/api/v1/iframe/famos/%s/',
+            self::HOST_SUFFIX,
+            rawurlencode($famos)
+        );
+    }
+
+    /**
+     * @param array<string,mixed> $attributes
+     */
+    private static function buildOrgIframeUrl(string $org, array $attributes): string
+    {
+        $street = (string) ($attributes['addressStreet'] ?? '');
+        $zip    = (string) ($attributes['addressZip'] ?? '');
+        $city   = (string) ($attributes['addressCity'] ?? '');
+
+        $addressQuery = self::buildAddressParam($street, $zip, $city);
+        if ($addressQuery !== '') {
+            return sprintf(
+                'https://%s/api/v1/iframe/org/%s/address/%s/',
+                self::HOST_SUFFIX,
+                $org,
+                rawurlencode($addressQuery)
+            );
+        }
+
+        return sprintf('https://%s/api/v1/iframe/org/%s/', self::HOST_SUFFIX, $org);
+    }
+
+    private static function buildAddressIframeUrl(string $addressQuery): string
+    {
+        return sprintf(
+            'https://%s/api/v1/iframe/address/%s/',
+            self::HOST_SUFFIX,
+            rawurlencode($addressQuery)
+        );
+    }
+
+    private static function buildCenterIframeUrl(float $lat, float $lon): string
+    {
+        return sprintf(
+            'https://%s/api/v1/iframe/center/%s/zoom/16/',
+            self::HOST_SUFFIX,
+            rawurlencode($lat . ',' . $lon)
+        );
+    }
+
+    private static function iframeHasMarkerSegment(string $url): bool
+    {
+        foreach (self::MARKER_PATH_SEGMENTS as $segment) {
+            if (self::iframePathHasSegment($url, $segment)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function famosFromIframeUrl(string $url): string
+    {
+        if (!self::isApiIframeUrl($url)) {
+            return '';
+        }
+
+        $parts = wp_parse_url($url);
+        if (!is_array($parts)) {
+            return '';
+        }
+
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+        if ($path === '') {
+            return '';
+        }
+
+        $segments = explode('/', $path);
+        $count    = count($segments);
+
+        for ($i = 0; $i < $count - 1; ++$i) {
+            if (strtolower($segments[$i]) !== 'famos') {
+                continue;
+            }
+
+            return self::sanitizeFamosDigits(rawurldecode($segments[$i + 1]));
+        }
+
+        return '';
+    }
+
+    private static function sanitizeFamosDigits(string $raw): string
+    {
+        $digits = preg_replace('/\D+/', '', trim($raw));
+
+        if (!is_string($digits) || $digits === '' || strlen($digits) > 5) {
+            return '';
+        }
+
+        return $digits;
     }
 
     /**
@@ -227,33 +327,6 @@ final class FauMapIframe
         $final = self::finalUrlFromResponse($response, $url);
 
         return self::isApiIframeUrl($final) ? $final : $url;
-    }
-
-    /**
-     * famos/… iframe URLs resolve to a center/… view; use that stable URL when possible.
-     */
-    private static function preferCenterIframeUrl(string $url): string
-    {
-        if (!self::isApiIframeUrl($url) || self::iframePathHasSegment($url, 'center')) {
-            return $url;
-        }
-
-        if (!self::iframePathHasSegment($url, 'famos')) {
-            return $url;
-        }
-
-        [$lat, $lon] = FauMapGeojson::coordinatesFromIframeUrl($url);
-        if (null === $lat || null === $lon) {
-            return $url;
-        }
-
-        $pair = $lat . ',' . $lon;
-
-        return sprintf(
-            'https://%s/api/v1/iframe/center/%s/zoom/16/',
-            self::HOST_SUFFIX,
-            rawurlencode($pair)
-        );
     }
 
     private static function iframePathHasSegment(string $url, string $segment): bool

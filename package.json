@@ -1,6 +1,6 @@
 {
   "name": "rrze-direction",
-  "version": "1.0.0",
+  "version": "1.0.37",
   "description": "Gutenberg block for arrival directions: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.",
   "license": "GPL-2.0-or-later",
   "repository": {
