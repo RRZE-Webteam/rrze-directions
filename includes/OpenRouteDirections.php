@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
 /**
- * Fetches route instructions from the OpenRouteService directions API.
+ * Fetches route instructions from the OpenRouteService directionss API.
  *
  * @link https://openrouteservice.org/dev/#/api-docs/introduction
  */
-final class OpenRouteDirections
+final class OpenRouteDirectionss
 {
-    private const API_BASE = 'https://api.openrouteservice.org/v2/directions';
+    private const API_BASE = 'https://api.openrouteservice.org/v2/directionss';
 
     /**
      * Site language from Settings > General (not necessarily the current admin user locale).
      */
-    public static function siteLocaleForDirections(): string
+    public static function siteLocaleForDirectionss(): string
     {
         $locale = get_option('locale', '');
         if (is_string($locale) && $locale !== '') {
@@ -36,7 +36,7 @@ final class OpenRouteDirections
     /**
      * OpenRouteService `language` code: German for German locales, English otherwise.
      *
-     * @see https://giscience.github.io/openrouteservice/api-reference/endpoints/directions/requests-and-return-types
+     * @see https://giscience.github.io/openrouteservice/api-reference/endpoints/directionss/requests-and-return-types
      */
     public static function orsLanguageFromWpLocale(string $locale): string
     {
@@ -56,7 +56,7 @@ final class OpenRouteDirections
      *   transit: array{html: string, route: string}
      * }
      */
-    public static function fetchDirections(
+    public static function fetchDirectionss(
         string $apiKey,
         float $startLon,
         float $startLat,
@@ -82,13 +82,13 @@ final class OpenRouteDirections
         $walkingDecoded = $profiles['walking'];
 
         $bikeHtml = $bikeDecoded
-            ? self::directionsPayloadToHtml($bikeDecoded, $orsLanguage)
+            ? self::directionssPayloadToHtml($bikeDecoded, $orsLanguage)
             : '';
         $carHtml = $carDecoded
-            ? self::directionsPayloadToHtml($carDecoded, $orsLanguage)
+            ? self::directionssPayloadToHtml($carDecoded, $orsLanguage)
             : '';
         $walkingHtml = $walkingDecoded
-            ? self::directionsPayloadToHtml($walkingDecoded, $orsLanguage)
+            ? self::directionssPayloadToHtml($walkingDecoded, $orsLanguage)
             : '';
 
         return [
@@ -117,7 +117,7 @@ final class OpenRouteDirections
     }
 
     /**
-     * Fetch bike, car, and transit directions from every regional start point.
+     * Fetch bike, car, and transit directionss from every regional start point.
      *
      * @return array{
      *   bike: array{html: string, route: string},
@@ -125,7 +125,7 @@ final class OpenRouteDirections
      *   transit: array{html: string, route: string}
      * }
      */
-    public static function fetchDirectionsFromAllStarts(
+    public static function fetchDirectionssFromAllStarts(
         string $apiKey,
         float $endLon,
         float $endLat,
@@ -150,7 +150,7 @@ final class OpenRouteDirections
         ];
 
         foreach (RegionalStationOrigin::allStartPoints() as $start) {
-            $dirs = self::fetchDirections(
+            $dirs = self::fetchDirectionss(
                 $apiKey,
                 $start['lon'],
                 $start['lat'],
@@ -167,7 +167,7 @@ final class OpenRouteDirections
                 }
 
                 if ($dirs[$mode]['html'] !== '') {
-                    $combined[$mode]['html'] .= '<div class="rrze-direction__route-variant">';
+                    $combined[$mode]['html'] .= '<div class="rrze-directions__route-variant">';
                     $combined[$mode]['html'] .= $dirs[$mode]['html'];
                     $combined[$mode]['html'] .= '</div>';
                 }
@@ -217,20 +217,20 @@ final class OpenRouteDirections
         if ($orsLanguage === 'de') {
             $title = sprintf(
                 /* translators: 1: route start, 2: destination */
-                __('Von %1$s nach %2$s', 'rrze-direction'),
+                __('Von %1$s nach %2$s', 'rrze-directions'),
                 $fromLabel,
                 $toLabel
             );
         } else {
             $title = sprintf(
                 /* translators: 1: route start, 2: destination */
-                __('From %1$s to %2$s', 'rrze-direction'),
+                __('From %1$s to %2$s', 'rrze-directions'),
                 $fromLabel,
                 $toLabel
             );
         }
 
-        return '<p class="rrze-direction-route-title"><strong>'
+        return '<p class="rrze-directions-route-title"><strong>'
             . esc_html($title)
             . '</strong></p>';
     }
@@ -418,7 +418,7 @@ final class OpenRouteDirections
     /**
      * @param array<string, mixed> $decoded JSON `routes` response or GeoJSON FeatureCollection (legacy).
      */
-    private static function directionsPayloadToHtml(array $decoded, string $orsLanguage): string
+    private static function directionssPayloadToHtml(array $decoded, string $orsLanguage): string
     {
         $route = self::extractRoute($decoded);
         if (null === $route) {
@@ -528,14 +528,14 @@ final class OpenRouteDirections
             if ($orsLanguage === 'de') {
                 $summaryLine = sprintf(
                     /* translators: 1: distance in km, 2: duration in minutes */
-                    __('Etwa %1$s km, %2$s Min.', 'rrze-direction'),
+                    __('Etwa %1$s km, %2$s Min.', 'rrze-directions'),
                     (string) $km,
                     (string) $min
                 );
             } else {
                 $summaryLine = sprintf(
                     /* translators: 1: distance in km, 2: duration in minutes */
-                    __('About %1$s km, %2$s min', 'rrze-direction'),
+                    __('About %1$s km, %2$s min', 'rrze-directions'),
                     (string) $km,
                     (string) $min
                 );
@@ -545,12 +545,12 @@ final class OpenRouteDirections
 
         $lis = [];
         foreach ($steps as $step) {
-            $lis[] = '<li class="rrze-direction-ors-step">'
+            $lis[] = '<li class="rrze-directions-ors-step">'
                 . esc_html($step['instruction'])
                 . '</li>';
         }
 
-        $parts[] = '<ol class="rrze-direction-ors-steps">' . implode('', $lis) . '</ol>';
+        $parts[] = '<ol class="rrze-directions-ors-steps">' . implode('', $lis) . '</ol>';
 
         return implode('', $parts);
     }
@@ -564,12 +564,12 @@ final class OpenRouteDirections
         if ($orsLanguage === 'de') {
             $introText = __(
                 'Fußweg ab Hauptbahnhof (Näherung — für Bus und Bahn bitte aktuelle Fahrpläne nutzen).',
-                'rrze-direction'
+                'rrze-directions'
             );
         } else {
             $introText = __(
                 'Walking route from the main station (approximation — use local timetables for buses and trains).',
-                'rrze-direction'
+                'rrze-directions'
             );
         }
 

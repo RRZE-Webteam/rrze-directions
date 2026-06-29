@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 

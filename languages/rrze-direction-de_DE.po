@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: RRZE Direction 0.0.3\n"
+"Project-Id-Version: RRZE Directions 0.0.3\n"
 "Report-Msgid-Bugs-To: \n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
@@ -8,7 +8,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Directions"
+msgid "Directionss"
 msgstr "Anfahrt"
 
 msgid "Address"
@@ -68,7 +68,7 @@ msgstr "FAUdir"
 msgid "Person"
 msgstr "Person"
 
-msgid "Directions map"
+msgid "Directionss map"
 msgstr "Anfahrtskarte"
 
 msgid "Show arrival map section"
@@ -95,10 +95,10 @@ msgstr "Illustration ersetzen"
 msgid "Remove illustration"
 msgstr "Illustration entfernen"
 
-msgid "Directions by foot / bike."
+msgid "Directionss by foot / bike."
 msgstr "Anfahrt zu Fuß / mit dem Rad."
 
-msgid "Directions by car."
+msgid "Directionss by car."
 msgstr "Anfahrt mit dem Auto."
 
 msgid "Public transport."
@@ -122,14 +122,14 @@ msgstr "Karte"
 msgid "Map URL (preset from FAUdir)"
 msgstr "URL zu karte.fau.de"
 
-msgid "RRZE Direction has been deactivated because RRZE-FAUdir is installed but failed to initialize fully."
-msgstr "RRZE Direction wurde deaktiviert, weil RRZE-FAUdir installiert ist, aber nicht vollständig initialisiert werden konnte."
+msgid "RRZE Directions has been deactivated because RRZE-FAUdir is installed but failed to initialize fully."
+msgstr "RRZE Directions wurde deaktiviert, weil RRZE-FAUdir installiert ist, aber nicht vollständig initialisiert werden konnte."
 
-msgid "RRZE Direction requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it."
-msgstr "RRZE Direction benötigt RRZE-FAUdir. Das Plugin kann ohne dieses Plugin nicht aktiviert werden."
+msgid "RRZE Directions requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it."
+msgstr "RRZE Directions benötigt RRZE-FAUdir. Das Plugin kann ohne dieses Plugin nicht aktiviert werden."
 
-msgid "RRZE Direction is inactive because RRZE-FAUdir is not active."
-msgstr "RRZE Direction ist inaktiv, weil RRZE-FAUdir nicht aktiv ist."
+msgid "RRZE Directions is inactive because RRZE-FAUdir is not active."
+msgstr "RRZE Directions ist inaktiv, weil RRZE-FAUdir nicht aktiv ist."
 
 msgid "The FAUdir person custom post type is not registered."
 msgstr "Der FAUdir-Personenbeitragstyp ist nicht registriert."
@@ -197,10 +197,10 @@ msgstr "Von %1$s nach %2$s"
 msgid "From %1$s to %2$s"
 msgstr "Von %1$s nach %2$s"
 
-msgid "Directions output"
+msgid "Directionss output"
 msgstr "Anfahrtsbeschreibungen"
 
-msgid "Arrival directions"
+msgid "Arrival directionss"
 msgstr "Anfahrtsbeschreibungen"
 
 msgid "Show walking / cycling"
@@ -245,7 +245,7 @@ msgstr "Routenkarte"
 msgid "Interactive route map"
 msgstr "Interaktive Routenkarte"
 
-msgid "Click a numbered step in the directions list to highlight it on the map."
+msgid "Click a numbered step in the directionss list to highlight it on the map."
 msgstr "Klicken Sie auf einen nummerierten Schritt in der Anleitung, um ihn auf der Karte hervorzuheben."
 
 msgid "Show this step on the route map"
@@ -277,13 +277,13 @@ msgstr "Über"
 msgid "Tour"
 msgstr "Tour"
 
-msgid "About RRZE Direction"
-msgstr "Über RRZE Direction"
+msgid "About RRZE Directions"
+msgstr "Über RRZE Directions"
 
-msgid "Welcome to RRZE Direction"
-msgstr "Willkommen bei RRZE Direction"
+msgid "Welcome to RRZE Directions"
+msgstr "Willkommen bei RRZE Directions"
 
-msgid "This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directions with interactive route maps."
+msgid "This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directionss with interactive route maps."
 msgstr "Dieses Plugin ergänzt einen Anfahrtsblock mit FAUdir-Adressen, eingebetteter FAU-Karte und OpenRouteService-Wegbeschreibungen mit interaktiven Routenkarten."
 
 msgid "FAUdir and maps"
@@ -295,11 +295,11 @@ msgstr "Wählen Sie im Block-Editor eine Person und einen Arbeitsplatz. Das Plug
 msgid "Routes and layouts"
 msgstr "Routen und Layouts"
 
-msgid "Walking, car, and public transport directions can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map."
+msgid "Walking, car, and public transport directionss can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map."
 msgstr "Wegbeschreibungen zu Fuß, mit dem Auto und mit öffentlichen Verkehrsmitteln können als Akkordeon, Tabs, Spalten oder Dropdown dargestellt werden. Pro Verkehrsmittel wählen Besucher den Startpunkt per Pill-Button. Nummerierte Schritte verknüpfen mit der Routenkarte."
 
-msgid "Insert the RRZE Direction block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directions layout."
-msgstr "Fügen Sie den RRZE-Direction-Block im Editor ein, wählen Sie Person und Arbeitsplatz aus FAUdir und legen Sie Akkordeon, Tabs, Spalten oder Dropdown für die Wegbeschreibungen fest."
+msgid "Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directionss layout."
+msgstr "Fügen Sie den RRZE-Directions-Block im Editor ein, wählen Sie Person und Arbeitsplatz aus FAUdir und legen Sie Akkordeon, Tabs, Spalten oder Dropdown für die Wegbeschreibungen fest."
 
 msgid "Settings and tour"
 msgstr "Einstellungen und Tour"
@@ -313,8 +313,8 @@ msgstr "Feedback und Open Source"
 msgid "We welcome your feedback. Everyone who wants to contribute is invited to take part."
 msgstr "Wir freuen uns über Ihr Feedback. Alle, die mitwirken möchten, sind eingeladen."
 
-msgid "RRZE Direction is open source on"
-msgstr "RRZE Direction ist Open Source auf"
+msgid "RRZE Directions is open source on"
+msgstr "RRZE Directions ist Open Source auf"
 
 msgid "Documentation"
 msgstr "Dokumentation"
@@ -340,7 +340,7 @@ msgstr "Weiter"
 msgid "Close setup tour"
 msgstr "Einrichtungstour schließen"
 
-msgid "Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block."
+msgid "Request a free API key from openrouteservice.org and paste it here. It is required for route directionss and interactive route maps in the block."
 msgstr "Fordern Sie einen kostenlosen API-Schlüssel bei openrouteservice.org an und tragen Sie ihn hier ein. Er wird für Wegbeschreibungen und interaktive Routenkarten im Block benötigt."
 
 msgid "Click Save changes to store your API key. Changing the key clears cached OpenRouteService responses."
@@ -349,12 +349,12 @@ msgstr "Klicken Sie auf Änderungen speichern, um den API-Schlüssel zu sichern.
 msgid "Use this button after changing addresses or map data if the frontend still shows outdated routes or map pins."
 msgstr "Nutzen Sie diese Schaltfläche nach Adress- oder Kartenänderungen, wenn im Frontend noch veraltete Routen oder Karten-Pins angezeigt werden."
 
-msgid "RRZE Direction block"
-msgstr "RRZE-Direction-Block"
+msgid "RRZE Directions block"
+msgstr "RRZE-Directions-Block"
 
 
-msgid "Insert the RRZE Direction block when editing a page: %s"
-msgstr "Fügen Sie den RRZE-Direction-Block beim Bearbeiten einer Seite ein: %s"
+msgid "Insert the RRZE Directions block when editing a page: %s"
+msgstr "Fügen Sie den RRZE-Directions-Block beim Bearbeiten einer Seite ein: %s"
 
 msgid "Open block editor"
 msgstr "Block-Editor öffnen"

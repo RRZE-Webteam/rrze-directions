@@ -1,9 +1,9 @@
-@use 'direction-tabs';
-@use 'direction-accordion';
-@use 'direction-start-pills';
-@use 'direction-dropdown';
+@use 'directions-tabs';
+@use 'directions-accordion';
+@use 'directions-start-pills';
+@use 'directions-dropdown';
 
-.rrze-direction-editor {
+.rrze-directions-editor {
 	--rd-border: color-mix(in srgb, CanvasText 12%, Canvas);
 
 	&__title {
@@ -46,17 +46,17 @@
 		margin-bottom: 1rem;
 	}
 
-	&__directions-preview {
+	&__directionss-preview {
 		margin-top: 0.5rem;
 	}
 
-	&__directions-preview-label {
+	&__directionss-preview-label {
 		color: color-mix(in srgb, CanvasText 72%, Canvas);
 		margin: 0 0 0.5rem;
 	}
 }
 
-.rrze-direction__map-wheel-shield {
+.rrze-directions__map-wheel-shield {
 	background: transparent;
 	inset: 0;
 	position: absolute;
@@ -67,7 +67,7 @@
 	}
 }
 
-.rrze-direction-route-map {
+.rrze-directions-route-map {
 	margin: 0 0 1rem;
 
 	&__title {
@@ -88,14 +88,14 @@
 	}
 
 	&--editor-placeholder {
-		.rrze-direction-route-map__preview {
+		.rrze-directions-route-map__preview {
 			background: color-mix(in srgb, CanvasText 4%, Canvas);
 			border: 1px solid color-mix(in srgb, CanvasText 12%, Canvas);
 			height: clamp(160px, 28vw, 240px);
 			overflow: hidden;
 		}
 
-		.rrze-direction-route-map__preview-svg {
+		.rrze-directions-route-map__preview-svg {
 			display: block;
 			height: 100%;
 			width: 100%;
@@ -103,7 +103,7 @@
 	}
 }
 
-.rrze-direction-route-marker {
+.rrze-directions-route-marker {
 	background: transparent;
 	border: 0;
 
@@ -121,7 +121,7 @@
 	}
 }
 
-.rrze-direction-ors-step {
+.rrze-directions-ors-step {
 	cursor: pointer;
 
 	&.is-route-step-active {
@@ -129,7 +129,7 @@
 	}
 }
 
-.rrze-direction {
+.rrze-directions {
 	margin-bottom: 1.5rem;
 
 	&__title {
@@ -167,7 +167,7 @@
 		}
 	}
 
-	&__directions {
+	&__directionss {
 		margin-top: 1rem;
 	}
 
@@ -175,7 +175,7 @@
 		margin-bottom: 0;
 	}
 
-	&__directions-grid {
+	&__directionss-grid {
 		display: grid;
 		gap: 1.5rem;
 		grid-template-columns: 1fr;
@@ -202,7 +202,7 @@
 	}
 }
 
-.rrze-direction-block .rrze-direction-block__img {
+.rrze-directions-block .rrze-directions-block__img {
 	max-height: 200px;
 	width: auto;
 	border-radius: 4px;

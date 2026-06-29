@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
 /**
- * REST: prefill direction RichText from OpenRouteService using all regional main stations as starts.
+ * REST: prefill directions RichText from OpenRouteService using all regional main stations as starts.
  */
-final class RestOpenRouteDirections
+final class RestOpenRouteDirectionss
 {
     public static function register(): void
     {
@@ -19,8 +19,8 @@ final class RestOpenRouteDirections
     public static function registerRoutes(): void
     {
         register_rest_route(
-            'rrze-direction/v1',
-            '/openroute-directions',
+            'rrze-directions/v1',
+            '/openroute-directionss',
             [
                 'methods'             => 'POST',
                 'callback'            => [self::class, 'handle'],
@@ -49,12 +49,12 @@ final class RestOpenRouteDirections
 
         $empty = static fn(): \WP_REST_Response => new \WP_REST_Response(
             [
-                'directionBike'        => '',
-                'directionCar'         => '',
-                'directionTransit'     => '',
-                'directionBikeRoute'   => '',
-                'directionCarRoute'    => '',
-                'directionTransitRoute'=> '',
+                'directionsBike'        => '',
+                'directionsCar'         => '',
+                'directionsTransit'     => '',
+                'directionsBikeRoute'   => '',
+                'directionsCarRoute'    => '',
+                'directionsTransitRoute'=> '',
             ],
             200
         );
@@ -68,13 +68,13 @@ final class RestOpenRouteDirections
             return $empty();
         }
 
-        $orsLang = OpenRouteDirections::orsLanguageFromWpLocale(
-            OpenRouteDirections::siteLocaleForDirections()
+        $orsLang = OpenRouteDirectionss::orsLanguageFromWpLocale(
+            OpenRouteDirectionss::siteLocaleForDirectionss()
         );
 
         $toLabel = AddressPresentation::destinationLine($street, $zip, $city, $formattedAddress);
 
-        $dirs = OpenRouteDirections::fetchDirectionsFromAllStarts(
+        $dirs = OpenRouteDirectionss::fetchDirectionssFromAllStarts(
             $apiKey,
             $lon,
             $lat,
@@ -84,12 +84,12 @@ final class RestOpenRouteDirections
 
         return new \WP_REST_Response(
             [
-                'directionBike'         => $dirs['bike']['html'],
-                'directionCar'          => $dirs['car']['html'],
-                'directionTransit'      => $dirs['transit']['html'],
-                'directionBikeRoute'    => $dirs['bike']['route'],
-                'directionCarRoute'     => $dirs['car']['route'],
-                'directionTransitRoute' => $dirs['transit']['route'],
+                'directionsBike'         => $dirs['bike']['html'],
+                'directionsCar'          => $dirs['car']['html'],
+                'directionsTransit'      => $dirs['transit']['html'],
+                'directionsBikeRoute'    => $dirs['bike']['route'],
+                'directionsCarRoute'     => $dirs['car']['route'],
+                'directionsTransitRoute' => $dirs['transit']['route'],
             ],
             200
         );

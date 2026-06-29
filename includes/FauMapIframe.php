@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -289,7 +289,7 @@ final class FauMapIframe
             $url,
             [
                 'timeout'     => 8,
-                'redirection' => 5,
+                'redirections' => 5,
                 'headers'     => [
                     'Accept' => 'text/html,application/xhtml+xml',
                 ],
@@ -306,7 +306,7 @@ final class FauMapIframe
                 $url,
                 [
                     'timeout'     => 8,
-                    'redirection' => 5,
+                    'redirections' => 5,
                     'headers'     => [
                         'Accept' => 'text/html,application/xhtml+xml',
                     ],

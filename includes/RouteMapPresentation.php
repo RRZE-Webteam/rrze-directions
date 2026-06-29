@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
 /**
- * Leaflet route map markup (ORS geometry) shown above direction step lists.
+ * Leaflet route map markup (ORS geometry) shown above directions step lists.
  */
 final class RouteMapPresentation
 {
@@ -23,19 +23,19 @@ final class RouteMapPresentation
             return '';
         }
 
-        return '<div class="rrze-direction-route-map"'
+        return '<div class="rrze-directions-route-map"'
             . ' data-route="' . esc_attr($routeJson) . '">'
-            . '<h4 class="rrze-direction-route-map__title">'
-            . esc_html__('Route map', 'rrze-direction')
+            . '<h4 class="rrze-directions-route-map__title">'
+            . esc_html__('Route map', 'rrze-directions')
             . '</h4>'
-            . '<div class="rrze-direction-route-map__canvas"'
+            . '<div class="rrze-directions-route-map__canvas"'
             . ' role="application"'
-            . ' aria-label="' . esc_attr__('Interactive route map', 'rrze-direction') . '"'
+            . ' aria-label="' . esc_attr__('Interactive route map', 'rrze-directions') . '"'
             . '></div>'
-            . '<p class="rrze-direction-route-map__hint">'
+            . '<p class="rrze-directions-route-map__hint">'
             . esc_html__(
-                'Click a numbered step in the directions list to highlight it on the map.',
-                'rrze-direction'
+                'Click a numbered step in the directionss list to highlight it on the map.',
+                'rrze-directions'
             )
             . '</p>'
             . '</div>';

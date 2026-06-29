@@ -1,16 +1,16 @@
-.rrze-direction .rrze-direction__directions--dropdown,
-.rrze-direction-editor .rrze-direction__directions--dropdown {
-	.rrze-direction__mode-dropdown {
+.rrze-directions .rrze-directions__directionss--dropdown,
+.rrze-directions-editor .rrze-directions__directionss--dropdown {
+	.rrze-directions__mode-dropdown {
 		margin-bottom: 1rem;
 	}
 
-	.rrze-direction__mode-label {
+	.rrze-directions__mode-label {
 		display: block;
 		font-weight: 600;
 		margin: 0 0 0.35rem;
 	}
 
-	.rrze-direction__mode-select {
+	.rrze-directions__mode-select {
 		background: Canvas;
 		border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas);
 		border-radius: 4px;
@@ -22,7 +22,7 @@
 		width: min(100%, 28rem);
 	}
 
-	.rrze-direction__mode-panel[hidden] {
+	.rrze-directions__mode-panel[hidden] {
 		display: none !important;
 	}
 }

@@ -1,23 +1,23 @@
 <?php
 
 /*
-Plugin Name:        RRZE Direction
+Plugin Name:        RRZE Directions
 Plugin URI:         https://github.com/RRZE-Webteam/
-Version:            1.0.49
-Description:        Arrival and directions as a Gutenberg block: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.
+Version:            1.0.50
+Description:        Arrival and directionss as a Gutenberg block: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/
 License:            GNU General Public License Version 3
 License URI:        https://www.gnu.org/licenses/gpl-3.0.html
-Text Domain:        rrze-direction
+Text Domain:        rrze-directions
 Domain Path:        /languages
 Requires at least:   6.8
 Requires PHP:       8.2
 */
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
-use RRZE\Direction\Common\Plugin\Plugin;
+use RRZE\Directions\Common\Plugin\Plugin;
 
 defined('ABSPATH') || exit;
 
@@ -55,13 +55,13 @@ function activation_hook(): void
 
     if (!is_plugin_active(RRZE_DIRECTION_FAUDIR_PLUGIN)) {
         deactivate_plugins(plugin_basename(__FILE__));
-        set_transient('rrze_direction_activation_requires_faudir', 1, 120);
+        set_transient('rrze_directions_activation_requires_faudir', 1, 120);
         return;
     }
 
     if (!class_exists(\RRZE\FAUdir\API::class)) {
         deactivate_plugins(plugin_basename(__FILE__));
-        set_transient('rrze_direction_activation_requires_faudir', 2, 120);
+        set_transient('rrze_directions_activation_requires_faudir', 2, 120);
         return;
     }
 }
@@ -136,16 +136,16 @@ function admin_notice_activation_blocked(): void
         return;
     }
 
-    $flag = get_transient('rrze_direction_activation_requires_faudir');
+    $flag = get_transient('rrze_directions_activation_requires_faudir');
     if (empty($flag)) {
         return;
     }
 
-    delete_transient('rrze_direction_activation_requires_faudir');
+    delete_transient('rrze_directions_activation_requires_faudir');
 
     $message = (int) $flag === 2
-        ? __('RRZE Direction has been deactivated because RRZE-FAUdir is installed but failed to initialize fully.', 'rrze-direction')
-        : __('RRZE Direction requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it.', 'rrze-direction');
+        ? __('RRZE Directions has been deactivated because RRZE-FAUdir is installed but failed to initialize fully.', 'rrze-directions')
+        : __('RRZE Directions requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it.', 'rrze-directions');
 
     printf(
         '<div class="notice notice-error is-dismissible"><p>%s</p></div>',
@@ -166,8 +166,8 @@ function admin_notice_faudir_runtime(): void
 
     echo '<div class="notice notice-error"><p>'
         . esc_html__(
-            'RRZE Direction is inactive because RRZE-FAUdir is not active.',
-            'rrze-direction'
+            'RRZE Directions is inactive because RRZE-FAUdir is not active.',
+            'rrze-directions'
         )
         . '</p></div>';
 }
@@ -191,14 +191,14 @@ function requirements_notice_fatal(): void
     if (!$wpOk) {
         $error = sprintf(
             /* translators: 1: current WordPress version, 2: required WP version */
-            __('The server is running WordPress version %1$s. RRZE Direction requires WordPress version %2$s or higher.', 'rrze-direction'),
+            __('The server is running WordPress version %1$s. RRZE Directions requires WordPress version %2$s or higher.', 'rrze-directions'),
             wp_get_wp_version(),
             plugin()->getRequiresWP()
         );
     } elseif (!$phpOk) {
         $error = sprintf(
             /* translators: 1: current PHP version, 2: required PHP version */
-            __('The server is running PHP version %1$s. RRZE Direction requires PHP version %2$s or higher.', 'rrze-direction'),
+            __('The server is running PHP version %1$s. RRZE Directions requires PHP version %2$s or higher.', 'rrze-directions'),
             PHP_VERSION,
             plugin()->getRequiresPHP()
         );
@@ -219,7 +219,7 @@ function requirements_notice_fatal(): void
 function load_textdomain(): void
 {
     load_plugin_textdomain(
-        'rrze-direction',
+        'rrze-directions',
         false,
         dirname(plugin_basename(__FILE__)) . '/languages'
     );
@@ -229,8 +229,8 @@ function load_textdomain(): void
 function register_blocks(): void
 {
     register_block_type(__DIR__ . '/build');
-    $scriptHandle = generate_block_asset_handle('rrze/direction', 'editorScript');
-    wp_set_script_translations($scriptHandle, 'rrze-direction', plugin_dir_path(__FILE__) . 'languages');
+    $scriptHandle = generate_block_asset_handle('rrze/directions', 'editorScript');
+    wp_set_script_translations($scriptHandle, 'rrze-directions', plugin_dir_path(__FILE__) . 'languages');
 
     register_block_categories();
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -19,7 +19,7 @@ final class RestResolveCoordinates
     public static function registerRoutes(): void
     {
         register_rest_route(
-            'rrze-direction/v1',
+            'rrze-directions/v1',
             '/resolve-coordinates',
             [
                 'methods'             => 'POST',

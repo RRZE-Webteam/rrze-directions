@@ -1,12 +1,12 @@
 import { initRouteMapsIn, destroyRouteMap } from './route-map';
 import { attachMapWheelShield } from './map-wheel-shield';
-import { initDirectionTabsIn } from './direction-tabs';
-import { initStartPillsIn } from './direction-start-pills';
-import { initDirectionDropdownIn } from './direction-dropdown';
+import { initDirectionsTabsIn } from './directions-tabs';
+import { initStartPillsIn } from './directions-start-pills';
+import { initDirectionsDropdownIn } from './directions-dropdown';
 
 function handleAccordionPanel(event) {
 	const panel = event.target;
-	if (!panel?.classList?.contains('rrze-direction__accordion-panel')) {
+	if (!panel?.classList?.contains('rrze-directions__accordion-panel')) {
 		return;
 	}
 
@@ -15,20 +15,20 @@ function handleAccordionPanel(event) {
 		return;
 	}
 
-	panel.querySelectorAll('.rrze-direction-route-map').forEach((map) => {
+	panel.querySelectorAll('.rrze-directions-route-map').forEach((map) => {
 		destroyRouteMap(map);
 	});
 }
 
 function injectTileFixStyles() {
-	if (document.getElementById('rrze-direction-leaflet-tile-fix')) {
+	if (document.getElementById('rrze-directions-leaflet-tile-fix')) {
 		return;
 	}
 
 	const style = document.createElement('style');
-	style.id = 'rrze-direction-leaflet-tile-fix';
+	style.id = 'rrze-directions-leaflet-tile-fix';
 	style.textContent = `
-		.rrze-direction-route-map .leaflet-tile-pane img.leaflet-tile {
+		.rrze-directions-route-map .leaflet-tile-pane img.leaflet-tile {
 			mix-blend-mode: normal !important;
 			max-width: none !important;
 			max-height: none !important;
@@ -42,20 +42,20 @@ function injectTileFixStyles() {
 function boot() {
 	injectTileFixStyles();
 
-	document.querySelectorAll('.rrze-direction__map-frame').forEach((frame) => {
+	document.querySelectorAll('.rrze-directions__map-frame').forEach((frame) => {
 		attachMapWheelShield(frame);
 	});
 
 	initRouteMapsIn(document);
-	initDirectionTabsIn(document);
+	initDirectionsTabsIn(document);
 	initStartPillsIn(document);
-	initDirectionDropdownIn(document);
+	initDirectionsDropdownIn(document);
 
-	document.addEventListener('rrze-direction-accordion-panel', handleAccordionPanel);
+	document.addEventListener('rrze-directions-accordion-panel', handleAccordionPanel);
 
 	document
 		.querySelectorAll(
-			'.rrze-direction [data-external-tabs-script="1"] [role=tab]'
+			'.rrze-directions [data-external-tabs-script="1"] [role=tab]'
 		)
 		.forEach((tab) => {
 			tab.addEventListener('click', () => {

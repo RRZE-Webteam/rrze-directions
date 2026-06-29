@@ -59,8 +59,8 @@ function parseRoute(container) {
 
 function numberedIcon(number) {
 	return L.divIcon({
-		className: 'rrze-direction-route-marker',
-		html: `<span class="rrze-direction-route-marker__label">${number}</span>`,
+		className: 'rrze-directions-route-marker',
+		html: `<span class="rrze-directions-route-marker__label">${number}</span>`,
 		iconSize: [30, 30],
 		iconAnchor: [15, 15],
 	});
@@ -68,8 +68,8 @@ function numberedIcon(number) {
 
 function destinationIcon() {
 	return L.divIcon({
-		className: 'rrze-direction-route-marker rrze-direction-route-marker--destination',
-		html: '<span class="rrze-direction-route-marker__pin" aria-hidden="true"></span>',
+		className: 'rrze-directions-route-marker rrze-directions-route-marker--destination',
+		html: '<span class="rrze-directions-route-marker__pin" aria-hidden="true"></span>',
 		iconSize: [32, 40],
 		iconAnchor: [16, 40],
 	});
@@ -99,8 +99,8 @@ function resolveDestination(data, latLngs) {
 
 function findStepContainer(routeMapEl) {
 	return (
-		routeMapEl.closest('.rrze-direction__accordion-inner') ||
-		routeMapEl.closest('.rrze-direction__text--column') ||
+		routeMapEl.closest('.rrze-directions__accordion-inner') ||
+		routeMapEl.closest('.rrze-directions__text--column') ||
 		routeMapEl.parentElement
 	);
 }
@@ -131,7 +131,7 @@ function wireStepClicks(routeMapEl, map, markersByStep) {
 		return;
 	}
 
-	const steps = container.querySelectorAll('.rrze-direction-ors-step');
+	const steps = container.querySelectorAll('.rrze-directions-ors-step');
 	steps.forEach((stepEl, index) => {
 		const stepNumber = index + 1;
 		stepEl.setAttribute('tabindex', '0');
@@ -172,7 +172,7 @@ export function destroyRouteMap(container) {
 		container._rrzeResizeObserver = null;
 	}
 
-	const canvas = container.querySelector('.rrze-direction-route-map__canvas');
+	const canvas = container.querySelector('.rrze-directions-route-map__canvas');
 	if (canvas) {
 		detachMapWheelShield(canvas);
 	}
@@ -235,7 +235,7 @@ function addTileLayerWithFallback(map, layerIndex = 0) {
 }
 
 function createRouteMap(container, data) {
-	const canvas = container.querySelector('.rrze-direction-route-map__canvas');
+	const canvas = container.querySelector('.rrze-directions-route-map__canvas');
 	if (!canvas) {
 		return;
 	}
@@ -371,7 +371,7 @@ export function initRouteMap(container) {
 	}
 
 	const hiddenPanel = container.closest(
-		'.rrze-direction__route-variant[hidden], .rrze-direction__mode-panel[hidden]'
+		'.rrze-directions__route-variant[hidden], .rrze-directions__mode-panel[hidden]'
 	);
 	if (hiddenPanel) {
 		if (container.dataset.routeMapDeferred !== '1') {
@@ -391,7 +391,7 @@ export function initRouteMap(container) {
 		return;
 	}
 
-	const accordionPanel = container.closest('.rrze-direction__accordion-panel');
+	const accordionPanel = container.closest('.rrze-directions__accordion-panel');
 	if (
 		accordionPanel &&
 		(accordionPanel.hidden || !accordionPanel.classList.contains('open'))
@@ -399,7 +399,7 @@ export function initRouteMap(container) {
 		if (container.dataset.routeMapDeferred !== '1') {
 			container.dataset.routeMapDeferred = '1';
 			accordionPanel.addEventListener(
-				'rrze-direction-accordion-panel',
+				'rrze-directions-accordion-panel',
 				(event) => {
 					if (event.detail?.open) {
 						delete container.dataset.routeMapDeferred;
@@ -424,7 +424,7 @@ export function initRouteMapsIn(root = document) {
 		return;
 	}
 
-	root.querySelectorAll('.rrze-direction-route-map').forEach((container) => {
+	root.querySelectorAll('.rrze-directions-route-map').forEach((container) => {
 		initRouteMap(container);
 	});
 }

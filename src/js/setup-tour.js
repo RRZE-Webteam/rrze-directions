@@ -1,5 +1,5 @@
 /**
- * Contextual setup tour for RRZE Direction settings.
+ * Contextual setup tour for RRZE Directions settings.
  */
 import { createPortal, useCallback, useEffect, useMemo, useState } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
@@ -10,71 +10,71 @@ function getSetupSteps() {
 		{
 			id: 'openroute-api-key',
 			target: '[data-rrze-tour="openroute-api-key"]',
-			title: __( 'OpenRouteService API key', 'rrze-direction' ),
+			title: __( 'OpenRouteService API key', 'rrze-directions' ),
 			text: __(
-				'Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block.',
-				'rrze-direction'
+				'Request a free API key from openrouteservice.org and paste it here. It is required for route directionss and interactive route maps in the block.',
+				'rrze-directions'
 			),
 		},
 		{
 			id: 'route-start',
 			target: '[data-rrze-tour="route-start"]',
-			title: __( 'Route start', 'rrze-direction' ),
+			title: __( 'Route start', 'rrze-directions' ),
 			text: __(
 				'Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen.',
-				'rrze-direction'
+				'rrze-directions'
 			),
 		},
 		{
 			id: 'save-settings',
 			target: '[data-rrze-tour="save-settings"]',
-			title: __( 'Save settings', 'rrze-direction' ),
+			title: __( 'Save settings', 'rrze-directions' ),
 			text: __(
 				'Click Save changes to store your API key. Changing the key clears cached OpenRouteService responses.',
-				'rrze-direction'
+				'rrze-directions'
 			),
 		},
 		{
 			id: 'api-cache',
 			target: '[data-rrze-tour="api-cache"]',
-			title: __( 'API cache', 'rrze-direction' ),
+			title: __( 'API cache', 'rrze-directions' ),
 			text: __(
 				'Responses from karte.fau.de, OpenRouteService, and FAUdir are cached permanently for faster page loads.',
-				'rrze-direction'
+				'rrze-directions'
 			),
 		},
 		{
 			id: 'clear-cache',
 			target: '[data-rrze-tour="clear-cache"]',
-			title: __( 'Clear API cache', 'rrze-direction' ),
+			title: __( 'Clear API cache', 'rrze-directions' ),
 			text: __(
 				'Use this button after changing addresses or map data if the frontend still shows outdated routes or map pins.',
-				'rrze-direction'
+				'rrze-directions'
 			),
 			optional: true,
 		},
 		{
 			id: 'block-editor',
 			target: '[data-rrze-tour="block-editor"]',
-			title: __( 'RRZE Direction block', 'rrze-direction' ),
+			title: __( 'RRZE Directions block', 'rrze-directions' ),
 			text: __(
-				'Insert the RRZE Direction block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directions layout.',
-				'rrze-direction'
+				'Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directionss layout.',
+				'rrze-directions'
 			),
 		},
 	];
 }
 
 function dismissSetupTour() {
-	if ( typeof rrzeDirectionGuide === 'undefined' ) {
+	if ( typeof rrzeDirectionsGuide === 'undefined' ) {
 		return Promise.resolve();
 	}
 
 	const body = new FormData();
-	body.append( 'action', 'rrze_direction_dismiss_setup_tour' );
-	body.append( 'nonce', rrzeDirectionGuide.setupTourNonce );
+	body.append( 'action', 'rrze_directions_dismiss_setup_tour' );
+	body.append( 'nonce', rrzeDirectionsGuide.setupTourNonce );
 
-	return fetch( rrzeDirectionGuide.ajaxUrl, {
+	return fetch( rrzeDirectionsGuide.ajaxUrl, {
 		method: 'POST',
 		body,
 		credentials: 'same-origin',
@@ -86,7 +86,7 @@ function findStepTarget( step ) {
 }
 
 const SPOTLIGHT_PADDING = 8;
-const TOUR_TARGET_CLASS = 'rrze-direction-setup-tour__target';
+const TOUR_TARGET_CLASS = 'rrze-directions-setup-tour__target';
 
 function clearTourTargetMarkers() {
 	document
@@ -149,7 +149,7 @@ function SetupTourSpotlight( { rect, onClose, closeLabel } ) {
 		return (
 			<button
 				type="button"
-				className="rrze-direction-setup-tour__overlay"
+				className="rrze-directions-setup-tour__overlay"
 				aria-label={ closeLabel }
 				onClick={ onClose }
 			/>
@@ -160,13 +160,13 @@ function SetupTourSpotlight( { rect, onClose, closeLabel } ) {
 		<>
 			<button
 				type="button"
-				className="rrze-direction-setup-tour__overlay-panel rrze-direction-setup-tour__overlay-panel--cutout"
+				className="rrze-directions-setup-tour__overlay-panel rrze-directions-setup-tour__overlay-panel--cutout"
 				style={ { clipPath: getCutoutClipPath( rect ) } }
 				aria-label={ closeLabel }
 				onClick={ onClose }
 			/>
 			<div
-				className="rrze-direction-setup-tour__spotlight"
+				className="rrze-directions-setup-tour__spotlight"
 				style={ {
 					top: rect.top,
 					left: rect.left,
@@ -310,10 +310,10 @@ export function SetupTour( { initialStepId = '', onClose } ) {
 			<SetupTourSpotlight
 				rect={ spotlightRect }
 				onClose={ finishTour }
-				closeLabel={ __( 'Close setup tour', 'rrze-direction' ) }
+				closeLabel={ __( 'Close setup tour', 'rrze-directions' ) }
 			/>
 			<div
-				className="rrze-direction-setup-tour__card"
+				className="rrze-directions-setup-tour__card"
 				role="dialog"
 				aria-modal="true"
 				aria-label={ currentStep.title }
@@ -325,7 +325,7 @@ export function SetupTour( { initialStepId = '', onClose } ) {
 					text={ currentStep.text }
 					showPrevious={ globalStepIndex > 0 }
 					isLast={ isLast }
-					nextLabel={ __( 'Next', 'rrze-direction' ) }
+					nextLabel={ __( 'Next', 'rrze-directions' ) }
 					onPrevious={ () =>
 						setGlobalStepIndex(
 							findPreviousStepIndex( allSteps, globalStepIndex )

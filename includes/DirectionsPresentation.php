@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
 /**
- * Renders direction sections (foot, car, transit) as accordion, tabs, columns, or dropdown.
+ * Renders directions sections (foot, car, transit) as accordion, tabs, columns, or dropdown.
  */
-final class DirectionsPresentation
+final class DirectionssPresentation
 {
     /**
      * @return list<array{key: string, title: string, html: string, route: string}>
@@ -19,24 +19,24 @@ final class DirectionsPresentation
         $definitions = [
             [
                 'key'     => 'bike',
-                'enabled' => self::isTypeEnabled($attributes, 'showDirectionBike'),
-                'content' => (string) ($attributes['directionBike'] ?? ''),
-                'route'   => (string) ($attributes['directionBikeRoute'] ?? ''),
-                'title'   => __('Walking / Cycling', 'rrze-direction'),
+                'enabled' => self::isTypeEnabled($attributes, 'showDirectionsBike'),
+                'content' => (string) ($attributes['directionsBike'] ?? ''),
+                'route'   => (string) ($attributes['directionsBikeRoute'] ?? ''),
+                'title'   => __('Walking / Cycling', 'rrze-directions'),
             ],
             [
                 'key'     => 'car',
-                'enabled' => self::isTypeEnabled($attributes, 'showDirectionCar'),
-                'content' => (string) ($attributes['directionCar'] ?? ''),
-                'route'   => (string) ($attributes['directionCarRoute'] ?? ''),
-                'title'   => __('By car', 'rrze-direction'),
+                'enabled' => self::isTypeEnabled($attributes, 'showDirectionsCar'),
+                'content' => (string) ($attributes['directionsCar'] ?? ''),
+                'route'   => (string) ($attributes['directionsCarRoute'] ?? ''),
+                'title'   => __('By car', 'rrze-directions'),
             ],
             [
                 'key'     => 'transit',
-                'enabled' => self::isTypeEnabled($attributes, 'showDirectionTransit'),
-                'content' => (string) ($attributes['directionTransit'] ?? ''),
-                'route'   => (string) ($attributes['directionTransitRoute'] ?? ''),
-                'title'   => __('Bus / train', 'rrze-direction'),
+                'enabled' => self::isTypeEnabled($attributes, 'showDirectionsTransit'),
+                'content' => (string) ($attributes['directionsTransit'] ?? ''),
+                'route'   => (string) ($attributes['directionsTransitRoute'] ?? ''),
+                'title'   => __('Bus / train', 'rrze-directions'),
             ],
         ];
 
@@ -66,7 +66,7 @@ final class DirectionsPresentation
             return '';
         }
 
-        $layout = self::normalizeLayout((string) ($attributes['directionsLayout'] ?? 'accordion'));
+        $layout = self::normalizeLayout((string) ($attributes['directionssLayout'] ?? 'accordion'));
 
         if ($layout === 'columns') {
             return self::renderColumns($sections);
@@ -117,15 +117,15 @@ final class DirectionsPresentation
         $items = '';
 
         foreach ($sections as $index => $section) {
-            $panelId   = wp_unique_id('rrze-direction-' . $section['key'] . '-');
+            $panelId   = wp_unique_id('rrze-directions-' . $section['key'] . '-');
             $regionId  = $panelId . '-section';
             $isOpen    = $index === 0;
-            $toggleCls = 'rrze-direction__accordion-toggle' . ($isOpen ? ' active' : '');
-            $bodyCls   = 'rrze-direction__accordion-panel' . ($isOpen ? ' open' : '');
+            $toggleCls = 'rrze-directions__accordion-toggle' . ($isOpen ? ' active' : '');
+            $bodyCls   = 'rrze-directions__accordion-panel' . ($isOpen ? ' open' : '');
 
-            $items .= '<div class="rrze-direction__accordion-item">';
-            $items .= '<div class="rrze-direction__accordion-group">';
-            $items .= '<h3 class="rrze-direction__accordion-heading">';
+            $items .= '<div class="rrze-directions__accordion-item">';
+            $items .= '<div class="rrze-directions__accordion-group">';
+            $items .= '<h3 class="rrze-directions__accordion-heading">';
             $items .= '<button'
                 . ' class="' . esc_attr($toggleCls) . '"'
                 . ' type="button"'
@@ -142,15 +142,15 @@ final class DirectionsPresentation
                 . ' aria-labelledby="' . esc_attr($panelId) . '"'
                 . ' role="region"'
                 . '>';
-            $items .= '<div class="rrze-direction__accordion-inner clearfix">';
+            $items .= '<div class="rrze-directions__accordion-inner clearfix">';
             $items .= self::renderSectionBody($section);
             $items .= '</div></div></div></div>';
         }
 
-        return '<div class="rrze-direction__directions rrze-direction__accordions"'
+        return '<div class="rrze-directions__directionss rrze-directions__accordions"'
             . ' role="region"'
-            . ' aria-label="' . esc_attr__('Directions', 'rrze-direction') . '">'
-            . '<div class="rrze-direction__accordion">'
+            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
+            . '<div class="rrze-directions__accordion">'
             . $items
             . '</div></div>';
     }
@@ -170,16 +170,16 @@ final class DirectionsPresentation
         $items = '';
 
         foreach ($sections as $section) {
-            $items .= '<section class="rrze-direction__text rrze-direction__text--column">'
+            $items .= '<section class="rrze-directions__text rrze-directions__text--column">'
                 . '<h3>' . esc_html($section['title']) . '</h3>'
                 . self::renderSectionBody($section)
                 . '</section>';
         }
 
-        return '<div class="rrze-direction__directions rrze-direction__directions-grid'
-            . ' rrze-direction__directions-grid--cols-' . esc_attr((string) $cols)
+        return '<div class="rrze-directions__directionss rrze-directions__directionss-grid'
+            . ' rrze-directions__directionss-grid--cols-' . esc_attr((string) $cols)
             . '" role="region"'
-            . ' aria-label="' . esc_attr__('Directions', 'rrze-direction') . '">'
+            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
             . $items
             . '</div>';
     }
@@ -191,7 +191,7 @@ final class DirectionsPresentation
     {
         self::enqueueTabsAssets();
 
-        $groupId = wp_unique_id('rrze-direction-tabs-');
+        $groupId = wp_unique_id('rrze-directions-tabs-');
         $nav     = '';
         $panels  = '';
 
@@ -226,9 +226,9 @@ final class DirectionsPresentation
             $externalTabs = ' data-external-tabs-script="1"';
         }
 
-        return '<div class="rrze-direction__directions"'
+        return '<div class="rrze-directions__directionss"'
             . ' role="region"'
-            . ' aria-label="' . esc_attr__('Directions', 'rrze-direction') . '">'
+            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
             . '<div class="rrze-elements-tabs primary" id="tabs-' . esc_attr($groupId) . '"' . $externalTabs . '>'
             . '<div role="tablist" class="manual">'
             . $nav
@@ -243,7 +243,7 @@ final class DirectionsPresentation
      */
     private static function renderDropdown(array $sections): string
     {
-        $groupId  = wp_unique_id('rrze-direction-mode-');
+        $groupId  = wp_unique_id('rrze-directions-mode-');
         $selectId = $groupId . '-select';
         $options  = '';
         $panels   = '';
@@ -257,7 +257,7 @@ final class DirectionsPresentation
             $options .= '</option>';
 
             $panels .= '<div'
-                . ' class="rrze-direction__mode-panel' . ($active ? ' is-active' : '') . '"'
+                . ' class="rrze-directions__mode-panel' . ($active ? ' is-active' : '') . '"'
                 . ' id="' . esc_attr($panelId) . '"'
                 . ' data-mode="' . esc_attr($section['key']) . '"'
                 . ' role="region"'
@@ -269,18 +269,18 @@ final class DirectionsPresentation
             $panels .= '</div>';
         }
 
-        return '<div class="rrze-direction__directions rrze-direction__directions--dropdown"'
+        return '<div class="rrze-directions__directionss rrze-directions__directionss--dropdown"'
             . ' role="region"'
-            . ' aria-label="' . esc_attr__('Directions', 'rrze-direction') . '">'
-            . '<div class="rrze-direction__mode-dropdown">'
-            . '<label class="rrze-direction__mode-label" for="' . esc_attr($selectId) . '">'
-            . esc_html__('Mode of transport', 'rrze-direction')
+            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
+            . '<div class="rrze-directions__mode-dropdown">'
+            . '<label class="rrze-directions__mode-label" for="' . esc_attr($selectId) . '">'
+            . esc_html__('Mode of transport', 'rrze-directions')
             . '</label>'
-            . '<select class="rrze-direction__mode-select" id="' . esc_attr($selectId) . '" data-mode-select="1">'
+            . '<select class="rrze-directions__mode-select" id="' . esc_attr($selectId) . '" data-mode-select="1">'
             . $options
             . '</select>'
             . '</div>'
-            . '<div class="rrze-direction__mode-panels">'
+            . '<div class="rrze-directions__mode-panels">'
             . $panels
             . '</div>'
             . '</div>';
@@ -298,7 +298,7 @@ final class DirectionsPresentation
         }
 
         $html = RouteMapPresentation::render($section['route']);
-        $html .= '<div class="rrze-direction__rte">' . wp_kses_post($section['html']) . '</div>';
+        $html .= '<div class="rrze-directions__rte">' . wp_kses_post($section['html']) . '</div>';
 
         return $html;
     }
@@ -320,14 +320,14 @@ final class DirectionsPresentation
             }
 
             if ($part !== '') {
-                $output .= '<div class="rrze-direction__rte">' . wp_kses_post($part) . '</div>';
+                $output .= '<div class="rrze-directions__rte">' . wp_kses_post($part) . '</div>';
             }
 
             return $output;
         }
 
         $htmlParts = self::splitRouteVariantHtml($sectionHtml);
-        $groupId   = wp_unique_id('rrze-direction-start-');
+        $groupId   = wp_unique_id('rrze-directions-start-');
         $pills     = '';
         $panels    = '';
 
@@ -337,7 +337,7 @@ final class DirectionsPresentation
                 ? $variant['startLabel']
                 : sprintf(
                     /* translators: %d: variant number */
-                    __('Route %d', 'rrze-direction'),
+                    __('Route %d', 'rrze-directions'),
                     $index + 1
                 );
             $active  = $index === 0;
@@ -346,7 +346,7 @@ final class DirectionsPresentation
 
             $pills .= '<button'
                 . ' type="button"'
-                . ' class="rrze-direction__start-pill' . ($active ? ' is-active' : '') . '"'
+                . ' class="rrze-directions__start-pill' . ($active ? ' is-active' : '') . '"'
                 . ' role="tab"'
                 . ' id="' . esc_attr($pillId) . '"'
                 . ' aria-selected="' . ($active ? 'true' : 'false') . '"'
@@ -366,11 +366,11 @@ final class DirectionsPresentation
             }
 
             if ($part !== '') {
-                $panelContent .= '<div class="rrze-direction__rte">' . wp_kses_post($part) . '</div>';
+                $panelContent .= '<div class="rrze-directions__rte">' . wp_kses_post($part) . '</div>';
             }
 
             $panels .= '<div'
-                . ' class="rrze-direction__route-variant' . ($active ? ' is-active' : '') . '"'
+                . ' class="rrze-directions__route-variant' . ($active ? ' is-active' : '') . '"'
                 . ' id="' . esc_attr($panelId) . '"'
                 . ' role="tabpanel"'
                 . ' aria-labelledby="' . esc_attr($pillId) . '"'
@@ -381,13 +381,13 @@ final class DirectionsPresentation
             $panels .= '</div>';
         }
 
-        return '<div class="rrze-direction__start-switcher" data-start-switcher="1">'
-            . '<div class="rrze-direction__start-pills" role="tablist" aria-label="'
-            . esc_attr__('Starting point', 'rrze-direction')
+        return '<div class="rrze-directions__start-switcher" data-start-switcher="1">'
+            . '<div class="rrze-directions__start-pills" role="tablist" aria-label="'
+            . esc_attr__('Starting point', 'rrze-directions')
             . '">'
             . $pills
             . '</div>'
-            . '<div class="rrze-direction__start-panels">'
+            . '<div class="rrze-directions__start-panels">'
             . $panels
             . '</div>'
             . '</div>';
@@ -398,14 +398,14 @@ final class DirectionsPresentation
      */
     private static function splitRouteVariantHtml(string $html): array
     {
-        if (!str_contains($html, 'rrze-direction__route-variant')) {
+        if (!str_contains($html, 'rrze-directions__route-variant')) {
             $trimmed = trim($html);
 
             return $trimmed === '' ? [] : [$trimmed];
         }
 
         if (preg_match_all(
-            '/<div class="rrze-direction__route-variant">(.*?)<\/div>/s',
+            '/<div class="rrze-directions__route-variant">(.*?)<\/div>/s',
             $html,
             $matches
         ) && is_array($matches[1]) && $matches[1] !== []) {
@@ -418,7 +418,7 @@ final class DirectionsPresentation
 
         $previous = libxml_use_internal_errors(true);
         $document = new \DOMDocument();
-        $wrapped  = '<div id="rrze-direction-root">' . $html . '</div>';
+        $wrapped  = '<div id="rrze-directions-root">' . $html . '</div>';
         $parts    = [];
 
         if ($document->loadHTML(
@@ -427,7 +427,7 @@ final class DirectionsPresentation
         )) {
             $xpath = new \DOMXPath($document);
             $nodes = $xpath->query(
-                "//*[contains(concat(' ', normalize-space(@class), ' '), ' rrze-direction__route-variant ')]"
+                "//*[contains(concat(' ', normalize-space(@class), ' '), ' rrze-directions__route-variant ')]"
             );
 
             if ($nodes instanceof \DOMNodeList) {

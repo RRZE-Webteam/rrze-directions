@@ -1,18 +1,18 @@
-.rrze-direction .rrze-direction__start-switcher,
-.rrze-direction-editor .rrze-direction__start-switcher {
+.rrze-directions .rrze-directions__start-switcher,
+.rrze-directions-editor .rrze-directions__start-switcher {
 	margin-bottom: 0.75rem;
 }
 
-.rrze-direction .rrze-direction__start-pills,
-.rrze-direction-editor .rrze-direction__start-pills {
+.rrze-directions .rrze-directions__start-pills,
+.rrze-directions-editor .rrze-directions__start-pills {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
 	margin: 0 0 1rem;
 }
 
-.rrze-direction .rrze-direction__start-pill,
-.rrze-direction-editor .rrze-direction__start-pill {
+.rrze-directions .rrze-directions__start-pill,
+.rrze-directions-editor .rrze-directions__start-pill {
 	background: color-mix(in srgb, CanvasText 6%, Canvas);
 	border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas);
 	border-radius: 999px;
@@ -38,12 +38,12 @@
 	}
 }
 
-.rrze-direction .rrze-direction__route-variant[hidden],
-.rrze-direction-editor .rrze-direction__route-variant[hidden] {
+.rrze-directions .rrze-directions__route-variant[hidden],
+.rrze-directions-editor .rrze-directions__route-variant[hidden] {
 	display: none !important;
 }
 
-.rrze-direction .rrze-direction__start-panels .rrze-direction-route-map,
-.rrze-direction-editor .rrze-direction__start-panels .rrze-direction-route-map {
+.rrze-directions .rrze-directions__start-panels .rrze-directions-route-map,
+.rrze-directions-editor .rrze-directions__start-panels .rrze-directions-route-map {
 	margin-top: 0;
 }

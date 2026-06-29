@@ -1,6 +1,6 @@
-/* Shared tab helpers inside the direction block. */
-.rrze-direction .rrze-elements-tabs.primary,
-.rrze-direction-editor .rrze-elements-tabs.primary {
+/* Shared tab helpers inside the directions block. */
+.rrze-directions .rrze-elements-tabs.primary,
+.rrze-directions-editor .rrze-elements-tabs.primary {
 	margin-bottom: 1em;
 
 	[role='tabpanel'].is-hidden {
@@ -42,8 +42,8 @@
 		min-height: 10em;
 		overflow: auto;
 
-		> .rrze-direction__rte > :first-child,
-		> .rrze-direction-route-map:first-child {
+		> .rrze-directions__rte > :first-child,
+		> .rrze-directions-route-map:first-child {
 			margin-top: 0;
 			padding-top: 0;
 		}
@@ -52,8 +52,8 @@
 
 /* FAU Elemental: flat tabs — inactive white, active + panel light blue-grey, no borders. */
 body.wp-theme-FAU-Elemental {
-	.rrze-direction .rrze-elements-tabs.primary,
-	.rrze-direction-editor .rrze-elements-tabs.primary {
+	.rrze-directions .rrze-elements-tabs.primary,
+	.rrze-directions-editor .rrze-elements-tabs.primary {
 		[role='tablist'] {
 			margin: 0;
 		}
@@ -82,8 +82,8 @@ body.wp-theme-FAU-Elemental {
 
 /* All other themes: RRZE Elements Blocks .primary — bordered tabs, white active tab + panel. */
 body:not(.wp-theme-FAU-Elemental) {
-	.rrze-direction .rrze-elements-tabs.primary,
-	.rrze-direction-editor .rrze-elements-tabs.primary {
+	.rrze-directions .rrze-elements-tabs.primary,
+	.rrze-directions-editor .rrze-elements-tabs.primary {
 		[role='tablist'] {
 			margin: 0;
 

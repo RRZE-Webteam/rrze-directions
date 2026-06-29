@@ -17,28 +17,28 @@ export function SetupTourStepPanel( {
 	isLast,
 } ) {
 	return (
-		<div className="rrze-direction-setup-tour__body">
-			<p className="rrze-direction-setup-tour__step">
+		<div className="rrze-directions-setup-tour__body">
+			<p className="rrze-directions-setup-tour__step">
 				{ sprintf(
 					/* translators: 1: current step number, 2: total steps */
-					__( 'Step %1$d of %2$d', 'rrze-direction' ),
+					__( 'Step %1$d of %2$d', 'rrze-directions' ),
 					stepNumber,
 					totalSteps
 				) }
 			</p>
-			<h2 className="rrze-direction-setup-tour__title">{ title }</h2>
-			<p className="rrze-direction-setup-tour__text">{ text }</p>
-			<div className="rrze-direction-setup-tour__actions">
+			<h2 className="rrze-directions-setup-tour__title">{ title }</h2>
+			<p className="rrze-directions-setup-tour__text">{ text }</p>
+			<div className="rrze-directions-setup-tour__actions">
 				{ showPrevious && (
 					<Button variant="tertiary" onClick={ onPrevious }>
-						{ __( 'Previous', 'rrze-direction' ) }
+						{ __( 'Previous', 'rrze-directions' ) }
 					</Button>
 				) }
 				<Button variant="tertiary" onClick={ onSkip }>
-					{ __( 'Skip tour', 'rrze-direction' ) }
+					{ __( 'Skip tour', 'rrze-directions' ) }
 				</Button>
 				<Button variant="primary" onClick={ onNext }>
-					{ isLast ? __( 'Finish', 'rrze-direction' ) : nextLabel }
+					{ isLast ? __( 'Finish', 'rrze-directions' ) : nextLabel }
 				</Button>
 			</div>
 		</div>

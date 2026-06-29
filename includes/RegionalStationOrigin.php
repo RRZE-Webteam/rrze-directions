@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -25,7 +25,7 @@ final class RegionalStationOrigin
     private const NUERNBERG_AIRPORT_LON = 11.0781;
 
     /**
-     * All regional route starts (always used for direction drafts).
+     * All regional route starts (always used for directions drafts).
      *
      * @return list<array{key: string, label: string, lon: float, lat: float}>
      */
@@ -34,19 +34,19 @@ final class RegionalStationOrigin
         return [
             [
                 'key'   => 'erlangen',
-                'label' => __('Erlangen Hauptbahnhof', 'rrze-direction'),
+                'label' => __('Erlangen Hauptbahnhof', 'rrze-directions'),
                 'lon'   => self::ERLANGEN_HBF_LON,
                 'lat'   => self::ERLANGEN_HBF_LAT,
             ],
             [
                 'key'   => 'nuernberg',
-                'label' => __('Nürnberg Hauptbahnhof', 'rrze-direction'),
+                'label' => __('Nürnberg Hauptbahnhof', 'rrze-directions'),
                 'lon'   => self::NUERNBERG_HBF_LON,
                 'lat'   => self::NUERNBERG_HBF_LAT,
             ],
             [
                 'key'   => 'nuernberg_airport',
-                'label' => __('Nürnberg Flughafen', 'rrze-direction'),
+                'label' => __('Nürnberg Flughafen', 'rrze-directions'),
                 'lon'   => self::NUERNBERG_AIRPORT_LON,
                 'lat'   => self::NUERNBERG_AIRPORT_LAT,
             ],
@@ -87,9 +87,9 @@ final class RegionalStationOrigin
         }
 
         return match ($region) {
-            'erlangen'          => __('Erlangen Hauptbahnhof', 'rrze-direction'),
-            'nuernberg'         => __('Nürnberg Hauptbahnhof', 'rrze-direction'),
-            'nuernberg_airport' => __('Nürnberg Flughafen', 'rrze-direction'),
+            'erlangen'          => __('Erlangen Hauptbahnhof', 'rrze-directions'),
+            'nuernberg'         => __('Nürnberg Hauptbahnhof', 'rrze-directions'),
+            'nuernberg_airport' => __('Nürnberg Flughafen', 'rrze-directions'),
             default             => null,
         };
     }

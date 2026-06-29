@@ -1,31 +1,31 @@
 /**
- * RRZE Direction admin tours: About guide + contextual setup tour.
+ * RRZE Directions admin tours: About guide + contextual setup tour.
  */
 import { useEffect, useState } from '@wordpress/element';
 import { render } from '@wordpress/element';
 import { Guide } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { SetupTour } from './setup-tour';
-import '../sass/rrze-direction-admin.scss';
+import '../sass/rrze-directions-admin.scss';
 
 function GuideIcon( { dashicon } ) {
 	return (
-		<div className="rrze-direction-guided-tour__icon" aria-hidden="true">
+		<div className="rrze-directions-guided-tour__icon" aria-hidden="true">
 			<span className={ `dashicons ${ dashicon }` } />
 		</div>
 	);
 }
 
 function dismissTour() {
-	if ( typeof rrzeDirectionGuide === 'undefined' ) {
+	if ( typeof rrzeDirectionsGuide === 'undefined' ) {
 		return Promise.resolve();
 	}
 
 	const body = new FormData();
-	body.append( 'action', 'rrze_direction_dismiss_guided_tour' );
-	body.append( 'nonce', rrzeDirectionGuide.nonce );
+	body.append( 'action', 'rrze_directions_dismiss_guided_tour' );
+	body.append( 'nonce', rrzeDirectionsGuide.nonce );
 
-	return fetch( rrzeDirectionGuide.ajaxUrl, {
+	return fetch( rrzeDirectionsGuide.ajaxUrl, {
 		method: 'POST',
 		body,
 		credentials: 'same-origin',
@@ -44,10 +44,10 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 
 	useEffect( () => {
 		const guideButton = document.getElementById(
-			'rrze-direction-start-guided-tour'
+			'rrze-directions-start-guided-tour'
 		);
 		const setupButton = document.getElementById(
-			'rrze-direction-start-setup-tour'
+			'rrze-directions-start-setup-tour'
 		);
 
 		const openGuide = () => {
@@ -76,13 +76,13 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 	};
 
 	const githubUrl =
-		typeof rrzeDirectionGuide !== 'undefined' && rrzeDirectionGuide.githubUrl
-			? rrzeDirectionGuide.githubUrl
-			: 'https://github.com/RRZE-Webteam/rrze-direction';
+		typeof rrzeDirectionsGuide !== 'undefined' && rrzeDirectionsGuide.githubUrl
+			? rrzeDirectionsGuide.githubUrl
+			: 'https://github.com/RRZE-Webteam/rrze-directions';
 
 	const docuUrl =
-		typeof rrzeDirectionGuide !== 'undefined' && rrzeDirectionGuide.docuUrl
-			? rrzeDirectionGuide.docuUrl
+		typeof rrzeDirectionsGuide !== 'undefined' && rrzeDirectionsGuide.docuUrl
+			? rrzeDirectionsGuide.docuUrl
 			: 'https://www.wp.rrze.fau.de/';
 
 	const guidePages = [
@@ -90,13 +90,13 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 			image: <GuideIcon dashicon="dashicons-welcome-learn-more" />,
 			content: (
 				<>
-					<h1 className="rrze-direction-guided-tour__heading">
-						{ __( 'Welcome to RRZE Direction', 'rrze-direction' ) }
+					<h1 className="rrze-directions-guided-tour__heading">
+						{ __( 'Welcome to RRZE Directions', 'rrze-directions' ) }
 					</h1>
-					<p className="rrze-direction-guided-tour__text">
+					<p className="rrze-directions-guided-tour__text">
 						{ __(
-							'This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directions with interactive route maps.',
-							'rrze-direction'
+							'This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directionss with interactive route maps.',
+							'rrze-directions'
 						) }
 					</p>
 				</>
@@ -106,13 +106,13 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 			image: <GuideIcon dashicon="dashicons-location" />,
 			content: (
 				<>
-					<h1 className="rrze-direction-guided-tour__heading">
-						{ __( 'FAUdir and maps', 'rrze-direction' ) }
+					<h1 className="rrze-directions-guided-tour__heading">
+						{ __( 'FAUdir and maps', 'rrze-directions' ) }
 					</h1>
-					<p className="rrze-direction-guided-tour__text">
+					<p className="rrze-directions-guided-tour__text">
 						{ __(
 							'Select a person and workplace in the block editor. The plugin loads address data from FAUdir and embeds karte.fau.de with a location pin when possible.',
-							'rrze-direction'
+							'rrze-directions'
 						) }
 					</p>
 				</>
@@ -122,13 +122,13 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 			image: <GuideIcon dashicon="dashicons-admin-site-alt3" />,
 			content: (
 				<>
-					<h1 className="rrze-direction-guided-tour__heading">
-						{ __( 'Routes and layouts', 'rrze-direction' ) }
+					<h1 className="rrze-directions-guided-tour__heading">
+						{ __( 'Routes and layouts', 'rrze-directions' ) }
 					</h1>
-					<p className="rrze-direction-guided-tour__text">
+					<p className="rrze-directions-guided-tour__text">
 						{ __(
-							'Walking, car, and public transport directions can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map.',
-							'rrze-direction'
+							'Walking, car, and public transport directionss can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map.',
+							'rrze-directions'
 						) }
 					</p>
 				</>
@@ -138,13 +138,13 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 			image: <GuideIcon dashicon="dashicons-admin-settings" />,
 			content: (
 				<>
-					<h1 className="rrze-direction-guided-tour__heading">
-						{ __( 'Settings and tour', 'rrze-direction' ) }
+					<h1 className="rrze-directions-guided-tour__heading">
+						{ __( 'Settings and tour', 'rrze-directions' ) }
 					</h1>
-					<p className="rrze-direction-guided-tour__text">
+					<p className="rrze-directions-guided-tour__text">
 						{ __(
 							'Use the setup tour to configure your OpenRouteService API key and learn how caching works. The API key is required for automatic route generation.',
-							'rrze-direction'
+							'rrze-directions'
 						) }
 					</p>
 				</>
@@ -154,17 +154,17 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 			image: <GuideIcon dashicon="dashicons-heart" />,
 			content: (
 				<>
-					<h1 className="rrze-direction-guided-tour__heading">
-						{ __( 'Feedback and open source', 'rrze-direction' ) }
+					<h1 className="rrze-directions-guided-tour__heading">
+						{ __( 'Feedback and open source', 'rrze-directions' ) }
 					</h1>
-					<p className="rrze-direction-guided-tour__text">
+					<p className="rrze-directions-guided-tour__text">
 						{ __(
 							'We welcome your feedback. Everyone who wants to contribute is invited to take part.',
-							'rrze-direction'
+							'rrze-directions'
 						) }
 					</p>
-					<p className="rrze-direction-guided-tour__text">
-						{ __( 'RRZE Direction is open source on', 'rrze-direction' ) }{ ' ' }
+					<p className="rrze-directions-guided-tour__text">
+						{ __( 'RRZE Directions is open source on', 'rrze-directions' ) }{ ' ' }
 						<a
 							href={ githubUrl }
 							target="_self"
@@ -174,13 +174,13 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 						</a>
 						.
 					</p>
-					<p className="rrze-direction-guided-tour__text">
+					<p className="rrze-directions-guided-tour__text">
 						<a
 							href={ docuUrl }
 							target="_self"
 							rel="noopener noreferrer"
 						>
-							{ __( 'Documentation', 'rrze-direction' ) }
+							{ __( 'Documentation', 'rrze-directions' ) }
 						</a>
 					</p>
 				</>
@@ -192,12 +192,12 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 		<>
 			{ guideOpen && (
 				<Guide
-					className="rrze-direction-guided-tour"
+					className="rrze-directions-guided-tour"
 					contentLabel={ __(
-						'About RRZE Direction',
-						'rrze-direction'
+						'About RRZE Directions',
+						'rrze-directions'
 					) }
-					finishButtonText={ __( 'Get started', 'rrze-direction' ) }
+					finishButtonText={ __( 'Get started', 'rrze-directions' ) }
 					onFinish={ finishGuide }
 					pages={ guidePages }
 				/>
@@ -213,14 +213,14 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 	);
 }
 
-const root = document.getElementById( 'rrze-direction-guided-tour-root' );
+const root = document.getElementById( 'rrze-directions-guided-tour-root' );
 
-if ( root && typeof rrzeDirectionGuide !== 'undefined' ) {
+if ( root && typeof rrzeDirectionsGuide !== 'undefined' ) {
 	render(
 		<ToursApp
-			autoStartGuide={ rrzeDirectionGuide.autoStart }
-			autoStartSetup={ rrzeDirectionGuide.autoStartSetup }
-			setupTourStepId={ rrzeDirectionGuide.setupTourStepId }
+			autoStartGuide={ rrzeDirectionsGuide.autoStart }
+			autoStartSetup={ rrzeDirectionsGuide.autoStartSetup }
+			setupTourStepId={ rrzeDirectionsGuide.setupTourStepId }
 		/>,
 		root
 	);

@@ -1,4 +1,4 @@
-.rrze-direction-route-map {
+.rrze-directions-route-map {
 	.leaflet-container {
 		background: #ddd;
 	}
@@ -33,12 +33,12 @@
 	}
 }
 
-.leaflet-div-icon.rrze-direction-route-marker {
+.leaflet-div-icon.rrze-directions-route-marker {
 	background: transparent;
 	border: 0;
 }
 
-.rrze-direction-route-marker--destination .rrze-direction-route-marker__pin {
+.rrze-directions-route-marker--destination .rrze-directions-route-marker__pin {
 	background: #04316a;
 	border: 2px solid #fff;
 	border-radius: 50% 50% 50% 0;
