@@ -1,6 +1,8 @@
 import { initRouteMapsIn, destroyRouteMap } from './route-map';
 import { attachMapWheelShield } from './map-wheel-shield';
 import { initDirectionTabsIn } from './direction-tabs';
+import { initStartPillsIn } from './direction-start-pills';
+import { initDirectionDropdownIn } from './direction-dropdown';
 
 function handleAccordionPanel(event) {
 	const panel = event.target;
@@ -46,6 +48,8 @@ function boot() {
 
 	initRouteMapsIn(document);
 	initDirectionTabsIn(document);
+	initStartPillsIn(document);
+	initDirectionDropdownIn(document);
 
 	document.addEventListener('rrze-direction-accordion-panel', handleAccordionPanel);
 

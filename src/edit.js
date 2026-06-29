@@ -508,6 +508,12 @@ function hasRouteData(routeJson) {
 
 	try {
 		const data = JSON.parse(routeJson);
+		if (Array.isArray(data?.variants)) {
+			return data.variants.some((variant) =>
+				hasRouteData(JSON.stringify(variant?.route ?? {}))
+			);
+		}
+
 		return (
 			Array.isArray(data?.coordinates) &&
 			data.coordinates.length > 1 &&
@@ -517,6 +523,73 @@ function hasRouteData(routeJson) {
 	} catch (error) {
 		return false;
 	}
+}
+
+function parseRouteVariants(routeJson) {
+	if (!routeJson) {
+		return [];
+	}
+
+	try {
+		const data = JSON.parse(routeJson);
+		if (Array.isArray(data?.variants)) {
+			return data.variants
+				.map((variant) => ({
+					startKey: `${variant?.startKey ?? ''}`,
+					startLabel: `${variant?.startLabel ?? ''}`,
+					route: variant?.route ?? null,
+				}))
+				.filter((variant) => hasRouteData(JSON.stringify(variant.route ?? {})));
+		}
+
+		if (hasRouteData(routeJson)) {
+			return [{ startKey: '', startLabel: '', route: data }];
+		}
+	} catch (error) {
+		return [];
+	}
+
+	return [];
+}
+
+function splitRouteVariantHtml(html) {
+	const source = `${html ?? ''}`;
+	if (!source.includes('rrze-direction__route-variant')) {
+		const trimmed = source.trim();
+		return trimmed ? [trimmed] : [];
+	}
+
+	const marker =
+		/<div class="rrze-direction__route-variant">([\s\S]*?)<\/div>/g;
+	const parts = [];
+	let match = marker.exec(source);
+
+	while (match) {
+		parts.push(match[1].trim());
+		match = marker.exec(source);
+	}
+
+	if (parts.length > 0) {
+		return parts;
+	}
+
+	const parser = new DOMParser();
+	const document = parser.parseFromString(
+		`<div id="rrze-direction-root">${source}</div>`,
+		'text/html'
+	);
+	const nodes = document.querySelectorAll('.rrze-direction__route-variant');
+
+	nodes.forEach((node) => {
+		parts.push(node.innerHTML.trim());
+	});
+
+	if (parts.length > 0) {
+		return parts;
+	}
+
+	const trimmed = source.trim();
+	return trimmed ? [trimmed] : [];
 }
 
 function getVisibleDirectionSections(attributes, strings) {
@@ -559,26 +632,257 @@ function getVisibleDirectionSections(attributes, strings) {
 }
 
 function normalizeDirectionsLayout(layout) {
-	if (layout === 'columns' || layout === 'tabs') {
+	if (layout === 'columns' || layout === 'tabs' || layout === 'dropdown') {
 		return layout;
 	}
 
 	return 'accordion';
 }
 
+function variantKey(variant, index) {
+	if (!variant) {
+		return `variant-${index}`;
+	}
+
+	return variant.startKey || `variant-${index}`;
+}
+
+function RouteVariantsEditorMaps({ routeJson, strings }) {
+	const variants = parseRouteVariants(routeJson);
+	const mapHint =
+		strings.routeMapPreview ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-direction'
+		);
+	const [activeKey, setActiveKey] = useState(() =>
+		variantKey(variants[0], 0)
+	);
+
+	useEffect(() => {
+		if (variants.length === 0) {
+			return;
+		}
+
+		setActiveKey((current) => {
+			if (variants.some((variant, index) => variantKey(variant, index) === current)) {
+				return current;
+			}
+
+			return variantKey(variants[0], 0);
+		});
+	}, [routeJson]);
+
+	if (variants.length > 1) {
+		return (
+			<div className="rrze-direction__start-switcher">
+				<div className="rrze-direction__start-pills" role="tablist">
+					{variants.map((variant, index) => {
+						const key = variantKey(variant, index);
+						const active = key === activeKey;
+
+						return (
+							<button
+								key={key}
+								type="button"
+								className={`rrze-direction__start-pill${
+									active ? ' is-active' : ''
+								}`}
+								role="tab"
+								aria-selected={active}
+								onClick={() => setActiveKey(key)}
+							>
+								{variant.startLabel ||
+									strings.routeMapTitle ||
+									__('Route map', 'rrze-direction')}
+							</button>
+						);
+					})}
+				</div>
+				<div className="rrze-direction__start-panels">
+					{variants.map((variant, index) => {
+						const key = variantKey(variant, index);
+
+						return (
+							<div
+								key={key}
+								className={`rrze-direction__route-variant${
+									key === activeKey ? ' is-active' : ''
+								}`}
+								role="tabpanel"
+								hidden={key !== activeKey}
+							>
+								<RouteMapEditorPlaceholder
+									routeJson={JSON.stringify(variant.route)}
+									title={
+										variant.startLabel ||
+										strings.routeMapTitle ||
+										__('Route map', 'rrze-direction')
+									}
+									hint={mapHint}
+								/>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<RouteMapEditorPlaceholder
+			routeJson={
+				variants.length === 1
+					? JSON.stringify(variants[0].route)
+					: routeJson
+			}
+			title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
+			hint={mapHint}
+		/>
+	);
+}
+
+function DirectionStartSwitcher({ routeJson, content, strings }) {
+	const variants = useMemo(() => parseRouteVariants(routeJson), [routeJson]);
+	const htmlParts = useMemo(() => splitRouteVariantHtml(content), [content]);
+	const [activeKey, setActiveKey] = useState(() => variantKey(variants[0], 0));
+	const mapHint =
+		strings.routeMapPreview ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-direction'
+		);
+
+	useEffect(() => {
+		if (variants.length === 0) {
+			return;
+		}
+
+		setActiveKey((current) => {
+			if (variants.some((variant, index) => variantKey(variant, index) === current)) {
+				return current;
+			}
+
+			return variantKey(variants[0], 0);
+		});
+	}, [routeJson, variants]);
+
+	return (
+		<div className="rrze-direction__start-switcher">
+			<div
+				className="rrze-direction__start-pills"
+				role="tablist"
+				aria-label={strings.startingPoint ?? __('Starting point', 'rrze-direction')}
+			>
+				{variants.map((variant, index) => {
+					const key = variantKey(variant, index);
+					const active = key === activeKey;
+
+					return (
+						<button
+							key={key}
+							type="button"
+							className={`rrze-direction__start-pill${
+								active ? ' is-active' : ''
+							}`}
+							role="tab"
+							aria-selected={active}
+							onClick={() => setActiveKey(key)}
+						>
+							{variant.startLabel ||
+								sprintf(
+									/* translators: %d: route variant number */
+									__('Route %d', 'rrze-direction'),
+									index + 1
+								)}
+						</button>
+					);
+				})}
+			</div>
+			<div className="rrze-direction__start-panels">
+				{variants.map((variant, index) => {
+					const key = variantKey(variant, index);
+
+					return (
+						<div
+							key={key}
+							className={`rrze-direction__route-variant${
+								key === activeKey ? ' is-active' : ''
+							}`}
+							role="tabpanel"
+							hidden={key !== activeKey}
+						>
+							<RouteMapEditorPlaceholder
+								routeJson={JSON.stringify(variant.route)}
+								title={
+									variant.startLabel ||
+									strings.routeMapTitle ||
+									__('Route map', 'rrze-direction')
+								}
+								hint={mapHint}
+							/>
+							<div
+								className="rrze-direction__rte"
+								dangerouslySetInnerHTML={{
+									__html: htmlParts[index] ?? '',
+								}}
+							/>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
 function DirectionSectionPreviewBody({ section, strings }) {
+	const variants = parseRouteVariants(section.route);
+	const htmlParts = splitRouteVariantHtml(section.content);
+	const mapHint =
+		strings.routeMapPreview ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-direction'
+		);
+
+	if (variants.length > 1) {
+		return (
+			<DirectionStartSwitcher
+				routeJson={section.route}
+				content={section.content}
+				strings={strings}
+			/>
+		);
+	}
+
+	if (variants.length === 1) {
+		return (
+			<>
+				<RouteMapEditorPlaceholder
+					routeJson={JSON.stringify(variants[0].route)}
+					title={
+						variants[0].startLabel ||
+						strings.routeMapTitle ||
+						__('Route map', 'rrze-direction')
+					}
+					hint={mapHint}
+				/>
+				<div
+					className="rrze-direction__rte"
+					dangerouslySetInnerHTML={{
+						__html: htmlParts[0] ?? section.content,
+					}}
+				/>
+			</>
+		);
+	}
+
 	return (
 		<>
 			<RouteMapEditorPlaceholder
 				routeJson={section.route}
 				title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
-				hint={
-					strings.routeMapPreview ??
-					__(
-						'Interactive route map with numbered steps is shown on the published page.',
-						'rrze-direction'
-					)
-				}
+				hint={mapHint}
 			/>
 			<div
 				className="rrze-direction__rte"
@@ -665,7 +969,9 @@ function DirectionsEditorPreview({ attributes, strings }) {
 			? strings.directionsLayoutColumns ?? __('Columns', 'rrze-direction')
 			: layout === 'tabs'
 				? strings.directionsLayoutTabs ?? __('Tabs', 'rrze-direction')
-				: strings.directionsLayoutAccordion ?? __('Accordion', 'rrze-direction');
+				: layout === 'dropdown'
+					? strings.directionsLayoutDropdown ?? __('Dropdown', 'rrze-direction')
+					: strings.directionsLayoutAccordion ?? __('Accordion', 'rrze-direction');
 
 	let preview = null;
 
@@ -744,6 +1050,56 @@ function DirectionsEditorPreview({ attributes, strings }) {
 							role="tabpanel"
 							className={index !== activeIndex ? 'is-hidden' : undefined}
 						>
+							<DirectionSectionPreviewBody
+								section={section}
+								strings={strings}
+							/>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	} else if (layout === 'dropdown') {
+		const activeIndex = Math.max(
+			0,
+			sections.findIndex((section) => section.key === activeKey)
+		);
+
+		preview = (
+			<div className="rrze-direction__directions rrze-direction__directions--dropdown">
+				<div className="rrze-direction__mode-dropdown">
+					<label
+						className="rrze-direction__mode-label"
+						htmlFor="rrze-direction-editor-mode-select"
+					>
+						{strings.modeOfTransport ??
+							__('Mode of transport', 'rrze-direction')}
+					</label>
+					<select
+						id="rrze-direction-editor-mode-select"
+						className="rrze-direction__mode-select"
+						value={sections[activeIndex]?.key ?? ''}
+						onChange={(event) => setActiveKey(event.target.value)}
+					>
+						{sections.map((section) => (
+							<option key={section.key} value={section.key}>
+								{section.title}
+							</option>
+						))}
+					</select>
+				</div>
+				<div className="rrze-direction__mode-panels">
+					{sections.map((section, index) => (
+						<div
+							key={section.key}
+							className={`rrze-direction__mode-panel${
+								index === activeIndex ? ' is-active' : ''
+							}`}
+							role="region"
+							aria-label={section.title}
+							hidden={index !== activeIndex}
+						>
+							<h3 className="screen-reader-text">{section.title}</h3>
 							<DirectionSectionPreviewBody
 								section={section}
 								strings={strings}
@@ -1238,6 +1594,12 @@ export default function Edit({ attributes, setAttributes }) {
 									__('Tabs', 'rrze-direction'),
 								value: 'tabs',
 							},
+							{
+								label:
+									strings.directionsLayoutDropdown ??
+									__('Dropdown', 'rrze-direction'),
+								value: 'dropdown',
+							},
 						]}
 						onChange={(next) =>
 							setAttributes({
@@ -1357,9 +1719,9 @@ export default function Edit({ attributes, setAttributes }) {
 									{strings.directionBike ??
 										__('Walking / Cycling', 'rrze-direction')}
 								</h4>
-								<RouteMapEditorPlaceholder
+								<RouteVariantsEditorMaps
 									routeJson={directionBikeRoute}
-									title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
+									strings={strings}
 								/>
 								<RichText
 									tagName="div"
@@ -1382,9 +1744,9 @@ export default function Edit({ attributes, setAttributes }) {
 								<h4>
 									{strings.directionCar ?? __('By car', 'rrze-direction')}
 								</h4>
-								<RouteMapEditorPlaceholder
+								<RouteVariantsEditorMaps
 									routeJson={directionCarRoute}
-									title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
+									strings={strings}
 								/>
 								<RichText
 									tagName="div"
@@ -1406,9 +1768,9 @@ export default function Edit({ attributes, setAttributes }) {
 									{strings.directionTransit ??
 										__('Bus / train', 'rrze-direction')}
 								</h4>
-								<RouteMapEditorPlaceholder
+								<RouteVariantsEditorMaps
 									routeJson={directionTransitRoute}
-									title={strings.routeMapTitle ?? __('Route map', 'rrze-direction')}
+									strings={strings}
 								/>
 								<RichText
 									tagName="div"

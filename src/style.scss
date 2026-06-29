@@ -1,5 +1,7 @@
 @use 'direction-tabs';
 @use 'direction-accordion';
+@use 'direction-start-pills';
+@use 'direction-dropdown';
 
 .rrze-direction-editor {
 	--rd-border: color-mix(in srgb, CanvasText 12%, Canvas);
@@ -167,6 +169,10 @@
 
 	&__directions {
 		margin-top: 1rem;
+	}
+
+	&__route-variant {
+		margin-bottom: 0;
 	}
 
 	&__directions-grid {

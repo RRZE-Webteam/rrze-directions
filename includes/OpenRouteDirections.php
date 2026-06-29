@@ -116,6 +116,86 @@ final class OpenRouteDirections
         ];
     }
 
+    /**
+     * Fetch bike, car, and transit directions from every regional start point.
+     *
+     * @return array{
+     *   bike: array{html: string, route: string},
+     *   car: array{html: string, route: string},
+     *   transit: array{html: string, route: string}
+     * }
+     */
+    public static function fetchDirectionsFromAllStarts(
+        string $apiKey,
+        float $endLon,
+        float $endLat,
+        string $orsLanguage = 'en',
+        string $toLabel = ''
+    ): array {
+        $emptyMode = static fn(): array => ['html' => '', 'route' => ''];
+        $combined  = [
+            'bike'    => $emptyMode(),
+            'car'     => $emptyMode(),
+            'transit' => $emptyMode(),
+        ];
+
+        if ($apiKey === '') {
+            return $combined;
+        }
+
+        $routeVariants = [
+            'bike'    => [],
+            'car'     => [],
+            'transit' => [],
+        ];
+
+        foreach (RegionalStationOrigin::allStartPoints() as $start) {
+            $dirs = self::fetchDirections(
+                $apiKey,
+                $start['lon'],
+                $start['lat'],
+                $endLon,
+                $endLat,
+                $orsLanguage,
+                $start['label'],
+                $toLabel
+            );
+
+            foreach (['bike', 'car', 'transit'] as $mode) {
+                if ($dirs[$mode]['html'] === '' && $dirs[$mode]['route'] === '') {
+                    continue;
+                }
+
+                if ($dirs[$mode]['html'] !== '') {
+                    $combined[$mode]['html'] .= '<div class="rrze-direction__route-variant">';
+                    $combined[$mode]['html'] .= $dirs[$mode]['html'];
+                    $combined[$mode]['html'] .= '</div>';
+                }
+
+                if ($dirs[$mode]['route'] === '') {
+                    continue;
+                }
+
+                $routeDecoded = json_decode($dirs[$mode]['route'], true);
+                if (!is_array($routeDecoded)) {
+                    continue;
+                }
+
+                $routeVariants[$mode][] = [
+                    'startKey'   => $start['key'],
+                    'startLabel' => $start['label'],
+                    'route'      => $routeDecoded,
+                ];
+            }
+        }
+
+        foreach (['bike', 'car', 'transit'] as $mode) {
+            $combined[$mode]['route'] = RouteMapPresentation::encodeVariantsJson($routeVariants[$mode]);
+        }
+
+        return $combined;
+    }
+
     private static function withRouteTitle(string $html, string $routeTitle): string
     {
         if ($html === '' || $routeTitle === '') {

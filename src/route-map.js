@@ -370,6 +370,27 @@ export function initRouteMap(container) {
 		return;
 	}
 
+	const hiddenPanel = container.closest(
+		'.rrze-direction__route-variant[hidden], .rrze-direction__mode-panel[hidden]'
+	);
+	if (hiddenPanel) {
+		if (container.dataset.routeMapDeferred !== '1') {
+			container.dataset.routeMapDeferred = '1';
+			const observer = new MutationObserver(() => {
+				if (!hiddenPanel.hidden) {
+					observer.disconnect();
+					delete container.dataset.routeMapDeferred;
+					initRouteMap(container);
+				}
+			});
+			observer.observe(hiddenPanel, {
+				attributes: true,
+				attributeFilter: ['hidden', 'class'],
+			});
+		}
+		return;
+	}
+
 	const accordionPanel = container.closest('.rrze-direction__accordion-panel');
 	if (
 		accordionPanel &&

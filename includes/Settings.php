@@ -19,6 +19,10 @@ final class Settings
 
     public const OPTION_GROUP = 'rrze_direction_settings';
 
+    private const GUIDED_TOUR_DISMISSED_META = 'rrze_direction_guided_tour_dismissed';
+
+    private const SETUP_TOUR_DISMISSED_META = 'rrze_direction_setup_tour_dismissed';
+
     public static function init(): void
     {
         if (!is_admin()) {
@@ -28,6 +32,9 @@ final class Settings
         add_action('admin_menu', [self::class, 'addMenuPage']);
         add_action('admin_init', [self::class, 'registerSetting']);
         add_action('admin_init', [self::class, 'handleCacheFlush']);
+        add_action('admin_enqueue_scripts', [self::class, 'enqueueGuidedTour']);
+        add_action('wp_ajax_rrze_direction_dismiss_guided_tour', [self::class, 'dismissGuidedTour']);
+        add_action('wp_ajax_rrze_direction_dismiss_setup_tour', [self::class, 'dismissSetupTour']);
         add_filter(
             'plugin_action_links_' . plugin_basename(plugin()->getFile()),
             [self::class, 'actionLinks']
@@ -140,6 +147,81 @@ final class Settings
         );
     }
 
+    public static function enqueueGuidedTour(string $hook): void
+    {
+        if ($hook !== 'settings_page_' . self::PAGE_SLUG) {
+            return;
+        }
+
+        $scriptPath = plugin()->getPath() . 'build/rrze-direction-guided-tour.js';
+        $assetPath  = plugin()->getPath() . 'build/rrze-direction-guided-tour.asset.php';
+
+        if (!is_readable($scriptPath) || !is_readable($assetPath)) {
+            return;
+        }
+
+        /** @var array{dependencies: string[], version: string} $asset */
+        $asset = include $assetPath;
+
+        wp_enqueue_style('dashicons');
+        wp_enqueue_style('wp-components');
+
+        wp_enqueue_script(
+            'rrze-direction-guided-tour',
+            plugin()->getUrl() . 'build/rrze-direction-guided-tour.js',
+            $asset['dependencies'],
+            $asset['version'],
+            true
+        );
+
+        wp_set_script_translations(
+            'rrze-direction-guided-tour',
+            'rrze-direction',
+            plugin()->getPath() . 'languages'
+        );
+
+        $setupTourStepId = '';
+        if (isset($_GET['rrze_setup_tour_step'])) {
+            $setupTourStepId = sanitize_text_field((string) wp_unslash($_GET['rrze_setup_tour_step']));
+        }
+
+        wp_localize_script('rrze-direction-guided-tour', 'rrzeDirectionGuide', [
+            'autoStart'      => !get_user_meta(get_current_user_id(), self::GUIDED_TOUR_DISMISSED_META, true),
+            'autoStartSetup' => isset($_GET['rrze_setup_tour']),
+            'setupTourStepId'=> $setupTourStepId,
+            'settingsUrl'    => admin_url('options-general.php?page=' . self::PAGE_SLUG),
+            'ajaxUrl'        => admin_url('admin-ajax.php'),
+            'nonce'          => wp_create_nonce('rrze_direction_guided_tour'),
+            'setupTourNonce' => wp_create_nonce('rrze_direction_setup_tour'),
+            'githubUrl'      => 'https://github.com/RRZE-Webteam/rrze-direction',
+            'docuUrl'        => 'https://www.wp.rrze.fau.de/',
+        ]);
+    }
+
+    public static function dismissGuidedTour(): void
+    {
+        check_ajax_referer('rrze_direction_guided_tour', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(null, 403);
+        }
+
+        update_user_meta(get_current_user_id(), self::GUIDED_TOUR_DISMISSED_META, 1);
+        wp_send_json_success();
+    }
+
+    public static function dismissSetupTour(): void
+    {
+        check_ajax_referer('rrze_direction_setup_tour', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(null, 403);
+        }
+
+        update_user_meta(get_current_user_id(), self::SETUP_TOUR_DISMISSED_META, 1);
+        wp_send_json_success();
+    }
+
     public static function renderPage(): void
     {
         if (!current_user_can('manage_options')) {
@@ -149,14 +231,25 @@ final class Settings
         $hasKey = self::getOpenRouteServiceApiKey() !== '';
         $apiKey = self::getOpenRouteServiceApiKey();
         $cacheEntries = ApiCache::entryCount();
+        $editorUrl = admin_url('post-new.php?post_type=page');
         ?>
-        <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+        <div class="wrap rrze-direction-settings-wrap">
+            <h1 class="wp-heading-inline"><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <button type="button" id="rrze-direction-start-guided-tour" class="page-title-action">
+                <?php esc_html_e('About', 'rrze-direction'); ?>
+            </button>
+            <button type="button" id="rrze-direction-start-setup-tour" class="page-title-action">
+                <?php esc_html_e('Tour', 'rrze-direction'); ?>
+            </button>
+            <hr class="wp-header-end">
+            <div id="rrze-direction-guided-tour-root"></div>
+
             <?php settings_errors('rrze_direction_settings'); ?>
+
             <form action="options.php" method="post">
                 <?php settings_fields(self::OPTION_GROUP); ?>
                 <table class="form-table" role="presentation">
-                    <tr>
+                    <tr data-rrze-tour="openroute-api-key">
                         <th scope="row">
                             <label for="rrze_direction_openrouteservice_api_key">
                                 <?php esc_html_e('OpenRouteService API key', 'rrze-direction'); ?>
@@ -196,39 +289,43 @@ final class Settings
                             <?php endif; ?>
                         </td>
                     </tr>
-                    <tr>
+                    <tr data-rrze-tour="route-start">
                         <th scope="row"><?php esc_html_e('Route start', 'rrze-direction'); ?></th>
                         <td>
                             <p class="description" style="margin-top:0;">
-                                <?php esc_html_e('For workplaces in Erlangen, Nuremberg, or Fürth, draft routes use the respective main station as the start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Fürth (main) station.', 'rrze-direction'); ?>
+                                <?php esc_html_e('Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen.', 'rrze-direction'); ?>
                             </p>
                         </td>
                     </tr>
                 </table>
-                <?php submit_button(); ?>
+                <p data-rrze-tour="save-settings">
+                    <?php submit_button(); ?>
+                </p>
             </form>
 
-            <h2><?php esc_html_e('API cache', 'rrze-direction'); ?></h2>
-            <p>
-                <?php
-                echo esc_html(
-                    sprintf(
-                        /* translators: %d: number of cached API responses */
-                        _n(
-                            '%d cached API response is stored permanently for faster loading.',
-                            '%d cached API responses are stored permanently for faster loading.',
-                            $cacheEntries,
-                            'rrze-direction'
-                        ),
-                        $cacheEntries
-                    )
-                );
-                ?>
-            </p>
-            <p class="description">
-                <?php esc_html_e('Responses from karte.fau.de, OpenRouteService, and FAUdir are cached until you clear the cache or relevant data changes.', 'rrze-direction'); ?>
-            </p>
-            <form method="post">
+            <div data-rrze-tour="api-cache">
+                <h2><?php esc_html_e('API cache', 'rrze-direction'); ?></h2>
+                <p>
+                    <?php
+                    echo esc_html(
+                        sprintf(
+                            /* translators: %d: number of cached API responses */
+                            _n(
+                                '%d cached API response is stored permanently for faster loading.',
+                                '%d cached API responses are stored permanently for faster loading.',
+                                $cacheEntries,
+                                'rrze-direction'
+                            ),
+                            $cacheEntries
+                        )
+                    );
+                    ?>
+                </p>
+                <p class="description">
+                    <?php esc_html_e('Responses from karte.fau.de, OpenRouteService, and FAUdir are cached until you clear the cache or relevant data changes.', 'rrze-direction'); ?>
+                </p>
+            </div>
+            <form method="post" data-rrze-tour="clear-cache">
                 <?php wp_nonce_field('rrze_direction_flush_api_cache'); ?>
                 <input type="hidden" name="rrze_direction_flush_api_cache" value="1" />
                 <?php
@@ -240,6 +337,21 @@ final class Settings
                 );
                 ?>
             </form>
+
+            <p data-rrze-tour="block-editor" class="description">
+                <?php
+                printf(
+                    /* translators: %s: link to create a new page in the editor */
+                    esc_html__(
+                        'Insert the RRZE Direction block when editing a page: %s',
+                        'rrze-direction'
+                    ),
+                    '<a href="' . esc_url($editorUrl) . '">'
+                    . esc_html__('Open block editor', 'rrze-direction')
+                    . '</a>'
+                );
+                ?>
+            </p>
         </div>
         <?php
     }

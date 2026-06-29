@@ -7,7 +7,7 @@ namespace RRZE\Direction;
 defined('ABSPATH') || exit;
 
 /**
- * REST: prefill direction RichText from OpenRouteService using regional main stations as start.
+ * REST: prefill direction RichText from OpenRouteService using all regional main stations as starts.
  */
 final class RestOpenRouteDirections
 {
@@ -63,37 +63,22 @@ final class RestOpenRouteDirections
             return $empty();
         }
 
-        if ($city === '' && $zip === '') {
-            return $empty();
-        }
-
-        $start = RegionalStationOrigin::startLonLatForCityOrZip($city, $zip);
-        if (null === $start) {
-            return $empty();
-        }
-
         $apiKey = Settings::getOpenRouteServiceApiKey();
         if ($apiKey === '') {
             return $empty();
         }
 
-        [$startLon, $startLat] = $start;
-
         $orsLang = OpenRouteDirections::orsLanguageFromWpLocale(
             OpenRouteDirections::siteLocaleForDirections()
         );
 
-        $fromLabel = RegionalStationOrigin::labelForCityOrZip($city, $zip) ?? '';
-        $toLabel   = AddressPresentation::destinationLine($street, $zip, $city, $formattedAddress);
+        $toLabel = AddressPresentation::destinationLine($street, $zip, $city, $formattedAddress);
 
-        $dirs = OpenRouteDirections::fetchDirections(
+        $dirs = OpenRouteDirections::fetchDirectionsFromAllStarts(
             $apiKey,
-            $startLon,
-            $startLat,
             $lon,
             $lat,
             $orsLang,
-            $fromLabel,
             $toLabel
         );
 
