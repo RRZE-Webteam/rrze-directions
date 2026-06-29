@@ -4,7 +4,7 @@
   "title": "RRZE Directions",
   "category": "rrze",
   "icon": "location",
-  "description": "Directionss and arrival information using RRZE-FAUdir address data.",
+  "description": "Directions and arrival information using RRZE-FAUdir address data.",
   "supports": {
     "html": false
   },
@@ -105,7 +105,7 @@
       "type": "boolean",
       "default": true
     },
-    "directionssLayout": {
+    "directionsLayout": {
       "type": "string",
       "default": "accordion"
     }

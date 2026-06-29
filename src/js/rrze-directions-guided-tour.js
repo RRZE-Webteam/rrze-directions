@@ -95,7 +95,7 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 					</h1>
 					<p className="rrze-directions-guided-tour__text">
 						{ __(
-							'This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directionss with interactive route maps.',
+							'This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directions with interactive route maps.',
 							'rrze-directions'
 						) }
 					</p>
@@ -127,7 +127,7 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 					</h1>
 					<p className="rrze-directions-guided-tour__text">
 						{ __(
-							'Walking, car, and public transport directionss can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map.',
+							'Walking, car, and public transport directions can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map.',
 							'rrze-directions'
 						) }
 					</p>

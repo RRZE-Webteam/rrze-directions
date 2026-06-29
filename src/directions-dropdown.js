@@ -26,7 +26,7 @@ export function initDirectionsDropdownIn(root = document) {
 		return;
 	}
 
-	root.querySelectorAll('.rrze-directions__directionss--dropdown').forEach((dropdown) => {
+	root.querySelectorAll('.rrze-directions__directions--dropdown').forEach((dropdown) => {
 		if (dropdown.dataset.dropdownInit === '1') {
 			return;
 		}

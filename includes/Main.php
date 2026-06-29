@@ -24,7 +24,7 @@ final class Main
         add_action('save_post', [$this, 'invalidateFaudirCacheOnPersonSave'], 10, 3);
         RestResolveCoordinates::register();
         RestResolveIframeSrc::register();
-        RestOpenRouteDirectionss::register();
+        RestOpenRouteDirections::register();
     }
 
     public function registerAssets(): void
@@ -102,7 +102,7 @@ final class Main
                 'persons'                     => $payload,
                 'restResolveCoordinatesPath'  => '/rrze-directions/v1/resolve-coordinates',
                 'restResolveIframeSrcPath'    => '/rrze-directions/v1/resolve-iframe-src',
-                'restOpenRouteDirectionssPath' => '/rrze-directions/v1/openroute-directionss',
+                'restOpenRouteDirectionsPath' => '/rrze-directions/v1/openroute-directions',
                 'editorStrings'               => [
                     'pleaseSelectPerson'         => __('Select a person from FAUdir first.', 'rrze-directions'),
                     'addressLabel'               => __('Address', 'rrze-directions'),
@@ -112,7 +112,7 @@ final class Main
                     'selectPersonPanel'          => __('FAUdir', 'rrze-directions'),
                     'selectPerson'               => __('Person', 'rrze-directions'),
                     'selectPersonWorkplace'      => __('Select person and workplace.', 'rrze-directions'),
-                    'mapSection'                 => __('Directionss map', 'rrze-directions'),
+                    'mapSection'                 => __('Directions map', 'rrze-directions'),
                     'mapUrl'                     => __('Link to', 'rrze-directions'),
                     'googleMaps'                 => __('Google Maps', 'rrze-directions'),
                     'appleMaps'                  => __('Apple Maps', 'rrze-directions'),
@@ -124,24 +124,24 @@ final class Main
                     'directionsBike'              => __('Walking / Cycling', 'rrze-directions'),
                     'directionsCar'               => __('By car', 'rrze-directions'),
                     'directionsTransit'           => __('Bus / train', 'rrze-directions'),
-                    'directionsBikePlaceholder'   => __('Directionss by foot / bike.', 'rrze-directions'),
-                    'directionsCarPlaceholder'    => __('Directionss by car.', 'rrze-directions'),
+                    'directionsBikePlaceholder'   => __('Directions by foot / bike.', 'rrze-directions'),
+                    'directionsCarPlaceholder'    => __('Directions by car.', 'rrze-directions'),
                     'directionsTransitPlaceholder'=> __('Public transport.', 'rrze-directions'),
-                    'directionssSettings'           => __('Arrival directionss', 'rrze-directions'),
+                    'directionsSettings'           => __('Arrival directions', 'rrze-directions'),
                     'showDirectionsBike'            => __('Show walking / cycling', 'rrze-directions'),
                     'showDirectionsCar'             => __('Show by car', 'rrze-directions'),
                     'showDirectionsTransit'         => __('Show bus / train', 'rrze-directions'),
-                    'directionssLayout'             => __('Layout', 'rrze-directions'),
-                    'directionssLayoutAccordion'    => __('Accordion', 'rrze-directions'),
-                    'directionssLayoutColumns'      => __('Columns', 'rrze-directions'),
-                    'directionssLayoutTabs'         => __('Tabs', 'rrze-directions'),
-                    'directionssLayoutDropdown'     => __('Dropdown', 'rrze-directions'),
+                    'directionsLayout'             => __('Layout', 'rrze-directions'),
+                    'directionsLayoutAccordion'    => __('Accordion', 'rrze-directions'),
+                    'directionsLayoutColumns'      => __('Columns', 'rrze-directions'),
+                    'directionsLayoutTabs'         => __('Tabs', 'rrze-directions'),
+                    'directionsLayoutDropdown'     => __('Dropdown', 'rrze-directions'),
                     'modeOfTransport'              => __('Mode of transport', 'rrze-directions'),
                     'startingPoint'                => __('Starting point', 'rrze-directions'),
 					'routeMapTitle'                => __('Route map', 'rrze-directions'),
 					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-directions'),
-					'routeMapHint'                 => __('Click a numbered step in the directionss list to highlight it on the map.', 'rrze-directions'),
-					'directionssLoading'            => __('Loading directionss…', 'rrze-directions'),
+					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-directions'),
+					'directionsLoading'            => __('Loading directions…', 'rrze-directions'),
 					'mapLoading'                   => __('Loading map…', 'rrze-directions'),
                     'coordinatesMissing'         => __('No coordinates detected in API data.', 'rrze-directions'),
                     'noneOption'                 => __('— Choose —', 'rrze-directions'),

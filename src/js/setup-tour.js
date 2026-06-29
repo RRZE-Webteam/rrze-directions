@@ -12,7 +12,7 @@ function getSetupSteps() {
 			target: '[data-rrze-tour="openroute-api-key"]',
 			title: __( 'OpenRouteService API key', 'rrze-directions' ),
 			text: __(
-				'Request a free API key from openrouteservice.org and paste it here. It is required for route directionss and interactive route maps in the block.',
+				'Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block.',
 				'rrze-directions'
 			),
 		},
@@ -58,7 +58,7 @@ function getSetupSteps() {
 			target: '[data-rrze-tour="block-editor"]',
 			title: __( 'RRZE Directions block', 'rrze-directions' ),
 			text: __(
-				'Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directionss layout.',
+				'Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directions layout.',
 				'rrze-directions'
 			),
 		},

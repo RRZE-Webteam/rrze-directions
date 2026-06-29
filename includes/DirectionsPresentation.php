@@ -9,7 +9,7 @@ defined('ABSPATH') || exit;
 /**
  * Renders directions sections (foot, car, transit) as accordion, tabs, columns, or dropdown.
  */
-final class DirectionssPresentation
+final class DirectionsPresentation
 {
     /**
      * @return list<array{key: string, title: string, html: string, route: string}>
@@ -66,7 +66,7 @@ final class DirectionssPresentation
             return '';
         }
 
-        $layout = self::normalizeLayout((string) ($attributes['directionssLayout'] ?? 'accordion'));
+        $layout = self::normalizeLayout((string) ($attributes['directionsLayout'] ?? 'accordion'));
 
         if ($layout === 'columns') {
             return self::renderColumns($sections);
@@ -147,9 +147,9 @@ final class DirectionssPresentation
             $items .= '</div></div></div></div>';
         }
 
-        return '<div class="rrze-directions__directionss rrze-directions__accordions"'
+        return '<div class="rrze-directions__directions rrze-directions__accordions"'
             . ' role="region"'
-            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
+            . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
             . '<div class="rrze-directions__accordion">'
             . $items
             . '</div></div>';
@@ -176,10 +176,10 @@ final class DirectionssPresentation
                 . '</section>';
         }
 
-        return '<div class="rrze-directions__directionss rrze-directions__directionss-grid'
-            . ' rrze-directions__directionss-grid--cols-' . esc_attr((string) $cols)
+        return '<div class="rrze-directions__directions rrze-directions__directions-grid'
+            . ' rrze-directions__directions-grid--cols-' . esc_attr((string) $cols)
             . '" role="region"'
-            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
+            . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
             . $items
             . '</div>';
     }
@@ -226,9 +226,9 @@ final class DirectionssPresentation
             $externalTabs = ' data-external-tabs-script="1"';
         }
 
-        return '<div class="rrze-directions__directionss"'
+        return '<div class="rrze-directions__directions"'
             . ' role="region"'
-            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
+            . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
             . '<div class="rrze-elements-tabs primary" id="tabs-' . esc_attr($groupId) . '"' . $externalTabs . '>'
             . '<div role="tablist" class="manual">'
             . $nav
@@ -269,9 +269,9 @@ final class DirectionssPresentation
             $panels .= '</div>';
         }
 
-        return '<div class="rrze-directions__directionss rrze-directions__directionss--dropdown"'
+        return '<div class="rrze-directions__directions rrze-directions__directions--dropdown"'
             . ' role="region"'
-            . ' aria-label="' . esc_attr__('Directionss', 'rrze-directions') . '">'
+            . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
             . '<div class="rrze-directions__mode-dropdown">'
             . '<label class="rrze-directions__mode-label" for="' . esc_attr($selectId) . '">'
             . esc_html__('Mode of transport', 'rrze-directions')

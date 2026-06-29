@@ -7,18 +7,18 @@ namespace RRZE\Directions;
 defined('ABSPATH') || exit;
 
 /**
- * Fetches route instructions from the OpenRouteService directionss API.
+ * Fetches route instructions from the OpenRouteService directions API.
  *
  * @link https://openrouteservice.org/dev/#/api-docs/introduction
  */
-final class OpenRouteDirectionss
+final class OpenRouteDirections
 {
-    private const API_BASE = 'https://api.openrouteservice.org/v2/directionss';
+    private const API_BASE = 'https://api.openrouteservice.org/v2/directions';
 
     /**
      * Site language from Settings > General (not necessarily the current admin user locale).
      */
-    public static function siteLocaleForDirectionss(): string
+    public static function siteLocaleForDirections(): string
     {
         $locale = get_option('locale', '');
         if (is_string($locale) && $locale !== '') {
@@ -36,7 +36,7 @@ final class OpenRouteDirectionss
     /**
      * OpenRouteService `language` code: German for German locales, English otherwise.
      *
-     * @see https://giscience.github.io/openrouteservice/api-reference/endpoints/directionss/requests-and-return-types
+     * @see https://giscience.github.io/openrouteservice/api-reference/endpoints/directions/requests-and-return-types
      */
     public static function orsLanguageFromWpLocale(string $locale): string
     {
@@ -56,7 +56,7 @@ final class OpenRouteDirectionss
      *   transit: array{html: string, route: string}
      * }
      */
-    public static function fetchDirectionss(
+    public static function fetchDirections(
         string $apiKey,
         float $startLon,
         float $startLat,
@@ -82,13 +82,13 @@ final class OpenRouteDirectionss
         $walkingDecoded = $profiles['walking'];
 
         $bikeHtml = $bikeDecoded
-            ? self::directionssPayloadToHtml($bikeDecoded, $orsLanguage)
+            ? self::directionsPayloadToHtml($bikeDecoded, $orsLanguage)
             : '';
         $carHtml = $carDecoded
-            ? self::directionssPayloadToHtml($carDecoded, $orsLanguage)
+            ? self::directionsPayloadToHtml($carDecoded, $orsLanguage)
             : '';
         $walkingHtml = $walkingDecoded
-            ? self::directionssPayloadToHtml($walkingDecoded, $orsLanguage)
+            ? self::directionsPayloadToHtml($walkingDecoded, $orsLanguage)
             : '';
 
         return [
@@ -117,7 +117,7 @@ final class OpenRouteDirectionss
     }
 
     /**
-     * Fetch bike, car, and transit directionss from every regional start point.
+     * Fetch bike, car, and transit directions from every regional start point.
      *
      * @return array{
      *   bike: array{html: string, route: string},
@@ -125,7 +125,7 @@ final class OpenRouteDirectionss
      *   transit: array{html: string, route: string}
      * }
      */
-    public static function fetchDirectionssFromAllStarts(
+    public static function fetchDirectionsFromAllStarts(
         string $apiKey,
         float $endLon,
         float $endLat,
@@ -150,7 +150,7 @@ final class OpenRouteDirectionss
         ];
 
         foreach (RegionalStationOrigin::allStartPoints() as $start) {
-            $dirs = self::fetchDirectionss(
+            $dirs = self::fetchDirections(
                 $apiKey,
                 $start['lon'],
                 $start['lat'],
@@ -418,7 +418,7 @@ final class OpenRouteDirectionss
     /**
      * @param array<string, mixed> $decoded JSON `routes` response or GeoJSON FeatureCollection (legacy).
      */
-    private static function directionssPayloadToHtml(array $decoded, string $orsLanguage): string
+    private static function directionsPayloadToHtml(array $decoded, string $orsLanguage): string
     {
         $route = self::extractRoute($decoded);
         if (null === $route) {

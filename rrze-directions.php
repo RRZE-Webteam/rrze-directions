@@ -3,8 +3,8 @@
 /*
 Plugin Name:        RRZE Directions
 Plugin URI:         https://github.com/RRZE-Webteam/
-Version:            1.0.50
-Description:        Arrival and directionss as a Gutenberg block: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.
+Version:            1.0.55
+Description:        Arrival and directions as a Gutenberg block: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/
 License:            GNU General Public License Version 3
@@ -21,7 +21,7 @@ use RRZE\Directions\Common\Plugin\Plugin;
 
 defined('ABSPATH') || exit;
 
-const RRZE_DIRECTION_FAUDIR_PLUGIN = 'rrze-faudir/rrze-faudir.php';
+const RRZE_DIRECTIONS_FAUDIR_PLUGIN = 'rrze-faudir/rrze-faudir.php';
 
 spl_autoload_register(static function ($class): void {
     $prefix  = __NAMESPACE__;
@@ -53,7 +53,7 @@ function activation_hook(): void
 
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-    if (!is_plugin_active(RRZE_DIRECTION_FAUDIR_PLUGIN)) {
+    if (!is_plugin_active(RRZE_DIRECTIONS_FAUDIR_PLUGIN)) {
         deactivate_plugins(plugin_basename(__FILE__));
         set_transient('rrze_directions_activation_requires_faudir', 1, 120);
         return;
@@ -126,7 +126,7 @@ function faudir_is_active(): bool
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
     }
 
-    return is_plugin_active(RRZE_DIRECTION_FAUDIR_PLUGIN) && class_exists(\RRZE\FAUdir\API::class);
+    return is_plugin_active(RRZE_DIRECTIONS_FAUDIR_PLUGIN) && class_exists(\RRZE\FAUdir\API::class);
 }
 
 

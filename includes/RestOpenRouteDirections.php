@@ -9,7 +9,7 @@ defined('ABSPATH') || exit;
 /**
  * REST: prefill directions RichText from OpenRouteService using all regional main stations as starts.
  */
-final class RestOpenRouteDirectionss
+final class RestOpenRouteDirections
 {
     public static function register(): void
     {
@@ -20,7 +20,7 @@ final class RestOpenRouteDirectionss
     {
         register_rest_route(
             'rrze-directions/v1',
-            '/openroute-directionss',
+            '/openroute-directions',
             [
                 'methods'             => 'POST',
                 'callback'            => [self::class, 'handle'],
@@ -68,13 +68,13 @@ final class RestOpenRouteDirectionss
             return $empty();
         }
 
-        $orsLang = OpenRouteDirectionss::orsLanguageFromWpLocale(
-            OpenRouteDirectionss::siteLocaleForDirectionss()
+        $orsLang = OpenRouteDirections::orsLanguageFromWpLocale(
+            OpenRouteDirections::siteLocaleForDirections()
         );
 
         $toLabel = AddressPresentation::destinationLine($street, $zip, $city, $formattedAddress);
 
-        $dirs = OpenRouteDirectionss::fetchDirectionssFromAllStarts(
+        $dirs = OpenRouteDirections::fetchDirectionsFromAllStarts(
             $apiKey,
             $lon,
             $lat,

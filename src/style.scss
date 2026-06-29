@@ -46,11 +46,11 @@
 		margin-bottom: 1rem;
 	}
 
-	&__directionss-preview {
+	&__directions-preview {
 		margin-top: 0.5rem;
 	}
 
-	&__directionss-preview-label {
+	&__directions-preview-label {
 		color: color-mix(in srgb, CanvasText 72%, Canvas);
 		margin: 0 0 0.5rem;
 	}
@@ -167,7 +167,7 @@
 		}
 	}
 
-	&__directionss {
+	&__directions {
 		margin-top: 1rem;
 	}
 
@@ -175,7 +175,7 @@
 		margin-bottom: 0;
 	}
 
-	&__directionss-grid {
+	&__directions-grid {
 		display: grid;
 		gap: 1.5rem;
 		grid-template-columns: 1fr;

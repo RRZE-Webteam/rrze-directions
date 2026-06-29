@@ -336,8 +336,8 @@ async function fetchResolvedIframeSrc(candidateUrl) {
 	return { iframeSrc: trimmed, mapUrl: trimmed };
 }
 
-async function fetchOpenRouteDirectionss(place, coords, extras = {}) {
-	const path = window.rrze_directions?.restOpenRouteDirectionssPath;
+async function fetchOpenRouteDirections(place, coords, extras = {}) {
+	const path = window.rrze_directions?.restOpenRouteDirectionsPath;
 	if (!path) {
 		return null;
 	}
@@ -376,7 +376,7 @@ async function fetchOpenRouteDirectionss(place, coords, extras = {}) {
 	}
 }
 
-function directionssResponseHasContent(dirs) {
+function directionsResponseHasContent(dirs) {
 	if (!dirs) {
 		return false;
 	}
@@ -424,8 +424,8 @@ async function loadWorkplaceData(place, extras = {}) {
 			});
 		}
 
-		dirs = await fetchOpenRouteDirectionss(place, coords, extras);
-		if (directionssResponseHasContent(dirs)) {
+		dirs = await fetchOpenRouteDirections(place, coords, extras);
+		if (directionsResponseHasContent(dirs)) {
 			break;
 		}
 	}
@@ -434,7 +434,7 @@ async function loadWorkplaceData(place, extras = {}) {
 }
 
 function applyDirectionsPayload(payload, dirs) {
-	if (!dirs || !directionssResponseHasContent(dirs)) {
+	if (!dirs || !directionsResponseHasContent(dirs)) {
 		return;
 	}
 
@@ -602,7 +602,7 @@ function getVisibleDirectionsSections(attributes, strings) {
 			title: strings.directionsBike ?? __('Walking / Cycling', 'rrze-directions'),
 			placeholder:
 				strings.directionsBikePlaceholder ??
-				__('Directionss by foot / bike.', 'rrze-directions'),
+				__('Directions by foot / bike.', 'rrze-directions'),
 		},
 		{
 			key: 'car',
@@ -612,7 +612,7 @@ function getVisibleDirectionsSections(attributes, strings) {
 			title: strings.directionsCar ?? __('By car', 'rrze-directions'),
 			placeholder:
 				strings.directionsCarPlaceholder ??
-				__('Directionss by car.', 'rrze-directions'),
+				__('Directions by car.', 'rrze-directions'),
 		},
 		{
 			key: 'transit',
@@ -631,7 +631,7 @@ function getVisibleDirectionsSections(attributes, strings) {
 	);
 }
 
-function normalizeDirectionssLayout(layout) {
+function normalizeDirectionsLayout(layout) {
 	if (layout === 'columns' || layout === 'tabs' || layout === 'dropdown') {
 		return layout;
 	}
@@ -949,8 +949,8 @@ function RouteMapEditorPlaceholder({ routeJson, title, hint }) {
 	);
 }
 
-function DirectionssEditorPreview({ attributes, strings }) {
-	const layout = normalizeDirectionssLayout(attributes.directionssLayout);
+function DirectionsEditorPreview({ attributes, strings }) {
+	const layout = normalizeDirectionsLayout(attributes.directionsLayout);
 	const sections = getVisibleDirectionsSections(attributes, strings);
 	const [activeKey, setActiveKey] = useState(sections[0]?.key ?? '');
 
@@ -966,18 +966,18 @@ function DirectionssEditorPreview({ attributes, strings }) {
 
 	const layoutLabel =
 		layout === 'columns'
-			? strings.directionssLayoutColumns ?? __('Columns', 'rrze-directions')
+			? strings.directionsLayoutColumns ?? __('Columns', 'rrze-directions')
 			: layout === 'tabs'
-				? strings.directionssLayoutTabs ?? __('Tabs', 'rrze-directions')
+				? strings.directionsLayoutTabs ?? __('Tabs', 'rrze-directions')
 				: layout === 'dropdown'
-					? strings.directionssLayoutDropdown ?? __('Dropdown', 'rrze-directions')
-					: strings.directionssLayoutAccordion ?? __('Accordion', 'rrze-directions');
+					? strings.directionsLayoutDropdown ?? __('Dropdown', 'rrze-directions')
+					: strings.directionsLayoutAccordion ?? __('Accordion', 'rrze-directions');
 
 	let preview = null;
 
 	if (layout === 'accordion') {
 		preview = (
-			<div className="rrze-directions__directionss rrze-directions__accordions">
+			<div className="rrze-directions__directions rrze-directions__accordions">
 				<div className="rrze-directions__accordion">
 					{sections.map((section, index) => (
 						<div
@@ -1027,7 +1027,7 @@ function DirectionssEditorPreview({ attributes, strings }) {
 		);
 
 		preview = (
-			<div className="rrze-directions__directionss">
+			<div className="rrze-directions__directions">
 				<div className="rrze-elements-tabs primary">
 					<div role="tablist" className="manual">
 						{sections.map((section, index) => (
@@ -1066,7 +1066,7 @@ function DirectionssEditorPreview({ attributes, strings }) {
 		);
 
 		preview = (
-			<div className="rrze-directions__directionss rrze-directions__directionss--dropdown">
+			<div className="rrze-directions__directions rrze-directions__directions--dropdown">
 				<div className="rrze-directions__mode-dropdown">
 					<label
 						className="rrze-directions__mode-label"
@@ -1112,7 +1112,7 @@ function DirectionssEditorPreview({ attributes, strings }) {
 	} else {
 		preview = (
 			<div
-				className={`rrze-directions__directionss rrze-directions__directionss-grid rrze-directions__directionss-grid--cols-${
+				className={`rrze-directions__directions rrze-directions__directions-grid rrze-directions__directions-grid--cols-${
 					sections.length >= 3 ? 3 : sections.length
 				}`}
 			>
@@ -1133,8 +1133,8 @@ function DirectionssEditorPreview({ attributes, strings }) {
 	}
 
 	return (
-		<div className="rrze-directions-editor__directionss-preview">
-			<p className="rrze-directions-editor__directionss-preview-label">
+		<div className="rrze-directions-editor__directions-preview">
+			<p className="rrze-directions-editor__directions-preview-label">
 				{layoutLabel}
 			</p>
 			{preview}
@@ -1203,7 +1203,7 @@ export default function Edit({ attributes, setAttributes }) {
 		showDirectionsBike,
 		showDirectionsCar,
 		showDirectionsTransit,
-		directionssLayout,
+		directionsLayout,
 	} = attributes;
 
 	const blockProps = useBlockProps({ className: 'rrze-directions-block' });
@@ -1264,39 +1264,39 @@ export default function Edit({ attributes, setAttributes }) {
 	const wpSelectOptions = workplaceOptions;
 
 	const previewPersonLabel =
-		selectedRow?.label ?? __('Directionss', 'rrze-directions');
+		selectedRow?.label ?? __('Directions', 'rrze-directions');
 
 	const loadRequestIdRef = useRef(0);
-	const [isLoadingDirectionss, setIsLoadingDirectionss] = useState(false);
+	const [isLoadingDirections, setIsLoadingDirections] = useState(false);
 	const [editorMapSrc, setEditorMapSrc] = useState('');
 
 	useEffect(() => {
-		if (!isLoadingDirectionss) {
+		if (!isLoadingDirections) {
 			setEditorMapSrc(mapIframeSrc);
 		}
-	}, [isLoadingDirectionss, mapIframeSrc]);
+	}, [isLoadingDirections, mapIframeSrc]);
 
 	useEffect(() => {
 		if (!personId || !personRows.length) {
-			setIsLoadingDirectionss(false);
+			setIsLoadingDirections(false);
 			return undefined;
 		}
 
 		const row = personRows.find((r) => r.id === Number(personId));
 		if (!row?.places?.length) {
-			setIsLoadingDirectionss(false);
+			setIsLoadingDirections(false);
 			return undefined;
 		}
 
 		const id = workplaceKey || row.places[0]?.id;
 		const place = id ? row.places.find((p) => p.id === id) : row.places[0];
 		if (!place) {
-			setIsLoadingDirectionss(false);
+			setIsLoadingDirections(false);
 			return undefined;
 		}
 
 		const requestId = ++loadRequestIdRef.current;
-		setIsLoadingDirectionss(true);
+		setIsLoadingDirections(true);
 
 		(async () => {
 			try {
@@ -1328,7 +1328,7 @@ export default function Edit({ attributes, setAttributes }) {
 				setAttributes(payload);
 			} finally {
 				if (loadRequestIdRef.current === requestId) {
-					setIsLoadingDirectionss(false);
+					setIsLoadingDirections(false);
 				}
 			}
 		})();
@@ -1536,8 +1536,8 @@ export default function Edit({ attributes, setAttributes }) {
 
 				<PanelBody
 					title={
-						strings.directionssSettings ??
-						__('Arrival directionss', 'rrze-directions')
+						strings.directionsSettings ??
+						__('Arrival directions', 'rrze-directions')
 					}
 					initialOpen
 				>
@@ -1571,39 +1571,39 @@ export default function Edit({ attributes, setAttributes }) {
 					/>
 					<SelectControl
 						label={
-							strings.directionssLayout ??
+							strings.directionsLayout ??
 							__('Layout', 'rrze-directions')
 						}
-						value={normalizeDirectionssLayout(directionssLayout)}
+						value={normalizeDirectionsLayout(directionsLayout)}
 						options={[
 							{
 								label:
-									strings.directionssLayoutAccordion ??
+									strings.directionsLayoutAccordion ??
 									__('Accordion', 'rrze-directions'),
 								value: 'accordion',
 							},
 							{
 								label:
-									strings.directionssLayoutColumns ??
+									strings.directionsLayoutColumns ??
 									__('Columns', 'rrze-directions'),
 								value: 'columns',
 							},
 							{
 								label:
-									strings.directionssLayoutTabs ??
+									strings.directionsLayoutTabs ??
 									__('Tabs', 'rrze-directions'),
 								value: 'tabs',
 							},
 							{
 								label:
-									strings.directionssLayoutDropdown ??
+									strings.directionsLayoutDropdown ??
 									__('Dropdown', 'rrze-directions'),
 								value: 'dropdown',
 							},
 						]}
 						onChange={(next) =>
 							setAttributes({
-								directionssLayout: normalizeDirectionssLayout(next),
+								directionsLayout: normalizeDirectionsLayout(next),
 							})
 						}
 					/>
@@ -1613,7 +1613,7 @@ export default function Edit({ attributes, setAttributes }) {
 			<div {...blockProps}>
 				<div className="rrze-directions-editor">
 					<h3 className="rrze-directions-editor__title">
-						{__('Directionss', 'rrze-directions')}
+						{__('Directions', 'rrze-directions')}
 						{personId ? ` — ${previewPersonLabel}` : ''}
 					</h3>
 
@@ -1683,7 +1683,7 @@ export default function Edit({ attributes, setAttributes }) {
 					</section>
 
 					<section className="rrze-directions-editor__map">
-						{isLoadingDirectionss ? (
+						{isLoadingDirections ? (
 							<p className="rrze-directions-editor__loading" aria-live="polite">
 								{strings.mapLoading ??
 									__('Loading map…', 'rrze-directions')}
@@ -1733,7 +1733,7 @@ export default function Edit({ attributes, setAttributes }) {
 									allowedFormats={['core/bold', 'core/italic', 'core/link']}
 									placeholder={
 										strings.directionsBikePlaceholder ??
-										__('Directionss by foot / bike.', 'rrze-directions')
+										__('Directions by foot / bike.', 'rrze-directions')
 									}
 								/>
 							</>
@@ -1756,7 +1756,7 @@ export default function Edit({ attributes, setAttributes }) {
 									allowedFormats={['core/bold', 'core/italic', 'core/link']}
 									placeholder={
 										strings.directionsCarPlaceholder ??
-										__('Directionss by car.', 'rrze-directions')
+										__('Directions by car.', 'rrze-directions')
 									}
 								/>
 							</>
@@ -1788,14 +1788,14 @@ export default function Edit({ attributes, setAttributes }) {
 							</>
 						) : null}
 
-						{isLoadingDirectionss ? (
+						{isLoadingDirections ? (
 							<p className="rrze-directions-editor__loading" aria-live="polite">
-								{strings.directionssLoading ??
-									__('Loading directionss…', 'rrze-directions')}
+								{strings.directionsLoading ??
+									__('Loading directions…', 'rrze-directions')}
 							</p>
 						) : null}
 
-						<DirectionssEditorPreview attributes={attributes} strings={strings} />
+						<DirectionsEditorPreview attributes={attributes} strings={strings} />
 					</section>
 				</div>
 			</div>

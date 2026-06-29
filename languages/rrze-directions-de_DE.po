@@ -8,7 +8,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "Directionss"
+msgid "Directions"
 msgstr "Anfahrt"
 
 msgid "Address"
@@ -68,7 +68,7 @@ msgstr "FAUdir"
 msgid "Person"
 msgstr "Person"
 
-msgid "Directionss map"
+msgid "Directions map"
 msgstr "Anfahrtskarte"
 
 msgid "Show arrival map section"
@@ -95,10 +95,10 @@ msgstr "Illustration ersetzen"
 msgid "Remove illustration"
 msgstr "Illustration entfernen"
 
-msgid "Directionss by foot / bike."
+msgid "Directions by foot / bike."
 msgstr "Anfahrt zu Fuß / mit dem Rad."
 
-msgid "Directionss by car."
+msgid "Directions by car."
 msgstr "Anfahrt mit dem Auto."
 
 msgid "Public transport."
@@ -197,10 +197,10 @@ msgstr "Von %1$s nach %2$s"
 msgid "From %1$s to %2$s"
 msgstr "Von %1$s nach %2$s"
 
-msgid "Directionss output"
+msgid "Directions output"
 msgstr "Anfahrtsbeschreibungen"
 
-msgid "Arrival directionss"
+msgid "Arrival directions"
 msgstr "Anfahrtsbeschreibungen"
 
 msgid "Show walking / cycling"
@@ -245,7 +245,7 @@ msgstr "Routenkarte"
 msgid "Interactive route map"
 msgstr "Interaktive Routenkarte"
 
-msgid "Click a numbered step in the directionss list to highlight it on the map."
+msgid "Click a numbered step in the directions list to highlight it on the map."
 msgstr "Klicken Sie auf einen nummerierten Schritt in der Anleitung, um ihn auf der Karte hervorzuheben."
 
 msgid "Show this step on the route map"
@@ -283,7 +283,7 @@ msgstr "Über RRZE Directions"
 msgid "Welcome to RRZE Directions"
 msgstr "Willkommen bei RRZE Directions"
 
-msgid "This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directionss with interactive route maps."
+msgid "This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directions with interactive route maps."
 msgstr "Dieses Plugin ergänzt einen Anfahrtsblock mit FAUdir-Adressen, eingebetteter FAU-Karte und OpenRouteService-Wegbeschreibungen mit interaktiven Routenkarten."
 
 msgid "FAUdir and maps"
@@ -295,10 +295,10 @@ msgstr "Wählen Sie im Block-Editor eine Person und einen Arbeitsplatz. Das Plug
 msgid "Routes and layouts"
 msgstr "Routen und Layouts"
 
-msgid "Walking, car, and public transport directionss can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map."
+msgid "Walking, car, and public transport directions can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map."
 msgstr "Wegbeschreibungen zu Fuß, mit dem Auto und mit öffentlichen Verkehrsmitteln können als Akkordeon, Tabs, Spalten oder Dropdown dargestellt werden. Pro Verkehrsmittel wählen Besucher den Startpunkt per Pill-Button. Nummerierte Schritte verknüpfen mit der Routenkarte."
 
-msgid "Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directionss layout."
+msgid "Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directions layout."
 msgstr "Fügen Sie den RRZE-Directions-Block im Editor ein, wählen Sie Person und Arbeitsplatz aus FAUdir und legen Sie Akkordeon, Tabs, Spalten oder Dropdown für die Wegbeschreibungen fest."
 
 msgid "Settings and tour"
@@ -340,7 +340,7 @@ msgstr "Weiter"
 msgid "Close setup tour"
 msgstr "Einrichtungstour schließen"
 
-msgid "Request a free API key from openrouteservice.org and paste it here. It is required for route directionss and interactive route maps in the block."
+msgid "Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block."
 msgstr "Fordern Sie einen kostenlosen API-Schlüssel bei openrouteservice.org an und tragen Sie ihn hier ein. Er wird für Wegbeschreibungen und interaktive Routenkarten im Block benötigt."
 
 msgid "Click Save changes to store your API key. Changing the key clears cached OpenRouteService responses."

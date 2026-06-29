@@ -34,7 +34,7 @@ final class RouteMapPresentation
             . '></div>'
             . '<p class="rrze-directions-route-map__hint">'
             . esc_html__(
-                'Click a numbered step in the directionss list to highlight it on the map.',
+                'Click a numbered step in the directions list to highlight it on the map.',
                 'rrze-directions'
             )
             . '</p>'
