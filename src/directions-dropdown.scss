@@ -1,0 +1,28 @@
+.rrze-directions .rrze-directions__directions--dropdown,
+.rrze-directions-editor .rrze-directions__directions--dropdown {
+	.rrze-directions__mode-dropdown {
+		margin-bottom: 1rem;
+	}
+
+	.rrze-directions__mode-label {
+		display: block;
+		font-weight: 600;
+		margin: 0 0 0.35rem;
+	}
+
+	.rrze-directions__mode-select {
+		background: Canvas;
+		border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas);
+		border-radius: 4px;
+		color: inherit;
+		font: inherit;
+		max-width: 100%;
+		min-height: 2.5rem;
+		padding: 0.4rem 2rem 0.4rem 0.65rem;
+		width: min(100%, 28rem);
+	}
+
+	.rrze-directions__mode-panel[hidden] {
+		display: none !important;
+	}
+}

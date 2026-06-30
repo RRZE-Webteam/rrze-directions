@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -11,9 +11,9 @@ defined('ABSPATH') || exit;
  */
 final class ApiCache
 {
-    private const INDEX_OPTION = 'rrze_direction_api_cache_index';
+    private const INDEX_OPTION = 'rrze_directions_api_cache_index';
 
-    private const OPTION_PREFIX = 'rrze_direction_api_cache_';
+    private const OPTION_PREFIX = 'rrze_directions_api_cache_';
 
     private const SCHEMA_VERSION = 1;
 

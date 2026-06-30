@@ -1,22 +1,22 @@
 {
-  "name": "rrze-direction",
-  "version": "1.0.37",
+  "name": "rrze-directions",
+  "version": "1.0.58",
   "description": "Gutenberg block for arrival directions: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.",
   "license": "GPL-2.0-or-later",
   "repository": {
     "type": "git",
     "url": ""
   },
-  "textDomain": "rrze-direction",
+  "textDomain": "rrze-directions",
   "scripts": {
-    "build": "wp-scripts build index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js --webpack-copy-php && npm run increment-version",
+    "build": "wp-scripts build index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js rrze-directions-guided-tour=./src/js/rrze-directions-guided-tour.js --webpack-copy-php && npm run increment-version",
     "increment-version": "node increment-version.js patch",
     "format": "wp-scripts format",
     "lint:css": "wp-scripts lint-style",
     "lint:js": "wp-scripts lint-js",
     "packages-update": "wp-scripts packages-update",
     "plugin-zip": "wp-scripts plugin-zip",
-    "start": "wp-scripts start index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js --webpack-copy-php",
+    "start": "wp-scripts start index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js rrze-directions-guided-tour=./src/js/rrze-directions-guided-tour.js --webpack-copy-php",
     "build:readme": "node build-readme.js"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@
  */
 import { initRouteMapsIn } from './route-map';
 
-class DirectionTabsManual {
+class DirectionsTabsManual {
 	constructor(tablistNode) {
 		this.tablistNode = tablistNode;
 		this.tabs = Array.from(tablistNode.querySelectorAll('[role=tab]'));
@@ -111,24 +111,24 @@ class DirectionTabsManual {
 	}
 }
 
-export function initDirectionTabsIn(root = document) {
+export function initDirectionsTabsIn(root = document) {
 	if (!root || typeof root.querySelectorAll !== 'function') {
 		return;
 	}
 
 	root.querySelectorAll(
-		'.rrze-direction .rrze-elements-tabs [role=tablist].manual'
+		'.rrze-directions .rrze-elements-tabs [role=tablist].manual'
 	).forEach((tablist) => {
 		const tabsRoot = tablist.closest('.rrze-elements-tabs');
 		if (tabsRoot?.dataset.externalTabsScript === '1') {
 			return;
 		}
 
-		if (tablist.dataset.directionTabsInit === '1') {
+		if (tablist.dataset.directionsTabsInit === '1') {
 			return;
 		}
 
-		tablist.dataset.directionTabsInit = '1';
-		new DirectionTabsManual(tablist);
+		tablist.dataset.directionsTabsInit = '1';
+		new DirectionsTabsManual(tablist);
 	});
 }

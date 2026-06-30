@@ -2,20 +2,15 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
 /**
- * Default OpenRouteService route starts: main stations for Erlangen, Nürnberg, Fürth.
+ * Fixed OpenRouteService route starts: Erlangen Hbf, Nürnberg Hbf, Nürnberg Flughafen.
  */
 final class RegionalStationOrigin
 {
-    /**
-     * WGS84 coordinates (latitude, longitude) for regional main stations.
-     *
-     * @see https://openrouteservice.org
-     */
     private const ERLANGEN_HBF_LAT = 49.59583;
 
     private const ERLANGEN_HBF_LON = 11.00472;
@@ -24,9 +19,60 @@ final class RegionalStationOrigin
 
     private const NUERNBERG_HBF_LON = 11.08227;
 
-    private const FUERTH_HBF_LAT = 49.46975;
+    /** Albrecht Dürer Airport Nürnberg (NUE). */
+    private const NUERNBERG_AIRPORT_LAT = 49.4987;
 
-    private const FUERTH_HBF_LON = 10.98889;
+    private const NUERNBERG_AIRPORT_LON = 11.0781;
+
+    /** Car routing: Terminal 1 / Flughafenstraße (driveable road). */
+    private const NUERNBERG_AIRPORT_CAR_LAT = 49.49361;
+
+    private const NUERNBERG_AIRPORT_CAR_LON = 11.06472;
+
+    /**
+     * All regional route starts (always used for directions drafts).
+     *
+     * @return list<array{key: string, label: string, lon: float, lat: float, carLon?: float, carLat?: float}>
+     */
+    public static function allStartPoints(): array
+    {
+        return [
+            [
+                'key'   => 'erlangen',
+                'label' => __('Erlangen Hauptbahnhof', 'rrze-directions'),
+                'lon'   => self::ERLANGEN_HBF_LON,
+                'lat'   => self::ERLANGEN_HBF_LAT,
+            ],
+            [
+                'key'   => 'nuernberg',
+                'label' => __('Nürnberg Hauptbahnhof', 'rrze-directions'),
+                'lon'   => self::NUERNBERG_HBF_LON,
+                'lat'   => self::NUERNBERG_HBF_LAT,
+            ],
+            [
+                'key'    => 'nuernberg_airport',
+                'label'  => __('Nürnberg Flughafen', 'rrze-directions'),
+                'lon'    => self::NUERNBERG_AIRPORT_LON,
+                'lat'    => self::NUERNBERG_AIRPORT_LAT,
+                'carLon' => self::NUERNBERG_AIRPORT_CAR_LON,
+                'carLat' => self::NUERNBERG_AIRPORT_CAR_LAT,
+            ],
+        ];
+    }
+
+    /**
+     * @param array{key: string, label: string, lon: float, lat: float, carLon?: float, carLat?: float} $start
+     *
+     * @return array{0: float, 1: float}
+     */
+    public static function lonLatForMode(array $start, string $mode): array
+    {
+        if ($mode === 'car' && isset($start['carLon'], $start['carLat'])) {
+            return [(float) $start['carLon'], (float) $start['carLat']];
+        }
+
+        return [(float) $start['lon'], (float) $start['lat']];
+    }
 
     /**
      * @return array{0: float, 1: float}|null Tuple longitude, latitude for OpenRouteService coordinates arrays.
@@ -51,7 +97,7 @@ final class RegionalStationOrigin
     }
 
     /**
-     * Human-readable main station label for the resolved regional route start.
+     * Human-readable route start label for the resolved region.
      */
     public static function labelForCityOrZip(string $city, string $zip): ?string
     {
@@ -62,22 +108,26 @@ final class RegionalStationOrigin
         }
 
         return match ($region) {
-            'erlangen'  => __('Erlangen Hauptbahnhof', 'rrze-direction'),
-            'nuernberg' => __('Nürnberg Hauptbahnhof', 'rrze-direction'),
-            'fuerth'    => __('Fürth Hauptbahnhof', 'rrze-direction'),
-            default     => null,
+            'erlangen'          => __('Erlangen Hauptbahnhof', 'rrze-directions'),
+            'nuernberg'         => __('Nürnberg Hauptbahnhof', 'rrze-directions'),
+            'nuernberg_airport' => __('Nürnberg Flughafen', 'rrze-directions'),
+            default             => null,
         };
     }
 
     /**
-     * @return 'erlangen'|'nuernberg'|'fuerth'|null
+     * @return 'erlangen'|'nuernberg'|'nuernberg_airport'|null
      */
     private static function regionKeyForCityOrZip(string $city, string $zip): ?string
     {
         $normalized = self::normalizeCityToken($city);
         if ($normalized !== '') {
+            if (str_contains($normalized, 'flughafen') || str_contains($normalized, 'airport')) {
+                return 'nuernberg_airport';
+            }
+
             if (str_contains($normalized, 'fuerth')) {
-                return 'fuerth';
+                return 'nuernberg_airport';
             }
 
             if (str_contains($normalized, 'nuernberg') || str_contains($normalized, 'nurnberg')) {
@@ -96,23 +146,23 @@ final class RegionalStationOrigin
 
         return match (substr($digits, 0, 3)) {
             '910'   => 'erlangen',
-            '907'   => 'fuerth',
+            '907'   => 'nuernberg_airport',
             '904'   => 'nuernberg',
             default => null,
         };
     }
 
     /**
-     * @param 'erlangen'|'nuernberg'|'fuerth' $region
+     * @param 'erlangen'|'nuernberg'|'nuernberg_airport' $region
      *
      * @return array{0: float, 1: float}
      */
     private static function lonLatForRegion(string $region): array
     {
         return match ($region) {
-            'fuerth'    => [self::FUERTH_HBF_LON, self::FUERTH_HBF_LAT],
-            'nuernberg' => [self::NUERNBERG_HBF_LON, self::NUERNBERG_HBF_LAT],
-            default     => [self::ERLANGEN_HBF_LON, self::ERLANGEN_HBF_LAT],
+            'nuernberg'         => [self::NUERNBERG_HBF_LON, self::NUERNBERG_HBF_LAT],
+            'nuernberg_airport' => [self::NUERNBERG_AIRPORT_LON, self::NUERNBERG_AIRPORT_LAT],
+            default             => [self::ERLANGEN_HBF_LON, self::ERLANGEN_HBF_LAT],
         };
     }
 

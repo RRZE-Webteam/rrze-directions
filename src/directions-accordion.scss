@@ -1,11 +1,11 @@
-/* FAU Elemental accordion look — rrze-direction-specific classes (not .accordion-toggle). */
-.rrze-direction .rrze-direction__accordions,
-.rrze-direction-editor .rrze-direction__accordions {
-	.rrze-direction__accordion {
+/* FAU Elemental accordion look — rrze-directions-specific classes (not .accordion-toggle). */
+.rrze-directions .rrze-directions__accordions,
+.rrze-directions-editor .rrze-directions__accordions {
+	.rrze-directions__accordion {
 		margin: 0;
 	}
 
-	.rrze-direction__accordion-group {
+	.rrze-directions__accordion-group {
 		border: none;
 		border-top: 1px solid var(--FAU-Col-FAU-Blau-100, #04316a);
 		margin-bottom: 0;
@@ -15,12 +15,12 @@
 		}
 	}
 
-	.rrze-direction__accordion-heading {
+	.rrze-directions__accordion-heading {
 		margin: 0;
 		padding: 0;
 	}
 
-	button.rrze-direction__accordion-toggle {
+	button.rrze-directions__accordion-toggle {
 		background: transparent;
 		border: none;
 		box-sizing: border-box;
@@ -82,12 +82,12 @@
 		}
 	}
 
-	.rrze-direction__accordion-panel[hidden] {
+	.rrze-directions__accordion-panel[hidden] {
 		display: none !important;
 		pointer-events: none;
 	}
 
-	.rrze-direction__accordion-inner {
+	.rrze-directions__accordion-inner {
 		padding: 0 0 var(--Spacing-6x, 1.5rem);
 	}
 }

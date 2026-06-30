@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: RRZE Direction 0.0.3\n"
+"Project-Id-Version: RRZE Directions 0.0.3\n"
 "Report-Msgid-Bugs-To: \n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
@@ -122,14 +122,14 @@ msgstr "Karte"
 msgid "Map URL (preset from FAUdir)"
 msgstr "URL zu karte.fau.de"
 
-msgid "RRZE Direction has been deactivated because RRZE-FAUdir is installed but failed to initialize fully."
-msgstr "RRZE Direction wurde deaktiviert, weil RRZE-FAUdir installiert ist, aber nicht vollständig initialisiert werden konnte."
+msgid "RRZE Directions has been deactivated because RRZE-FAUdir is installed but failed to initialize fully."
+msgstr "RRZE Directions wurde deaktiviert, weil RRZE-FAUdir installiert ist, aber nicht vollständig initialisiert werden konnte."
 
-msgid "RRZE Direction requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it."
-msgstr "RRZE Direction benötigt RRZE-FAUdir. Das Plugin kann ohne dieses Plugin nicht aktiviert werden."
+msgid "RRZE Directions requires RRZE-FAUdir to be installed and active. The plugin cannot be activated without it."
+msgstr "RRZE Directions benötigt RRZE-FAUdir. Das Plugin kann ohne dieses Plugin nicht aktiviert werden."
 
-msgid "RRZE Direction is inactive because RRZE-FAUdir is not active."
-msgstr "RRZE Direction ist inaktiv, weil RRZE-FAUdir nicht aktiv ist."
+msgid "RRZE Directions is inactive because RRZE-FAUdir is not active."
+msgstr "RRZE Directions ist inaktiv, weil RRZE-FAUdir nicht aktiv ist."
 
 msgid "The FAUdir person custom post type is not registered."
 msgstr "Der FAUdir-Personenbeitragstyp ist nicht registriert."
@@ -158,6 +158,15 @@ msgstr "Routenstart"
 msgid "For workplaces in Erlangen, Nuremberg, or Fürth, draft routes use the respective main station as the start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Fürth (main) station."
 msgstr "Bei Arbeitsplätzen in Erlangen, Nürnberg oder Fürth nutzen Entwurfsrouten jeweils den Hauptbahnhof als Start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof bzw. Fürth (Haupt-)bahnhof."
 
+msgid "Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen."
+msgstr "Entwurfsrouten werden immer von allen drei Startpunkten erzeugt: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen."
+
+msgid "Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen."
+msgstr "Entwurfsrouten werden immer vom Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen erzeugt."
+
+msgid "Draft routes use one of these starting points, depending on the workplace address: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Nürnberg Flughafen."
+msgstr "Entwurfsrouten werden immer von allen drei Startpunkten erzeugt: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen."
+
 msgid "About %1$s km, %2$s min"
 msgstr "Etwa %1$s km, %2$s Min."
 
@@ -178,6 +187,9 @@ msgstr "Nürnberg Hauptbahnhof"
 
 msgid "Fürth Hauptbahnhof"
 msgstr "Fürth Hauptbahnhof"
+
+msgid "Nürnberg Flughafen"
+msgstr "Nürnberg Flughafen"
 
 msgid "Von %1$s nach %2$s"
 msgstr "Von %1$s nach %2$s"
@@ -203,6 +215,9 @@ msgstr "Bus / Bahn anzeigen"
 msgid "Layout"
 msgstr "Darstellung"
 
+msgid "Pills"
+msgstr "Pills"
+
 msgid "Accordion"
 msgstr "Akkordeon"
 
@@ -214,6 +229,18 @@ msgstr "Spalten"
 
 msgid "Tabs"
 msgstr "Tabs"
+
+msgid "Dropdown"
+msgstr "Dropdown"
+
+msgid "Mode of transport"
+msgstr "Fortbewegungsart"
+
+msgid "Starting point"
+msgstr "Startpunkt"
+
+msgid "Route %d"
+msgstr "Route %d"
 
 msgid "Route map"
 msgstr "Routenkarte"
@@ -246,3 +273,91 @@ msgstr "API-Cache leeren"
 
 msgid "API cache cleared (%d entries removed)."
 msgstr "API-Cache geleert (%d Einträge entfernt)."
+
+msgid "About"
+msgstr "Über"
+
+msgid "Tour"
+msgstr "Tour"
+
+msgid "About RRZE Directions"
+msgstr "Über RRZE Directions"
+
+msgid "Welcome to RRZE Directions"
+msgstr "Willkommen bei RRZE Directions"
+
+msgid "This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directions with interactive route maps."
+msgstr "Dieses Plugin ergänzt einen Anfahrtsblock mit FAUdir-Adressen, eingebetteter FAU-Karte und OpenRouteService-Wegbeschreibungen mit interaktiven Routenkarten."
+
+msgid "FAUdir and maps"
+msgstr "FAUdir und Karten"
+
+msgid "Select a person and workplace in the block editor. The plugin loads address data from FAUdir and embeds karte.fau.de with a location pin when possible."
+msgstr "Wählen Sie im Block-Editor eine Person und einen Arbeitsplatz. Das Plugin lädt Adressdaten aus FAUdir und bindet karte.fau.de mit Standort-Pin ein, sofern möglich."
+
+msgid "Routes and layouts"
+msgstr "Routen und Layouts"
+
+msgid "Walking, car, and public transport directions can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map."
+msgstr "Wegbeschreibungen zu Fuß, mit dem Auto und mit öffentlichen Verkehrsmitteln können als Akkordeon, Tabs, Spalten oder Dropdown dargestellt werden. Pro Verkehrsmittel wählen Besucher den Startpunkt per Pill-Button. Nummerierte Schritte verknüpfen mit der Routenkarte."
+
+msgid "Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directions layout."
+msgstr "Fügen Sie den RRZE-Directions-Block im Editor ein, wählen Sie Person und Arbeitsplatz aus FAUdir und legen Sie Akkordeon, Tabs, Spalten oder Dropdown für die Wegbeschreibungen fest."
+
+msgid "Settings and tour"
+msgstr "Einstellungen und Tour"
+
+msgid "Use the setup tour to configure your OpenRouteService API key and learn how caching works. The API key is required for automatic route generation."
+msgstr "Mit der Einrichtungstour konfigurieren Sie den OpenRouteService-API-Schlüssel und erfahren, wie der Cache funktioniert. Der API-Schlüssel ist für die automatische Routenerzeugung erforderlich."
+
+msgid "Feedback and open source"
+msgstr "Feedback und Open Source"
+
+msgid "We welcome your feedback. Everyone who wants to contribute is invited to take part."
+msgstr "Wir freuen uns über Ihr Feedback. Alle, die mitwirken möchten, sind eingeladen."
+
+msgid "RRZE Directions is open source on"
+msgstr "RRZE Directions ist Open Source auf"
+
+msgid "Documentation"
+msgstr "Dokumentation"
+
+msgid "Get started"
+msgstr "Loslegen"
+
+msgid "Step %1$d of %2$d"
+msgstr "Schritt %1$d von %2$d"
+
+msgid "Previous"
+msgstr "Zurück"
+
+msgid "Skip tour"
+msgstr "Tour überspringen"
+
+msgid "Finish"
+msgstr "Fertig"
+
+msgid "Next"
+msgstr "Weiter"
+
+msgid "Close setup tour"
+msgstr "Einrichtungstour schließen"
+
+msgid "Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block."
+msgstr "Fordern Sie einen kostenlosen API-Schlüssel bei openrouteservice.org an und tragen Sie ihn hier ein. Er wird für Wegbeschreibungen und interaktive Routenkarten im Block benötigt."
+
+msgid "Click Save changes to store your API key. Changing the key clears cached OpenRouteService responses."
+msgstr "Klicken Sie auf Änderungen speichern, um den API-Schlüssel zu sichern. Bei einer Änderung des Schlüssels wird der OpenRouteService-Cache geleert."
+
+msgid "Use this button after changing addresses or map data if the frontend still shows outdated routes or map pins."
+msgstr "Nutzen Sie diese Schaltfläche nach Adress- oder Kartenänderungen, wenn im Frontend noch veraltete Routen oder Karten-Pins angezeigt werden."
+
+msgid "RRZE Directions block"
+msgstr "RRZE-Directions-Block"
+
+
+msgid "Insert the RRZE Directions block when editing a page: %s"
+msgstr "Fügen Sie den RRZE-Directions-Block beim Bearbeiten einer Seite ein: %s"
+
+msgid "Open block editor"
+msgstr "Block-Editor öffnen"

@@ -1,13 +1,13 @@
 /**
- * Direction block accordion (single-open).
- * Uses rrze-direction-specific class names so rrze-elements global accordion.js ignores us.
+ * Directions block accordion (single-open).
+ * Uses rrze-directions-specific class names so rrze-elements global accordion.js ignores us.
  */
 (function () {
 	'use strict';
 
-	const ROOT_SELECTOR = '.rrze-direction__accordions .rrze-direction__accordion';
-	const TOGGLE_SELECTOR = '.rrze-direction__accordion-toggle';
-	const PANEL_SELECTOR = '.rrze-direction__accordion-panel';
+	const ROOT_SELECTOR = '.rrze-directions__accordions .rrze-directions__accordion';
+	const TOGGLE_SELECTOR = '.rrze-directions__accordion-toggle';
+	const PANEL_SELECTOR = '.rrze-directions__accordion-panel';
 
 	function getPanel(group) {
 		return group.querySelector(PANEL_SELECTOR);
@@ -20,7 +20,7 @@
 		toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
 
 		panel.dispatchEvent(
-			new CustomEvent('rrze-direction-accordion-panel', {
+			new CustomEvent('rrze-directions-accordion-panel', {
 				bubbles: true,
 				detail: { open },
 			})
@@ -28,7 +28,7 @@
 	}
 
 	function togglePanel(toggle, accordion) {
-		const group = toggle.closest('.rrze-direction__accordion-group');
+		const group = toggle.closest('.rrze-directions__accordion-group');
 		if (!group) {
 			return;
 		}
@@ -40,7 +40,7 @@
 
 		const willOpen = !toggle.classList.contains('active');
 
-		accordion.querySelectorAll('.rrze-direction__accordion-group').forEach((other) => {
+		accordion.querySelectorAll('.rrze-directions__accordion-group').forEach((other) => {
 			if (other === group) {
 				return;
 			}
@@ -60,7 +60,7 @@
 		}
 		accordion.dataset.rrzeAccordionInit = '1';
 
-		accordion.querySelectorAll('.rrze-direction__accordion-group').forEach((group) => {
+		accordion.querySelectorAll('.rrze-directions__accordion-group').forEach((group) => {
 			const toggle = group.querySelector(TOGGLE_SELECTOR);
 			const panel = getPanel(group);
 			if (!toggle || !panel) {

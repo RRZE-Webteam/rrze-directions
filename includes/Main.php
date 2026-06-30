@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -11,11 +11,11 @@ defined('ABSPATH') || exit;
  */
 final class Main
 {
-    public const ACCORDION_SCRIPT_HANDLE = 'rrze-direction-accordion';
+    public const ACCORDION_SCRIPT_HANDLE = 'rrze-directions-accordion';
 
-    public const ROUTE_MAP_SCRIPT_HANDLE = 'rrze-direction-route-map';
+    public const ROUTE_MAP_SCRIPT_HANDLE = 'rrze-directions-route-map';
 
-    public const ROUTE_MAP_STYLE_HANDLE = 'rrze-direction-route-map';
+    public const ROUTE_MAP_STYLE_HANDLE = 'rrze-directions-route-map';
 
     public function __construct()
     {
@@ -62,7 +62,7 @@ final class Main
         }
 
         // Fallback when block viewScript/viewStyle handles are unavailable (older WP).
-        if (!wp_script_is('rrze-direction-view-script', 'registered')) {
+        if (!wp_script_is('rrze-directions-view-script', 'registered')) {
             $routeStylePath = plugin()->getPath() . 'build/view-route-map.css';
             if (is_readable($routeStylePath)) {
                 wp_register_style(
@@ -84,11 +84,11 @@ final class Main
     }
 
     /**
-     * Expose `window.rrze_direction` (persons + translated editor labels) before the script runs.
+     * Expose `window.rrze_directions` (persons + translated editor labels) before the script runs.
      */
     public function enqueueEditor(): void
     {
-        $handle = generate_block_asset_handle('rrze/direction', 'editorScript');
+        $handle = generate_block_asset_handle('rrze/directions', 'editorScript');
 
         if (!wp_script_is($handle, 'registered')) {
             return;
@@ -98,50 +98,54 @@ final class Main
 
         wp_add_inline_script(
             $handle,
-            'window.rrze_direction = ' . wp_json_encode([
+            'window.rrze_directions = ' . wp_json_encode([
                 'persons'                     => $payload,
-                'restResolveCoordinatesPath'  => '/rrze-direction/v1/resolve-coordinates',
-                'restResolveIframeSrcPath'    => '/rrze-direction/v1/resolve-iframe-src',
-                'restOpenRouteDirectionsPath' => '/rrze-direction/v1/openroute-directions',
+                'restResolveCoordinatesPath'  => '/rrze-directions/v1/resolve-coordinates',
+                'restResolveIframeSrcPath'    => '/rrze-directions/v1/resolve-iframe-src',
+                'restOpenRouteDirectionsPath' => '/rrze-directions/v1/openroute-directions',
                 'editorStrings'               => [
-                    'pleaseSelectPerson'         => __('Select a person from FAUdir first.', 'rrze-direction'),
-                    'addressLabel'               => __('Address', 'rrze-direction'),
-                    'roomLabel'                  => __('Room: %s', 'rrze-direction'),
-                    'floorLabel'                 => __('Floor: %s', 'rrze-direction'),
-                    'selectWorkplace'            => __('Office / workplace', 'rrze-direction'),
-                    'selectPersonPanel'          => __('FAUdir', 'rrze-direction'),
-                    'selectPerson'               => __('Person', 'rrze-direction'),
-                    'selectPersonWorkplace'      => __('Select person and workplace.', 'rrze-direction'),
-                    'mapSection'                 => __('Directions map', 'rrze-direction'),
-                    'mapUrl'                     => __('Link to', 'rrze-direction'),
-                    'googleMaps'                 => __('Google Maps', 'rrze-direction'),
-                    'appleMaps'                  => __('Apple Maps', 'rrze-direction'),
-                    'mapImageLabel'              => __('Illustration', 'rrze-direction'),
-                    'replaceIllustration'        => __('Replace illustration', 'rrze-direction'),
-                    'removeIllustration'         => __('Remove illustration', 'rrze-direction'),
-                    'mapServiceTitle'            => __('FAU map service', 'rrze-direction'),
-                    'mapUnavailable'             => __('No map parameters available (add FAUdir data or a Map URL).', 'rrze-direction'),
-                    'directionBike'              => __('Walking / Cycling', 'rrze-direction'),
-                    'directionCar'               => __('By car', 'rrze-direction'),
-                    'directionTransit'           => __('Bus / train', 'rrze-direction'),
-                    'directionBikePlaceholder'   => __('Directions by foot / bike.', 'rrze-direction'),
-                    'directionCarPlaceholder'    => __('Directions by car.', 'rrze-direction'),
-                    'directionTransitPlaceholder'=> __('Public transport.', 'rrze-direction'),
-                    'directionsSettings'           => __('Arrival directions', 'rrze-direction'),
-                    'showDirectionBike'            => __('Show walking / cycling', 'rrze-direction'),
-                    'showDirectionCar'             => __('Show by car', 'rrze-direction'),
-                    'showDirectionTransit'         => __('Show bus / train', 'rrze-direction'),
-                    'directionsLayout'             => __('Layout', 'rrze-direction'),
-                    'directionsLayoutAccordion'    => __('Accordion', 'rrze-direction'),
-                    'directionsLayoutColumns'      => __('Columns', 'rrze-direction'),
-                    'directionsLayoutTabs'         => __('Tabs', 'rrze-direction'),
-					'routeMapTitle'                => __('Route map', 'rrze-direction'),
-					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-direction'),
-					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-direction'),
-					'directionsLoading'            => __('Loading directions…', 'rrze-direction'),
-					'mapLoading'                   => __('Loading map…', 'rrze-direction'),
-                    'coordinatesMissing'         => __('No coordinates detected in API data.', 'rrze-direction'),
-                    'noneOption'                 => __('— Choose —', 'rrze-direction'),
+                    'pleaseSelectPerson'         => __('Select a person from FAUdir first.', 'rrze-directions'),
+                    'addressLabel'               => __('Address', 'rrze-directions'),
+                    'roomLabel'                  => __('Room: %s', 'rrze-directions'),
+                    'floorLabel'                 => __('Floor: %s', 'rrze-directions'),
+                    'selectWorkplace'            => __('Office / workplace', 'rrze-directions'),
+                    'selectPersonPanel'          => __('FAUdir', 'rrze-directions'),
+                    'selectPerson'               => __('Person', 'rrze-directions'),
+                    'selectPersonWorkplace'      => __('Select person and workplace.', 'rrze-directions'),
+                    'mapSection'                 => __('Directions map', 'rrze-directions'),
+                    'mapUrl'                     => __('Link to', 'rrze-directions'),
+                    'googleMaps'                 => __('Google Maps', 'rrze-directions'),
+                    'appleMaps'                  => __('Apple Maps', 'rrze-directions'),
+                    'mapImageLabel'              => __('Illustration', 'rrze-directions'),
+                    'replaceIllustration'        => __('Replace illustration', 'rrze-directions'),
+                    'removeIllustration'         => __('Remove illustration', 'rrze-directions'),
+                    'mapServiceTitle'            => __('FAU map service', 'rrze-directions'),
+                    'mapUnavailable'             => __('No map parameters available (add FAUdir data or a Map URL).', 'rrze-directions'),
+                    'directionsBike'              => __('Walking / Cycling', 'rrze-directions'),
+                    'directionsCar'               => __('By car', 'rrze-directions'),
+                    'directionsTransit'           => __('Bus / train', 'rrze-directions'),
+                    'directionsBikePlaceholder'   => __('Directions by foot / bike.', 'rrze-directions'),
+                    'directionsCarPlaceholder'    => __('Directions by car.', 'rrze-directions'),
+                    'directionsTransitPlaceholder'=> __('Public transport.', 'rrze-directions'),
+                    'directionsSettings'           => __('Arrival directions', 'rrze-directions'),
+                    'showDirectionsBike'            => __('Show walking / cycling', 'rrze-directions'),
+                    'showDirectionsCar'             => __('Show by car', 'rrze-directions'),
+                    'showDirectionsTransit'         => __('Show bus / train', 'rrze-directions'),
+                    'directionsLayout'             => __('Layout', 'rrze-directions'),
+                    'directionsLayoutPills'        => __('Pills', 'rrze-directions'),
+                    'directionsLayoutAccordion'    => __('Accordion', 'rrze-directions'),
+                    'directionsLayoutColumns'      => __('Columns', 'rrze-directions'),
+                    'directionsLayoutTabs'         => __('Tabs', 'rrze-directions'),
+                    'directionsLayoutDropdown'     => __('Dropdown', 'rrze-directions'),
+                    'modeOfTransport'              => __('Mode of transport', 'rrze-directions'),
+                    'startingPoint'                => __('Starting point', 'rrze-directions'),
+					'routeMapTitle'                => __('Route map', 'rrze-directions'),
+					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-directions'),
+					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-directions'),
+					'directionsLoading'            => __('Loading directions…', 'rrze-directions'),
+					'mapLoading'                   => __('Loading map…', 'rrze-directions'),
+                    'coordinatesMissing'         => __('No coordinates detected in API data.', 'rrze-directions'),
+                    'noneOption'                 => __('— Choose —', 'rrze-directions'),
                 ],
             ], JSON_HEX_TAG | JSON_HEX_AMP),
             'before'

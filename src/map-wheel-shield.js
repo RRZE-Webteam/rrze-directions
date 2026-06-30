@@ -1,6 +1,6 @@
-const SHIELD_CLASS = 'rrze-direction__map-wheel-shield';
+const SHIELD_CLASS = 'rrze-directions__map-wheel-shield';
 const PASS_THROUGH_CLASS = 'is-pass-through';
-const IFRAME_SELECTOR = 'iframe.rrze-direction__iframe';
+const IFRAME_SELECTOR = 'iframe.rrze-directions__iframe';
 
 function scrollPageFromWheel(event) {
 	event.preventDefault();

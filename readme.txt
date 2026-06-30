@@ -1,9 +1,9 @@
-=== RRZE Direction ===
+=== RRZE Directions ===
 Contributors: rrze-webteam
 Requires at least: 6.8
 Tested up to: 6.8
 Requires PHP: 8.2
-Stable tag: 1.0.37
+Stable tag: 1.0.58
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -11,7 +11,7 @@ Arrival and directions as a Gutenberg block with address data sourced from RRZE-
 
 == Description ==
 
-RRZE Direction provides a Gutenberg block for university websites that combines workplace address data from RRZE-FAUdir with maps and route descriptions for visitors.
+RRZE Directions provides a Gutenberg block for university websites that combines workplace address data from RRZE-FAUdir with maps and route descriptions for visitors.
 
 The block is intended for “Anfahrt” / directions pages: select a person and workplace in the editor, and the plugin fills in address fields, coordinates, an embedded FAU campus map, and optional route maps with turn-by-turn directions.
 
@@ -24,8 +24,8 @@ The block is intended for “Anfahrt” / directions pages: select a person and 
 * Optional illustration image below the map
 * Route maps (Leaflet) with geometry from OpenRouteService for walking/cycling, car, and public transport
 * Numbered route steps; clicking a step highlights the corresponding segment on the map
-* Rich-text direction sections, editable in the block editor
-* Show or hide individual direction types per block
+* Rich-text directions sections, editable in the block editor
+* Show or hide individual directions types per block
 * Layout choice: accordion (rrze-answers), tabs, or multi-column grid
 * Editor preview with SVG placeholders instead of live maps
 * Scroll-friendly FAU iframe: page scrolls by default; map controls remain clickable
@@ -44,21 +44,21 @@ The block is intended for “Anfahrt” / directions pages: select a person and 
 * WordPress 6.8 or newer
 * PHP 8.2 or newer
 * Active RRZE-FAUdir plugin (same data basis as FAUdir person entries / custom_person)
-* OpenRouteService API key for route maps and auto-generated directions (Settings → RRZE Direction)
+* OpenRouteService API key for route maps and auto-generated directions (Settings → RRZE Directions)
 
 == Installation ==
 
 1. Ensure RRZE-FAUdir is installed and active.
-2. Upload and activate RRZE Direction.
+2. Upload and activate RRZE Directions.
 3. Run `npm install && npm run build` if you deploy from source (assets must exist in `/build`).
-4. Add the “RRZE Direction” block to a page or post.
-5. Enter an OpenRouteService API key under Settings → RRZE Direction if you use route maps or automatic directions.
+4. Add the “RRZE Directions” block to a page or post.
+5. Enter an OpenRouteService API key under Settings → RRZE Directions if you use route maps or automatic directions.
 
 == Configuration ==
 
 = OpenRouteService =
 
-Under **Settings → RRZE Direction**, enter your OpenRouteService API key. Without a key, address and FAU map features still work; route maps and fetched directions are unavailable.
+Under **Settings → RRZE Directions**, enter your OpenRouteService API key. Without a key, address and FAU map features still work; route maps and fetched directions are unavailable.
 
 = FAU campus map URL =
 
@@ -72,7 +72,7 @@ From the plugin directory:
 `npm run build` — compile editor/frontend assets into `/build` and copy `render.php`
 `npm run start` — watch mode for development
 `npm run lint:js` / `npm run lint:css` — lint sources
-`msgfmt -o languages/rrze-direction-de_DE.mo languages/rrze-direction-de_DE.po` — compile German translations
+`msgfmt -o languages/rrze-directions-de_DE.mo languages/rrze-directions-de_DE.po` — compile German translations
 
 Source layout:
 

@@ -1,7 +1,7 @@
 {
   "apiVersion": 3,
-  "name": "rrze/direction",
-  "title": "RRZE Direction",
+  "name": "rrze/directions",
+  "title": "RRZE Directions",
   "category": "rrze",
   "icon": "location",
   "description": "Directions and arrival information using RRZE-FAUdir address data.",
@@ -69,45 +69,45 @@
       "type": "number",
       "default": 0
     },
-    "directionBike": {
+    "directionsBike": {
       "type": "string",
       "default": ""
     },
-    "directionCar": {
+    "directionsCar": {
       "type": "string",
       "default": ""
     },
-    "directionTransit": {
+    "directionsTransit": {
       "type": "string",
       "default": ""
     },
-    "directionBikeRoute": {
+    "directionsBikeRoute": {
       "type": "string",
       "default": ""
     },
-    "directionCarRoute": {
+    "directionsCarRoute": {
       "type": "string",
       "default": ""
     },
-    "directionTransitRoute": {
+    "directionsTransitRoute": {
       "type": "string",
       "default": ""
     },
-    "showDirectionBike": {
+    "showDirectionsBike": {
       "type": "boolean",
       "default": true
     },
-    "showDirectionCar": {
+    "showDirectionsCar": {
       "type": "boolean",
       "default": true
     },
-    "showDirectionTransit": {
+    "showDirectionsTransit": {
       "type": "boolean",
       "default": true
     },
     "directionsLayout": {
       "type": "string",
-      "default": "accordion"
+      "default": "pills"
     }
   },
   "editorScript": "file:./index.js",
@@ -115,5 +115,5 @@
   "viewStyle": "file:./view-route-map.css",
   "render": "file:./render.php",
   "style": "file:./style-index.css",
-  "textdomain": "rrze-direction"
+  "textdomain": "rrze-directions"
 }

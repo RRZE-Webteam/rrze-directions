@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -286,7 +286,7 @@ final class FauMapGeojson
             $url,
             [
                 'timeout'     => 8,
-                'redirection' => 2,
+                'redirections' => 2,
                 'headers'     => [
                     'Accept' => 'application/json',
                 ],

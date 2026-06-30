@@ -1,7 +1,10 @@
-@use 'direction-tabs';
-@use 'direction-accordion';
+@use 'directions-mode-pills';
+@use 'directions-tabs';
+@use 'directions-accordion';
+@use 'directions-start-pills';
+@use 'directions-dropdown';
 
-.rrze-direction-editor {
+.rrze-directions-editor {
 	--rd-border: color-mix(in srgb, CanvasText 12%, Canvas);
 
 	&__title {
@@ -9,6 +12,7 @@
 	}
 
 	&__address {
+		font-style: normal;
 		margin-bottom: 0.75rem;
 	}
 
@@ -54,7 +58,7 @@
 	}
 }
 
-.rrze-direction__map-wheel-shield {
+.rrze-directions__map-wheel-shield {
 	background: transparent;
 	inset: 0;
 	position: absolute;
@@ -65,7 +69,7 @@
 	}
 }
 
-.rrze-direction-route-map {
+.rrze-directions-route-map {
 	margin: 0 0 1rem;
 
 	&__title {
@@ -86,14 +90,14 @@
 	}
 
 	&--editor-placeholder {
-		.rrze-direction-route-map__preview {
+		.rrze-directions-route-map__preview {
 			background: color-mix(in srgb, CanvasText 4%, Canvas);
 			border: 1px solid color-mix(in srgb, CanvasText 12%, Canvas);
 			height: clamp(160px, 28vw, 240px);
 			overflow: hidden;
 		}
 
-		.rrze-direction-route-map__preview-svg {
+		.rrze-directions-route-map__preview-svg {
 			display: block;
 			height: 100%;
 			width: 100%;
@@ -101,7 +105,7 @@
 	}
 }
 
-.rrze-direction-route-marker {
+.rrze-directions-route-marker {
 	background: transparent;
 	border: 0;
 
@@ -119,7 +123,7 @@
 	}
 }
 
-.rrze-direction-ors-step {
+.rrze-directions-ors-step {
 	cursor: pointer;
 
 	&.is-route-step-active {
@@ -127,11 +131,15 @@
 	}
 }
 
-.rrze-direction {
+.rrze-directions {
 	margin-bottom: 1.5rem;
 
 	&__title {
 		margin: 0 0 1rem;
+	}
+
+	&__address {
+		font-style: normal;
 	}
 
 	&__rte p:first-child {
@@ -169,6 +177,10 @@
 		margin-top: 1rem;
 	}
 
+	&__route-variant {
+		margin-bottom: 0;
+	}
+
 	&__directions-grid {
 		display: grid;
 		gap: 1.5rem;
@@ -196,7 +208,7 @@
 	}
 }
 
-.rrze-direction-block .rrze-direction-block__img {
+.rrze-directions-block .rrze-directions-block__img {
 	max-height: 200px;
 	width: auto;
 	border-radius: 4px;

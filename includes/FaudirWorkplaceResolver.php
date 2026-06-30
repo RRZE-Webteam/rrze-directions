@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace RRZE\Direction;
+namespace RRZE\Directions;
 
 defined('ABSPATH') || exit;
 
@@ -21,7 +21,7 @@ final class FaudirWorkplaceResolver
         if (!post_type_exists('custom_person')) {
             return [
                 'error'   => true,
-                'message' => __('The FAUdir person custom post type is not registered.', 'rrze-direction'),
+                'message' => __('The FAUdir person custom post type is not registered.', 'rrze-directions'),
                 'data'    => [],
             ];
         }
@@ -29,7 +29,7 @@ final class FaudirWorkplaceResolver
         if (!class_exists(\RRZE\FAUdir\API::class) || !class_exists(\RRZE\FAUdir\Config::class)) {
             return [
                 'error'   => true,
-                'message' => __('FAUdir API classes are not available.', 'rrze-direction'),
+                'message' => __('FAUdir API classes are not available.', 'rrze-directions'),
                 'data'    => [],
             ];
         }
@@ -43,7 +43,7 @@ final class FaudirWorkplaceResolver
         if (!post_type_exists($ptype)) {
             return [
                 'error'   => true,
-                'message' => __('The configured FAUdir person post type does not exist.', 'rrze-direction'),
+                'message' => __('The configured FAUdir person post type does not exist.', 'rrze-directions'),
                 'data'    => [],
             ];
         }
