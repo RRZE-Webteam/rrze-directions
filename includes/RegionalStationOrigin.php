@@ -24,10 +24,15 @@ final class RegionalStationOrigin
 
     private const NUERNBERG_AIRPORT_LON = 11.0781;
 
+    /** Car routing: Terminal 1 / Flughafenstraße (driveable road). */
+    private const NUERNBERG_AIRPORT_CAR_LAT = 49.49361;
+
+    private const NUERNBERG_AIRPORT_CAR_LON = 11.06472;
+
     /**
      * All regional route starts (always used for directions drafts).
      *
-     * @return list<array{key: string, label: string, lon: float, lat: float}>
+     * @return list<array{key: string, label: string, lon: float, lat: float, carLon?: float, carLat?: float}>
      */
     public static function allStartPoints(): array
     {
@@ -45,12 +50,28 @@ final class RegionalStationOrigin
                 'lat'   => self::NUERNBERG_HBF_LAT,
             ],
             [
-                'key'   => 'nuernberg_airport',
-                'label' => __('Nürnberg Flughafen', 'rrze-directions'),
-                'lon'   => self::NUERNBERG_AIRPORT_LON,
-                'lat'   => self::NUERNBERG_AIRPORT_LAT,
+                'key'    => 'nuernberg_airport',
+                'label'  => __('Nürnberg Flughafen', 'rrze-directions'),
+                'lon'    => self::NUERNBERG_AIRPORT_LON,
+                'lat'    => self::NUERNBERG_AIRPORT_LAT,
+                'carLon' => self::NUERNBERG_AIRPORT_CAR_LON,
+                'carLat' => self::NUERNBERG_AIRPORT_CAR_LAT,
             ],
         ];
+    }
+
+    /**
+     * @param array{key: string, label: string, lon: float, lat: float, carLon?: float, carLat?: float} $start
+     *
+     * @return array{0: float, 1: float}
+     */
+    public static function lonLatForMode(array $start, string $mode): array
+    {
+        if ($mode === 'car' && isset($start['carLon'], $start['carLat'])) {
+            return [(float) $start['carLon'], (float) $start['carLat']];
+        }
+
+        return [(float) $start['lon'], (float) $start['lat']];
     }
 
     /**

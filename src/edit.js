@@ -16,6 +16,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from '@wordpress/eleme
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import apiFetch from '@wordpress/api-fetch';
+import { DirectionModeIcon, StartPointIcon } from './mode-icons';
 
 const KARTE_HOST_SUFFIX = 'karte.fau.de';
 const KARTE_IFRAME_PATH = '/api/v1/iframe';
@@ -632,11 +633,16 @@ function getVisibleDirectionsSections(attributes, strings) {
 }
 
 function normalizeDirectionsLayout(layout) {
-	if (layout === 'columns' || layout === 'tabs' || layout === 'dropdown') {
+	if (
+		layout === 'accordion' ||
+		layout === 'columns' ||
+		layout === 'tabs' ||
+		layout === 'dropdown'
+	) {
 		return layout;
 	}
 
-	return 'accordion';
+	return 'pills';
 }
 
 function variantKey(variant, index) {
@@ -692,9 +698,12 @@ function RouteVariantsEditorMaps({ routeJson, strings }) {
 								aria-selected={active}
 								onClick={() => setActiveKey(key)}
 							>
-								{variant.startLabel ||
-									strings.routeMapTitle ||
-									__('Route map', 'rrze-directions')}
+								<StartPointIcon startKey={variant.startKey || key} />
+								<span className="rrze-directions__start-pill-label">
+									{variant.startLabel ||
+										strings.routeMapTitle ||
+										__('Route map', 'rrze-directions')}
+								</span>
 							</button>
 						);
 					})}
@@ -789,12 +798,15 @@ function DirectionsStartSwitcher({ routeJson, content, strings }) {
 							aria-selected={active}
 							onClick={() => setActiveKey(key)}
 						>
-							{variant.startLabel ||
-								sprintf(
-									/* translators: %d: route variant number */
-									__('Route %d', 'rrze-directions'),
-									index + 1
-								)}
+							<StartPointIcon startKey={variant.startKey || key} />
+							<span className="rrze-directions__start-pill-label">
+								{variant.startLabel ||
+									sprintf(
+										/* translators: %d: route variant number */
+										__('Route %d', 'rrze-directions'),
+										index + 1
+									)}
+							</span>
 						</button>
 					);
 				})}
@@ -965,7 +977,9 @@ function DirectionsEditorPreview({ attributes, strings }) {
 	}
 
 	const layoutLabel =
-		layout === 'columns'
+		layout === 'pills'
+			? strings.directionsLayoutPills ?? __('Pills', 'rrze-directions')
+			: layout === 'columns'
 			? strings.directionsLayoutColumns ?? __('Columns', 'rrze-directions')
 			: layout === 'tabs'
 				? strings.directionsLayoutTabs ?? __('Tabs', 'rrze-directions')
@@ -975,7 +989,75 @@ function DirectionsEditorPreview({ attributes, strings }) {
 
 	let preview = null;
 
-	if (layout === 'accordion') {
+	if (layout === 'pills') {
+		if (sections.length === 1) {
+			preview = (
+				<div className="rrze-directions__directions rrze-directions__directions--mode-pills">
+					<DirectionsSectionPreviewBody
+						section={sections[0]}
+						strings={strings}
+					/>
+				</div>
+			);
+		} else {
+			const activeIndex = Math.max(
+				0,
+				sections.findIndex((section) => section.key === activeKey)
+			);
+
+			preview = (
+				<div className="rrze-directions__directions rrze-directions__directions--mode-pills">
+					<div className="rrze-directions__mode-switcher">
+						<div
+							className="rrze-directions__mode-pills"
+							role="tablist"
+							aria-label={
+								strings.modeOfTransport ??
+								__('Mode of transport', 'rrze-directions')
+							}
+						>
+							{sections.map((section, index) => (
+								<button
+									key={section.key}
+									type="button"
+									className={`rrze-directions__mode-pill${
+										index === activeIndex ? ' is-active' : ''
+									}`}
+									role="tab"
+									aria-selected={index === activeIndex}
+									onClick={() => setActiveKey(section.key)}
+								>
+									<DirectionModeIcon modeKey={section.key} />
+									<span className="rrze-directions__mode-pill-label">
+										{section.title}
+									</span>
+								</button>
+							))}
+						</div>
+						<div className="rrze-directions__mode-panels">
+							{sections.map((section, index) => (
+								<div
+									key={section.key}
+									className={`rrze-directions__mode-variant${
+										index === activeIndex ? ' is-active' : ''
+									}`}
+									role="tabpanel"
+									aria-label={section.title}
+									hidden={index !== activeIndex}
+								>
+									<h3 className="screen-reader-text">{section.title}</h3>
+									<DirectionsSectionPreviewBody
+										section={section}
+										strings={strings}
+									/>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			);
+		}
+	} else if (layout === 'accordion') {
 		preview = (
 			<div className="rrze-directions__directions rrze-directions__accordions">
 				<div className="rrze-directions__accordion">
@@ -1576,6 +1658,12 @@ export default function Edit({ attributes, setAttributes }) {
 						}
 						value={normalizeDirectionsLayout(directionsLayout)}
 						options={[
+							{
+								label:
+									strings.directionsLayoutPills ??
+									__('Pills', 'rrze-directions'),
+								value: 'pills',
+							},
 							{
 								label:
 									strings.directionsLayoutAccordion ??

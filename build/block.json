@@ -107,7 +107,7 @@
     },
     "directionsLayout": {
       "type": "string",
-      "default": "accordion"
+      "default": "pills"
     }
   },
   "editorScript": "file:./index.js",

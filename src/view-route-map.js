@@ -3,6 +3,7 @@ import { attachMapWheelShield } from './map-wheel-shield';
 import { initDirectionsTabsIn } from './directions-tabs';
 import { initStartPillsIn } from './directions-start-pills';
 import { initDirectionsDropdownIn } from './directions-dropdown';
+import { initModePillsIn } from './directions-mode-pills';
 
 function handleAccordionPanel(event) {
 	const panel = event.target;
@@ -49,6 +50,7 @@ function boot() {
 	initRouteMapsIn(document);
 	initDirectionsTabsIn(document);
 	initStartPillsIn(document);
+	initModePillsIn(document);
 	initDirectionsDropdownIn(document);
 
 	document.addEventListener('rrze-directions-accordion-panel', handleAccordionPanel);

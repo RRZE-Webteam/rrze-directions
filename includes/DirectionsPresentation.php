@@ -7,7 +7,7 @@ namespace RRZE\Directions;
 defined('ABSPATH') || exit;
 
 /**
- * Renders directions sections (foot, car, transit) as accordion, tabs, columns, or dropdown.
+ * Renders directions sections (foot, car, transit) as pills, accordion, tabs, columns, or dropdown.
  */
 final class DirectionsPresentation
 {
@@ -66,7 +66,13 @@ final class DirectionsPresentation
             return '';
         }
 
-        $layout = self::normalizeLayout((string) ($attributes['directionsLayout'] ?? 'accordion'));
+        ModeIcons::enqueueDashicons();
+
+        $layout = self::normalizeLayout((string) ($attributes['directionsLayout'] ?? 'pills'));
+
+        if ($layout === 'pills') {
+            return self::renderPills($sections);
+        }
 
         if ($layout === 'columns') {
             return self::renderColumns($sections);
@@ -100,11 +106,77 @@ final class DirectionsPresentation
     private static function normalizeLayout(string $layout): string
     {
         return match ($layout) {
-            'columns'  => 'columns',
-            'tabs'     => 'tabs',
-            'dropdown' => 'dropdown',
-            default    => 'accordion',
+            'accordion' => 'accordion',
+            'columns'   => 'columns',
+            'tabs'      => 'tabs',
+            'dropdown'  => 'dropdown',
+            default     => 'pills',
         };
+    }
+
+    /**
+     * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     */
+    private static function renderPills(array $sections): string
+    {
+        if (count($sections) === 1) {
+            return '<div class="rrze-directions__directions rrze-directions__directions--mode-pills"'
+                . ' role="region"'
+                . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
+                . self::renderSectionBody($sections[0])
+                . '</div>';
+        }
+
+        $groupId = wp_unique_id('rrze-directions-mode-');
+        $pills   = '';
+        $panels  = '';
+
+        foreach ($sections as $index => $section) {
+            $active  = $index === 0;
+            $pillId  = $groupId . '-pill-' . $section['key'];
+            $panelId = $groupId . '-panel-' . $section['key'];
+
+            $pills .= '<button'
+                . ' type="button"'
+                . ' class="rrze-directions__mode-pill' . ($active ? ' is-active' : '') . '"'
+                . ' role="tab"'
+                . ' id="' . esc_attr($pillId) . '"'
+                . ' aria-selected="' . ($active ? 'true' : 'false') . '"'
+                . ' aria-controls="' . esc_attr($panelId) . '"'
+                . ' data-mode-key="' . esc_attr($section['key']) . '"'
+                . ($active ? '' : ' tabindex="-1"')
+                . '>';
+            $pills .= ModeIcons::modeIconHtml($section['key']);
+            $pills .= '<span class="rrze-directions__mode-pill-label">' . esc_html($section['title']) . '</span>';
+            $pills .= '</button>';
+
+            $panels .= '<div'
+                . ' class="rrze-directions__mode-variant' . ($active ? ' is-active' : '') . '"'
+                . ' id="' . esc_attr($panelId) . '"'
+                . ' role="tabpanel"'
+                . ' aria-labelledby="' . esc_attr($pillId) . '"'
+                . ' data-mode-key="' . esc_attr($section['key']) . '"'
+                . ($active ? '' : ' hidden')
+                . '>';
+            $panels .= '<h3 class="screen-reader-text">' . esc_html($section['title']) . '</h3>';
+            $panels .= self::renderSectionBody($section);
+            $panels .= '</div>';
+        }
+
+        return '<div class="rrze-directions__directions rrze-directions__directions--mode-pills"'
+            . ' role="region"'
+            . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
+            . '<div class="rrze-directions__mode-switcher" data-mode-switcher="1">'
+            . '<div class="rrze-directions__mode-pills" role="tablist" aria-label="'
+            . esc_attr__('Mode of transport', 'rrze-directions')
+            . '">'
+            . $pills
+            . '</div>'
+            . '<div class="rrze-directions__mode-panels">'
+            . $panels
+            . '</div>'
+            . '</div>'
+            . '</div>';
     }
 
     /**
@@ -354,7 +426,8 @@ final class DirectionsPresentation
                 . ' data-start-key="' . esc_attr($startKey) . '"'
                 . ($active ? '' : ' tabindex="-1"')
                 . '>';
-            $pills .= esc_html($label);
+            $pills .= ModeIcons::startIconHtml($startKey);
+            $pills .= '<span class="rrze-directions__start-pill-label">' . esc_html($label) . '</span>';
             $pills .= '</button>';
 
             $routeJson      = wp_json_encode($variant['route']);

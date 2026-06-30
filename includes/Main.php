@@ -132,6 +132,7 @@ final class Main
                     'showDirectionsCar'             => __('Show by car', 'rrze-directions'),
                     'showDirectionsTransit'         => __('Show bus / train', 'rrze-directions'),
                     'directionsLayout'             => __('Layout', 'rrze-directions'),
+                    'directionsLayoutPills'        => __('Pills', 'rrze-directions'),
                     'directionsLayoutAccordion'    => __('Accordion', 'rrze-directions'),
                     'directionsLayoutColumns'      => __('Columns', 'rrze-directions'),
                     'directionsLayoutTabs'         => __('Tabs', 'rrze-directions'),

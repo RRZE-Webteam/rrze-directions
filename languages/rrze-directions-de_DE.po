@@ -215,6 +215,9 @@ msgstr "Bus / Bahn anzeigen"
 msgid "Layout"
 msgstr "Darstellung"
 
+msgid "Pills"
+msgstr "Pills"
+
 msgid "Accordion"
 msgstr "Akkordeon"
 
