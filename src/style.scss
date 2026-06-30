@@ -11,6 +11,7 @@
 	}
 
 	&__address {
+		font-style: normal;
 		margin-bottom: 0.75rem;
 	}
 
@@ -134,6 +135,10 @@
 
 	&__title {
 		margin: 0 0 1rem;
+	}
+
+	&__address {
+		font-style: normal;
 	}
 
 	&__rte p:first-child {
