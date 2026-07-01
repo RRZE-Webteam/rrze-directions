@@ -11,6 +11,43 @@
 	margin: 0 0 1rem;
 }
 
+.rrze-directions .rrze-directions__start-pill-group,
+.rrze-directions-editor .rrze-directions__start-pill-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.rrze-directions .rrze-directions__start-schedule,
+.rrze-directions-editor .rrze-directions__start-schedule {
+	align-items: center;
+	background: color-mix(in srgb, CanvasText 6%, Canvas);
+	border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas);
+	border-radius: 999px;
+	color: inherit;
+	display: inline-flex;
+	flex-shrink: 0;
+	height: 2rem;
+	justify-content: center;
+	margin-right: 0.75rem;
+	text-decoration: none;
+	width: 2rem;
+
+	&:hover,
+	&:focus-visible {
+		border-color: var(--FAU-Col-FAU-Blau-100, #04316a);
+		color: var(--FAU-Col-FAU-Blau-100, #04316a);
+		outline: none;
+	}
+
+	.dashicons,
+	.rrze-directions__pill-icon {
+		font-size: 1.125rem;
+		height: 1.125rem;
+		width: 1.125rem;
+	}
+}
+
 .rrze-directions .rrze-directions__start-pill,
 .rrze-directions-editor .rrze-directions__start-pill {
 	background: color-mix(in srgb, CanvasText 6%, Canvas);

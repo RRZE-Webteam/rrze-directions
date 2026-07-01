@@ -22,6 +22,7 @@ final class Main
         add_action('init', [$this, 'registerAssets']);
         add_action('enqueue_block_editor_assets', [$this, 'enqueueEditor']);
         add_action('save_post', [$this, 'invalidateFaudirCacheOnPersonSave'], 10, 3);
+        add_filter('render_block', [$this, 'localizeViewScript'], 10, 2);
         RestResolveCoordinates::register();
         RestResolveIframeSrc::register();
         RestOpenRouteDirections::register();
@@ -131,6 +132,10 @@ final class Main
                     'directionsTransitPlaceholder'=> __('Public transport.', 'rrze-directions'),
                     'defaultHeading'               => __('Directions', 'rrze-directions'),
                     'defaultHeadingWithPerson'     => __('Directions — %s', 'rrze-directions'),
+                    'displaySettings'              => __('Display', 'rrze-directions'),
+                    'showMap'                      => __('Show map', 'rrze-directions'),
+                    'showDirectionsSection'        => __('Show arrival directions', 'rrze-directions'),
+                    'showDirectionsRequiresMap'    => __('Arrival directions require the map to be shown.', 'rrze-directions'),
                     'directionsSettings'           => __('Arrival directions', 'rrze-directions'),
                     'showDirectionsBike'            => __('Show walking / cycling', 'rrze-directions'),
                     'showDirectionsCar'             => __('Show by car', 'rrze-directions'),
@@ -143,6 +148,7 @@ final class Main
                     'directionsLayoutDropdown'     => __('Dropdown', 'rrze-directions'),
                     'modeOfTransport'              => __('Mode of transport', 'rrze-directions'),
                     'startingPoint'                => __('Starting point', 'rrze-directions'),
+					'vgnSchedule'                  => __('Open VGN timetable', 'rrze-directions'),
 					'routeMapTitle'                => __('Route map', 'rrze-directions'),
 					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-directions'),
 					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-directions'),
@@ -154,6 +160,59 @@ final class Main
             ], JSON_HEX_TAG | JSON_HEX_AMP),
             'before'
         );
+    }
+
+    /**
+     * @param array<string, mixed> $block
+     */
+    public function localizeViewScript(string $content, array $block): string
+    {
+        if (($block['blockName'] ?? '') !== 'rrze/directions') {
+            return $content;
+        }
+
+        $handle = generate_block_asset_handle('rrze/directions', 'viewScript', 1);
+
+        if (!wp_script_is($handle, 'registered')) {
+            $handle = generate_block_asset_handle('rrze/directions', 'viewScript');
+        }
+
+        if (!wp_script_is($handle, 'registered')) {
+            $handle = self::ROUTE_MAP_SCRIPT_HANDLE;
+        }
+
+        if (!wp_script_is($handle, 'registered')) {
+            return $content;
+        }
+
+        static $localized = false;
+
+        if ($localized) {
+            return $content;
+        }
+
+        $localized = true;
+
+        wp_enqueue_script($handle);
+
+        wp_add_inline_script(
+            $handle,
+            'window.rrze_directions_view = ' . wp_json_encode([
+                'from'          => __('From', 'rrze-directions'),
+                'to'            => __('To', 'rrze-directions'),
+                'mode'          => __('Mode of transport', 'rrze-directions'),
+                'directions'    => __('Directions', 'rrze-directions'),
+                'destination'   => __('Destination', 'rrze-directions'),
+                'overviewMap'   => __('Overview map', 'rrze-directions'),
+                'detailMap'     => __('Detail map', 'rrze-directions'),
+                'page'          => __('Page', 'rrze-directions'),
+                'downloading'   => __('Generating PDF…', 'rrze-directions'),
+                'downloadError' => __('Could not generate the PDF.', 'rrze-directions'),
+            ], JSON_HEX_TAG | JSON_HEX_AMP) . ';',
+            'before'
+        );
+
+        return $content;
     }
 
     public function invalidateFaudirCacheOnPersonSave(int $postId, \WP_Post $post, bool $update): void

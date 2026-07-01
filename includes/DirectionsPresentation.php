@@ -71,22 +71,22 @@ final class DirectionsPresentation
         $layout = self::normalizeLayout((string) ($attributes['directionsLayout'] ?? 'pills'));
 
         if ($layout === 'pills') {
-            return self::renderPills($sections);
+            return self::renderPills($sections, $attributes);
         }
 
         if ($layout === 'columns') {
-            return self::renderColumns($sections);
+            return self::renderColumns($sections, $attributes);
         }
 
         if ($layout === 'tabs') {
-            return self::renderTabs($sections);
+            return self::renderTabs($sections, $attributes);
         }
 
         if ($layout === 'dropdown') {
-            return self::renderDropdown($sections);
+            return self::renderDropdown($sections, $attributes);
         }
 
-        return self::renderAccordion($sections);
+        return self::renderAccordion($sections, $attributes);
     }
 
     private static function isTypeEnabled(array $attributes, string $attributeKey): bool
@@ -116,14 +116,15 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     * @param array<string, mixed>                                                   $attributes
      */
-    private static function renderPills(array $sections): string
+    private static function renderPills(array $sections, array $attributes): string
     {
         if (count($sections) === 1) {
             return '<div class="rrze-directions__directions rrze-directions__directions--mode-pills"'
                 . ' role="region"'
                 . ' aria-label="' . esc_attr__('Directions', 'rrze-directions') . '">'
-                . self::renderSectionBody($sections[0])
+                . self::renderSectionBody($sections[0], $attributes)
                 . '</div>';
         }
 
@@ -143,11 +144,11 @@ final class DirectionsPresentation
                 . ' id="' . esc_attr($pillId) . '"'
                 . ' aria-selected="' . ($active ? 'true' : 'false') . '"'
                 . ' aria-controls="' . esc_attr($panelId) . '"'
+                . ' aria-label="' . esc_attr($section['title']) . '"'
                 . ' data-mode-key="' . esc_attr($section['key']) . '"'
                 . ($active ? '' : ' tabindex="-1"')
                 . '>';
             $pills .= ModeIcons::modeIconHtml($section['key']);
-            $pills .= '<span class="rrze-directions__mode-pill-label">' . esc_html($section['title']) . '</span>';
             $pills .= '</button>';
 
             $panels .= '<div'
@@ -159,7 +160,7 @@ final class DirectionsPresentation
                 . ($active ? '' : ' hidden')
                 . '>';
             $panels .= '<h3 class="screen-reader-text">' . esc_html($section['title']) . '</h3>';
-            $panels .= self::renderSectionBody($section);
+            $panels .= self::renderSectionBody($section, $attributes);
             $panels .= '</div>';
         }
 
@@ -181,8 +182,9 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     * @param array<string, mixed>                                                   $attributes
      */
-    private static function renderAccordion(array $sections): string
+    private static function renderAccordion(array $sections, array $attributes): string
     {
         self::enqueueAccordionAssets();
 
@@ -215,7 +217,7 @@ final class DirectionsPresentation
                 . ' role="region"'
                 . '>';
             $items .= '<div class="rrze-directions__accordion-inner clearfix">';
-            $items .= self::renderSectionBody($section);
+            $items .= self::renderSectionBody($section, $attributes);
             $items .= '</div></div></div></div>';
         }
 
@@ -229,8 +231,9 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     * @param array<string, mixed>                                                   $attributes
      */
-    private static function renderColumns(array $sections): string
+    private static function renderColumns(array $sections, array $attributes): string
     {
         $count = count($sections);
         $cols  = match (true) {
@@ -244,7 +247,7 @@ final class DirectionsPresentation
         foreach ($sections as $section) {
             $items .= '<section class="rrze-directions__text rrze-directions__text--column">'
                 . '<h3>' . esc_html($section['title']) . '</h3>'
-                . self::renderSectionBody($section)
+                . self::renderSectionBody($section, $attributes)
                 . '</section>';
         }
 
@@ -258,8 +261,9 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     * @param array<string, mixed>                                                   $attributes
      */
-    private static function renderTabs(array $sections): string
+    private static function renderTabs(array $sections, array $attributes): string
     {
         self::enqueueTabsAssets();
 
@@ -289,7 +293,7 @@ final class DirectionsPresentation
                 . ' aria-labelledby="' . esc_attr($tabId) . '"'
                 . ($active ? '' : ' class="is-hidden"')
                 . '>';
-            $panels .= self::renderSectionBody($section);
+            $panels .= self::renderSectionBody($section, $attributes);
             $panels .= '</div>';
         }
 
@@ -312,8 +316,9 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{key: string, title: string, html: string, route: string}> $sections
+     * @param array<string, mixed>                                                   $attributes
      */
-    private static function renderDropdown(array $sections): string
+    private static function renderDropdown(array $sections, array $attributes): string
     {
         $groupId  = wp_unique_id('rrze-directions-mode-');
         $selectId = $groupId . '-select';
@@ -337,7 +342,7 @@ final class DirectionsPresentation
                 . ($active ? '' : ' hidden')
                 . '>';
             $panels .= '<h3 class="screen-reader-text">' . esc_html($section['title']) . '</h3>';
-            $panels .= self::renderSectionBody($section);
+            $panels .= self::renderSectionBody($section, $attributes);
             $panels .= '</div>';
         }
 
@@ -360,16 +365,21 @@ final class DirectionsPresentation
 
     /**
      * @param array{key: string, title: string, html: string, route: string} $section
+     * @param array<string, mixed>                                              $attributes
      */
-    private static function renderSectionBody(array $section): string
+    private static function renderSectionBody(array $section, array $attributes): string
     {
         $variants = RouteMapPresentation::parseVariants($section['route']);
+        $context  = [
+            'modeKey'   => $section['key'],
+            'modeLabel' => $section['title'],
+        ];
 
         if ($variants !== []) {
-            return self::renderStartSwitcher($variants, $section['html']);
+            return self::renderStartSwitcher($variants, $section['html'], $context, $attributes);
         }
 
-        $html = RouteMapPresentation::render($section['route']);
+        $html = RouteMapPresentation::render($section['route'], $context);
         $html .= '<div class="rrze-directions__rte">' . wp_kses_post($section['html']) . '</div>';
 
         return $html;
@@ -377,8 +387,10 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{startKey: string, startLabel: string, route: array<string, mixed>}> $variants
+     * @param array{modeKey?: string, modeLabel?: string}                                     $context
+     * @param array<string, mixed>                                                             $attributes
      */
-    private static function renderStartSwitcher(array $variants, string $sectionHtml): string
+    private static function renderStartSwitcher(array $variants, string $sectionHtml, array $context = [], array $attributes = []): string
     {
         if (count($variants) === 1) {
             $variant   = $variants[0];
@@ -388,7 +400,9 @@ final class DirectionsPresentation
             $output    = '';
 
             if (is_string($routeJson) && $routeJson !== '') {
-                $output .= RouteMapPresentation::render($routeJson);
+                $output .= RouteMapPresentation::render($routeJson, array_merge($context, [
+                    'startLabel' => $variant['startLabel'],
+                ]));
             }
 
             if ($part !== '') {
@@ -416,6 +430,7 @@ final class DirectionsPresentation
             $pillId  = $groupId . '-pill-' . $startKey;
             $panelId = $groupId . '-panel-' . $startKey;
 
+            $pills .= '<span class="rrze-directions__start-pill-group">';
             $pills .= '<button'
                 . ' type="button"'
                 . ' class="rrze-directions__start-pill' . ($active ? ' is-active' : '') . '"'
@@ -429,13 +444,17 @@ final class DirectionsPresentation
             $pills .= ModeIcons::startIconHtml($startKey);
             $pills .= '<span class="rrze-directions__start-pill-label">' . esc_html($label) . '</span>';
             $pills .= '</button>';
+            $pills .= self::renderStartScheduleLink($startKey, $attributes, $context);
+            $pills .= '</span>';
 
             $routeJson      = wp_json_encode($variant['route']);
             $panelContent   = '';
             $part           = $htmlParts[$index] ?? '';
 
             if (is_string($routeJson) && $routeJson !== '') {
-                $panelContent .= RouteMapPresentation::render($routeJson);
+                $panelContent .= RouteMapPresentation::render($routeJson, array_merge($context, [
+                    'startLabel' => $label,
+                ]));
             }
 
             if ($part !== '') {
@@ -464,6 +483,27 @@ final class DirectionsPresentation
             . $panels
             . '</div>'
             . '</div>';
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     * @param array{modeKey?: string, modeLabel?: string} $context
+     */
+    private static function renderStartScheduleLink(
+        string $startKey,
+        array $attributes,
+        array $context
+    ): string {
+        if (($context['modeKey'] ?? '') !== 'transit' || !VgnTripLink::isStationStart($startKey)) {
+            return '';
+        }
+
+        $url = VgnTripLink::buildTripUrl($startKey, $attributes);
+        if ($url === null) {
+            return '';
+        }
+
+        return ModeIcons::vgnScheduleLinkHtml($url);
     }
 
     /**

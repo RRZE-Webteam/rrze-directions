@@ -1,6 +1,6 @@
 {
   "name": "rrze-directions",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "description": "Gutenberg block for arrival directions: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -9,20 +9,29 @@
   },
   "textDomain": "rrze-directions",
   "scripts": {
-    "build": "wp-scripts build index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js rrze-directions-guided-tour=./src/js/rrze-directions-guided-tour.js --webpack-copy-php && npm run increment-version",
+    "build": "npm-run-all build:js build:css i18n:make-json increment-version",
+    "build:js": "wp-scripts build index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js rrze-directions-guided-tour=./src/js/rrze-directions-guided-tour.js --webpack-copy-php",
+    "build:css": "sass src/sass:build/css --style compressed --no-source-map",
+    "i18n:make-json": "wp i18n make-json build/ --no-purge",
     "increment-version": "node increment-version.js patch",
     "format": "wp-scripts format",
     "lint:css": "wp-scripts lint-style",
     "lint:js": "wp-scripts lint-js",
     "packages-update": "wp-scripts packages-update",
     "plugin-zip": "wp-scripts plugin-zip",
-    "start": "wp-scripts start index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js rrze-directions-guided-tour=./src/js/rrze-directions-guided-tour.js --webpack-copy-php",
+    "start": "npm-run-all --parallel start:js start:css",
+    "start:js": "wp-scripts start index=./src/index.js view=./src/view.js view-route-map=./src/view-route-map.js rrze-directions-guided-tour=./src/js/rrze-directions-guided-tour.js --webpack-copy-php",
+    "start:css": "sass src/sass:build/css --watch --style compressed --no-source-map",
     "build:readme": "node build-readme.js"
   },
   "devDependencies": {
-    "@wordpress/scripts": "^30.11.0"
+    "@wordpress/scripts": "^30.11.0",
+    "npm-run-all": "^4.1.5",
+    "sass": "^1.87.0"
   },
   "dependencies": {
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "leaflet": "^1.7.1"
   }
 }

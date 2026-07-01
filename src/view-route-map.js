@@ -4,6 +4,7 @@ import { initDirectionsTabsIn } from './directions-tabs';
 import { initStartPillsIn } from './directions-start-pills';
 import { initDirectionsDropdownIn } from './directions-dropdown';
 import { initModePillsIn } from './directions-mode-pills';
+import { initRoutePdfButtons } from './route-pdf';
 
 function handleAccordionPanel(event) {
 	const panel = event.target;
@@ -13,6 +14,7 @@ function handleAccordionPanel(event) {
 
 	if (event.detail?.open) {
 		initRouteMapsIn(panel);
+		initRoutePdfButtons(panel);
 		return;
 	}
 
@@ -48,6 +50,7 @@ function boot() {
 	});
 
 	initRouteMapsIn(document);
+	initRoutePdfButtons(document);
 	initDirectionsTabsIn(document);
 	initStartPillsIn(document);
 	initModePillsIn(document);
@@ -65,6 +68,7 @@ function boot() {
 				const panel = panelId ? document.getElementById(panelId) : null;
 				if (panel) {
 					initRouteMapsIn(panel);
+					initRoutePdfButtons(panel);
 				}
 			});
 		});

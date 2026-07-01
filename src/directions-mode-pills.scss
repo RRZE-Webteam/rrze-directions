@@ -21,12 +21,11 @@
 	cursor: pointer;
 	display: inline-flex;
 	font: inherit;
-	font-size: 0.9375rem;
-	font-weight: 600;
-	gap: 0.45rem;
-	line-height: 1.3;
-	padding: 0.5rem 1rem;
-	text-align: center;
+	justify-content: center;
+	line-height: 1;
+	min-height: 2.75rem;
+	min-width: 2.75rem;
+	padding: 0.625rem;
 
 	&:hover,
 	&:focus-visible {
@@ -49,20 +48,16 @@
 
 .rrze-directions .rrze-directions__pill-icon,
 .rrze-directions-editor .rrze-directions__pill-icon {
+	display: block;
 	flex-shrink: 0;
-	font-size: 1.125rem;
-	height: 1.125rem;
+	font-size: 1.375rem;
+	height: 1.375rem;
 	line-height: 1;
-	width: 1.125rem;
+	width: 1.375rem;
 
 	&--svg {
 		display: block;
 	}
-}
-
-.rrze-directions .rrze-directions__mode-pill-label,
-.rrze-directions-editor .rrze-directions__mode-pill-label {
-	white-space: nowrap;
 }
 
 .rrze-directions .rrze-directions__start-pill,

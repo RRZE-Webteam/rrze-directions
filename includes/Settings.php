@@ -95,27 +95,15 @@ final class Settings
 
     public static function sanitizeApiKey(mixed $value): string
     {
-        if (
-            isset($_POST['rrze_directions_clear_openrouteservice_api_key'])
-            && (string) wp_unslash($_POST['rrze_directions_clear_openrouteservice_api_key']) === '1'
-        ) {
-            return '';
-        }
-
         $new = is_string($value) ? trim($value) : '';
-        if ($new === '') {
-            $old = get_option(self::OPTION_KEY, '');
-
-            return is_string($old) ? $old : '';
-        }
-
         $old = get_option(self::OPTION_KEY, '');
         $old = is_string($old) ? trim($old) : '';
+
         if ($new !== $old) {
             ApiCache::flushGroup('openroute');
         }
 
-        return sanitize_text_field($new);
+        return $new === '' ? '' : sanitize_text_field($new);
     }
 
     public static function handleCacheFlush(): void
@@ -166,6 +154,16 @@ final class Settings
         wp_enqueue_style('dashicons');
         wp_enqueue_style('wp-components');
 
+        $adminCss = plugin()->getPath() . 'build/css/rrze-directions-admin.css';
+        if (is_readable($adminCss)) {
+            wp_enqueue_style(
+                'rrze-directions-admin-css',
+                plugin()->getUrl() . 'build/css/rrze-directions-admin.css',
+                [],
+                (string) filemtime($adminCss)
+            );
+        }
+
         wp_enqueue_script(
             'rrze-directions-guided-tour',
             plugin()->getUrl() . 'build/rrze-directions-guided-tour.js',
@@ -186,15 +184,14 @@ final class Settings
         }
 
         wp_localize_script('rrze-directions-guided-tour', 'rrzeDirectionsGuide', [
-            'autoStart'      => !get_user_meta(get_current_user_id(), self::GUIDED_TOUR_DISMISSED_META, true),
-            'autoStartSetup' => isset($_GET['rrze_setup_tour']),
-            'setupTourStepId'=> $setupTourStepId,
-            'settingsUrl'    => admin_url('options-general.php?page=' . self::PAGE_SLUG),
-            'ajaxUrl'        => admin_url('admin-ajax.php'),
-            'nonce'          => wp_create_nonce('rrze_directions_guided_tour'),
-            'setupTourNonce' => wp_create_nonce('rrze_directions_setup_tour'),
-            'githubUrl'      => 'https://github.com/RRZE-Webteam/rrze-directions',
-            'docuUrl'        => 'https://www.wp.rrze.fau.de/',
+            'autoStart'       => !get_user_meta(get_current_user_id(), self::GUIDED_TOUR_DISMISSED_META, true),
+            'autoStartSetup'  => isset($_GET['rrze_setup_tour']),
+            'setupTourStepId' => $setupTourStepId,
+            'settingsUrl'     => admin_url('options-general.php?page=' . self::PAGE_SLUG),
+            'ajaxUrl'         => admin_url('admin-ajax.php'),
+            'nonce'           => wp_create_nonce('rrze_directions_guided_tour'),
+            'setupTourNonce'  => wp_create_nonce('rrze_directions_setup_tour'),
+            'githubUrl'       => 'https://github.com/RRZE-Webteam/rrze-directions',
         ]);
     }
 
@@ -228,10 +225,8 @@ final class Settings
             return;
         }
 
-        $hasKey = self::getOpenRouteServiceApiKey() !== '';
         $apiKey = self::getOpenRouteServiceApiKey();
         $cacheEntries = ApiCache::entryCount();
-        $editorUrl = admin_url('post-new.php?post_type=page');
         ?>
         <div class="wrap rrze-directions-settings-wrap">
             <h1 class="wp-heading-inline"><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -243,8 +238,6 @@ final class Settings
             </button>
             <hr class="wp-header-end">
             <div id="rrze-directions-guided-tour-root"></div>
-
-            <?php settings_errors('rrze_directions_settings'); ?>
 
             <form action="options.php" method="post">
                 <?php settings_fields(self::OPTION_GROUP); ?>
@@ -266,41 +259,20 @@ final class Settings
                             />
                             <p class="description">
                                 <?php
-                                echo esc_html(
-                                    sprintf(
-                                        /* translators: %s: URL to openrouteservice.org */
-                                        __('Request a key from %s (dashboard) and paste it here.', 'rrze-directions'),
-                                        'https://openrouteservice.org'
-                                    )
+                                printf(
+                                    /* translators: %s: link to openrouteservice.org */
+                                    esc_html__(
+                                        'Request a key from %s (dashboard) and paste it here.',
+                                        'rrze-directions'
+                                    ),
+                                    '<a href="' . esc_url('https://openrouteservice.org') . '" target="_blank" rel="noopener noreferrer">openrouteservice.org</a>'
                                 );
                                 ?>
-                            </p>
-                            <?php if ($hasKey) : ?>
-                                <p>
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            name="rrze_directions_clear_openrouteservice_api_key"
-                                            value="1"
-                                        />
-                                        <?php esc_html_e('Remove stored API key', 'rrze-directions'); ?>
-                                    </label>
-                                </p>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <tr data-rrze-tour="route-start">
-                        <th scope="row"><?php esc_html_e('Route start', 'rrze-directions'); ?></th>
-                        <td>
-                            <p class="description" style="margin-top:0;">
-                                <?php esc_html_e('Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen.', 'rrze-directions'); ?>
                             </p>
                         </td>
                     </tr>
                 </table>
-                <p data-rrze-tour="save-settings">
-                    <?php submit_button(); ?>
-                </p>
+                <?php submit_button(null, 'primary', 'submit', true, ['data-rrze-tour' => 'save-settings']); ?>
             </form>
 
             <div data-rrze-tour="api-cache">
@@ -325,7 +297,7 @@ final class Settings
                     <?php esc_html_e('Responses from karte.fau.de, OpenRouteService, and FAUdir are cached until you clear the cache or relevant data changes.', 'rrze-directions'); ?>
                 </p>
             </div>
-            <form method="post" data-rrze-tour="clear-cache">
+            <form method="post">
                 <?php wp_nonce_field('rrze_directions_flush_api_cache'); ?>
                 <input type="hidden" name="rrze_directions_flush_api_cache" value="1" />
                 <?php
@@ -333,25 +305,11 @@ final class Settings
                     __('Clear API cache', 'rrze-directions'),
                     'secondary',
                     'submit',
-                    false
+                    true,
+                    ['data-rrze-tour' => 'clear-cache']
                 );
                 ?>
             </form>
-
-            <p data-rrze-tour="block-editor" class="description">
-                <?php
-                printf(
-                    /* translators: %s: link to create a new page in the editor */
-                    esc_html__(
-                        'Insert the RRZE Directions block when editing a page: %s',
-                        'rrze-directions'
-                    ),
-                    '<a href="' . esc_url($editorUrl) . '">'
-                    . esc_html__('Open block editor', 'rrze-directions')
-                    . '</a>'
-                );
-                ?>
-            </p>
         </div>
         <?php
     }

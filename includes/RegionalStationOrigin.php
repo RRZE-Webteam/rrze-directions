@@ -7,7 +7,7 @@ namespace RRZE\Directions;
 defined('ABSPATH') || exit;
 
 /**
- * Fixed OpenRouteService route starts: Erlangen Hbf, Nürnberg Hbf, Nürnberg Flughafen.
+ * Fixed OpenRouteService route starts: Erlangen Hbf, Nürnberg Hbf, Nürnberg Flughafen NUE.
  */
 final class RegionalStationOrigin
 {
@@ -51,7 +51,7 @@ final class RegionalStationOrigin
             ],
             [
                 'key'    => 'nuernberg_airport',
-                'label'  => __('Nürnberg Flughafen', 'rrze-directions'),
+                'label'  => __('Nürnberg Flughafen NUE', 'rrze-directions'),
                 'lon'    => self::NUERNBERG_AIRPORT_LON,
                 'lat'    => self::NUERNBERG_AIRPORT_LAT,
                 'carLon' => self::NUERNBERG_AIRPORT_CAR_LON,
@@ -110,7 +110,7 @@ final class RegionalStationOrigin
         return match ($region) {
             'erlangen'          => __('Erlangen Hauptbahnhof', 'rrze-directions'),
             'nuernberg'         => __('Nürnberg Hauptbahnhof', 'rrze-directions'),
-            'nuernberg_airport' => __('Nürnberg Flughafen', 'rrze-directions'),
+            'nuernberg_airport' => __('Nürnberg Flughafen NUE', 'rrze-directions'),
             default             => null,
         };
     }

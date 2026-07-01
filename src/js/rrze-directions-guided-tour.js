@@ -6,7 +6,6 @@ import { render } from '@wordpress/element';
 import { Guide } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import { SetupTour } from './setup-tour';
-import '../sass/rrze-directions-admin.scss';
 
 function GuideIcon( { dashicon } ) {
 	return (
@@ -75,15 +74,9 @@ function ToursApp( { autoStartGuide, autoStartSetup, setupTourStepId } ) {
 		dismissTour();
 	};
 
-	const githubUrl =
-		typeof rrzeDirectionsGuide !== 'undefined' && rrzeDirectionsGuide.githubUrl
-			? rrzeDirectionsGuide.githubUrl
-			: 'https://github.com/RRZE-Webteam/rrze-directions';
+	const githubUrl = 'https://github.com/RRZE-Webteam/rrze-directions';
 
-	const docuUrl =
-		typeof rrzeDirectionsGuide !== 'undefined' && rrzeDirectionsGuide.docuUrl
-			? rrzeDirectionsGuide.docuUrl
-			: 'https://www.wp.rrze.fau.de/';
+	const docuUrl = 'https://www.wp.rrze.fau.de/';
 
 	const guidePages = [
 		{

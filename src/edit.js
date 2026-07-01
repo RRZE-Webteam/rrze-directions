@@ -3,6 +3,7 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
+	ToggleControl,
 } from '@wordpress/components';
 import {
 	InspectorControls,
@@ -15,7 +16,8 @@ import { Fragment, useEffect, useMemo, useRef, useState } from '@wordpress/eleme
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import apiFetch from '@wordpress/api-fetch';
-import { DirectionModeIcon, StartPointIcon } from './mode-icons';
+import { DirectionModeIcon, StartPointIcon, VgnScheduleLink } from './mode-icons';
+import { buildVgnTripUrl, isStationStartKey } from './vgn-trip-link';
 
 const KARTE_HOST_SUFFIX = 'karte.fau.de';
 const KARTE_IFRAME_PATH = '/api/v1/iframe';
@@ -268,14 +270,14 @@ function formatCoordinatePair(latitude, longitude) {
 function googleMapsUrl(latitude, longitude) {
 	const query = encodeURIComponent(`${latitude},${longitude}`);
 
-	return `https://www.google.com/maps/search/?api=1&query=${query}`;
+	return `https://www.google.com/maps/dir/?api=1&destination=${query}`;
 }
 
 function appleMapsUrl(latitude, longitude) {
 	const pair = `${latitude},${longitude}`;
 	const encoded = encodeURIComponent(pair);
 
-	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
+	return `https://maps.apple.com/?daddr=${encoded}&q=${encoded}`;
 }
 
 async function fetchCoordinatesFromMapUrl(mapUrl) {
@@ -917,7 +919,7 @@ function RouteVariantsEditorMaps({ routeJson, strings }) {
 	);
 }
 
-function DirectionsStartSwitcher({ routeJson, content, strings }) {
+function DirectionsStartSwitcher({ routeJson, content, strings, attributes, modeKey }) {
 	const variants = useMemo(() => parseRouteVariants(routeJson), [routeJson]);
 	const htmlParts = useMemo(() => splitRouteVariantHtml(content), [content]);
 	const [activeKey, setActiveKey] = useState(() => variantKey(variants[0], 0));
@@ -952,28 +954,39 @@ function DirectionsStartSwitcher({ routeJson, content, strings }) {
 				{variants.map((variant, index) => {
 					const key = variantKey(variant, index);
 					const active = key === activeKey;
+					const startKey = variant.startKey || key;
+					const startLabel = variant.startLabel || '';
+					const scheduleUrl =
+						modeKey === 'transit' && isStationStartKey(startKey)
+							? buildVgnTripUrl(startKey, startLabel, attributes)
+							: null;
+					const scheduleLabel =
+						strings.vgnSchedule ??
+						__('Open VGN timetable', 'rrze-directions');
 
 					return (
-						<button
-							key={key}
-							type="button"
-							className={`rrze-directions__start-pill${
-								active ? ' is-active' : ''
-							}`}
-							role="tab"
-							aria-selected={active}
-							onClick={() => setActiveKey(key)}
-						>
-							<StartPointIcon startKey={variant.startKey || key} />
-							<span className="rrze-directions__start-pill-label">
-								{variant.startLabel ||
-									sprintf(
-										/* translators: %d: route variant number */
-										__('Route %d', 'rrze-directions'),
-										index + 1
-									)}
-							</span>
-						</button>
+						<span key={key} className="rrze-directions__start-pill-group">
+							<button
+								type="button"
+								className={`rrze-directions__start-pill${
+									active ? ' is-active' : ''
+								}`}
+								role="tab"
+								aria-selected={active}
+								onClick={() => setActiveKey(key)}
+							>
+								<StartPointIcon startKey={startKey} />
+								<span className="rrze-directions__start-pill-label">
+									{startLabel ||
+										sprintf(
+											/* translators: %d: route variant number */
+											__('Route %d', 'rrze-directions'),
+											index + 1
+										)}
+								</span>
+							</button>
+							<VgnScheduleLink href={scheduleUrl} label={scheduleLabel} />
+						</span>
 					);
 				})}
 			</div>
@@ -1013,7 +1026,7 @@ function DirectionsStartSwitcher({ routeJson, content, strings }) {
 	);
 }
 
-function DirectionsSectionPreviewBody({ section, strings }) {
+function DirectionsSectionPreviewBody({ section, strings, attributes }) {
 	const variants = parseRouteVariants(section.route);
 	const htmlParts = splitRouteVariantHtml(section.content);
 	const mapHint =
@@ -1029,6 +1042,8 @@ function DirectionsSectionPreviewBody({ section, strings }) {
 				routeJson={section.route}
 				content={section.content}
 				strings={strings}
+				attributes={attributes}
+				modeKey={section.key}
 			/>
 		);
 	}
@@ -1162,6 +1177,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 					<DirectionsSectionPreviewBody
 						section={sections[0]}
 						strings={strings}
+						attributes={attributes}
 					/>
 				</div>
 			);
@@ -1191,12 +1207,10 @@ function DirectionsEditorPreview({ attributes, strings }) {
 									}`}
 									role="tab"
 									aria-selected={index === activeIndex}
+									aria-label={section.title}
 									onClick={() => setActiveKey(section.key)}
 								>
 									<DirectionModeIcon modeKey={section.key} />
-									<span className="rrze-directions__mode-pill-label">
-										{section.title}
-									</span>
 								</button>
 							))}
 						</div>
@@ -1215,6 +1229,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 									<DirectionsSectionPreviewBody
 										section={section}
 										strings={strings}
+										attributes={attributes}
 									/>
 								</div>
 							))}
@@ -1259,6 +1274,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 										<DirectionsSectionPreviewBody
 											section={section}
 											strings={strings}
+											attributes={attributes}
 										/>
 									</div>
 								</div>
@@ -1301,6 +1317,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 							<DirectionsSectionPreviewBody
 								section={section}
 								strings={strings}
+								attributes={attributes}
 							/>
 						</div>
 					))}
@@ -1351,6 +1368,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 							<DirectionsSectionPreviewBody
 								section={section}
 								strings={strings}
+								attributes={attributes}
 							/>
 						</div>
 					))}
@@ -1373,6 +1391,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 						<DirectionsSectionPreviewBody
 							section={section}
 							strings={strings}
+							attributes={attributes}
 						/>
 					</section>
 				))}
@@ -1455,6 +1474,8 @@ export default function Edit({ attributes, setAttributes }) {
 		showDirectionsCar,
 		showDirectionsTransit,
 		directionsLayout,
+		showMap,
+		showDirections,
 	} = attributes;
 
 	const blockProps = useBlockProps({ className: 'rrze-directions-block' });
@@ -1896,7 +1917,10 @@ export default function Edit({ attributes, setAttributes }) {
 	return (
 		<Fragment>
 			<InspectorControls>
-				<PanelBody title={strings.selectPersonPanel ?? __('FAUdir', 'rrze-directions')}>
+				<PanelBody
+					title={strings.selectPersonPanel ?? __('FAUdir', 'rrze-directions')}
+					initialOpen
+				>
 					<SelectControl
 						label={strings.selectPerson ?? __('Person', 'rrze-directions')}
 						value={personId ? String(personId) : ''}
@@ -1966,6 +1990,30 @@ export default function Edit({ attributes, setAttributes }) {
 					) : null}
 				</PanelBody>
 
+				<PanelBody title={strings.displaySettings ?? __('Display', 'rrze-directions')}>
+					<ToggleControl
+						label={strings.showMap ?? __('Show map', 'rrze-directions')}
+						checked={showMap !== false}
+						onChange={(next) =>
+							setAttributes({
+								showMap: next,
+								...(next ? {} : { showDirections: false }),
+							})
+						}
+					/>
+					{showMap !== false ? (
+						<ToggleControl
+							label={
+								strings.showDirectionsSection ??
+								__('Show arrival directions', 'rrze-directions')
+							}
+							checked={showDirections !== false}
+							onChange={(next) => setAttributes({ showDirections: next })}
+						/>
+					) : null}
+				</PanelBody>
+
+				{showMap !== false ? (
 				<PanelBody title={strings.mapSection ?? __('Map', 'rrze-directions')}>
 					<TextControl
 						label={
@@ -2029,6 +2077,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 					{mapIllustration}
 				</PanelBody>
+				) : null}
 			</InspectorControls>
 
 			<div {...blockProps}>
@@ -2107,36 +2156,39 @@ export default function Edit({ attributes, setAttributes }) {
 						</address>
 					</section>
 
-					<section className="rrze-directions-editor__map">
-						{isLoadingDirections ? (
-							<p className="rrze-directions-editor__loading" aria-live="polite">
-								{strings.mapLoading ??
-									__('Loading map…', 'rrze-directions')}
-							</p>
-						) : editorMapSrc ? (
-							<div className="rrze-directions__map-frame">
-								<iframe
-									title={
-										strings.mapServiceTitle ??
-										__('FAU map service', 'rrze-directions')
-									}
-									src={editorMapSrc}
-									className="rrze-directions__iframe"
-									loading="lazy"
-									referrerPolicy="no-referrer-when-downgrade"
-								/>
-							</div>
-						) : (
-							<p className="rrze-directions-editor__muted">
-								{strings.mapUnavailable ??
-									__(
-										'No map parameters available (add FAUdir data or a Map URL).',
-										'rrze-directions'
-									)}
-							</p>
-						)}
-					</section>
+					{showMap !== false ? (
+						<section className="rrze-directions-editor__map">
+							{isLoadingDirections ? (
+								<p className="rrze-directions-editor__loading" aria-live="polite">
+									{strings.mapLoading ??
+										__('Loading map…', 'rrze-directions')}
+								</p>
+							) : editorMapSrc ? (
+								<div className="rrze-directions__map-frame">
+									<iframe
+										title={
+											strings.mapServiceTitle ??
+											__('FAU map service', 'rrze-directions')
+										}
+										src={editorMapSrc}
+										className="rrze-directions__iframe"
+										loading="lazy"
+										referrerPolicy="no-referrer-when-downgrade"
+									/>
+								</div>
+							) : (
+								<p className="rrze-directions-editor__muted">
+									{strings.mapUnavailable ??
+										__(
+											'No map parameters available (add FAUdir data or a Map URL).',
+											'rrze-directions'
+										)}
+								</p>
+							)}
+						</section>
+					) : null}
 
+					{showMap !== false && showDirections !== false ? (
 					<section>
 						{showDirectionsBike !== false ? (
 							<>
@@ -2222,6 +2274,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 						<DirectionsEditorPreview attributes={attributes} strings={strings} />
 					</section>
+					) : null}
 				</div>
 			</div>
 		</Fragment>

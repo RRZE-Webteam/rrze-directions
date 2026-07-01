@@ -17,15 +17,6 @@ function getSetupSteps() {
 			),
 		},
 		{
-			id: 'route-start',
-			target: '[data-rrze-tour="route-start"]',
-			title: __( 'Route start', 'rrze-directions' ),
-			text: __(
-				'Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen.',
-				'rrze-directions'
-			),
-		},
-		{
 			id: 'save-settings',
 			target: '[data-rrze-tour="save-settings"]',
 			title: __( 'Save settings', 'rrze-directions' ),
@@ -52,15 +43,6 @@ function getSetupSteps() {
 				'rrze-directions'
 			),
 			optional: true,
-		},
-		{
-			id: 'block-editor',
-			target: '[data-rrze-tour="block-editor"]',
-			title: __( 'RRZE Directions block', 'rrze-directions' ),
-			text: __(
-				'Insert the RRZE Directions block in the editor, choose a person and workplace from FAUdir, and pick accordion, tabs, columns, or dropdown for the directions layout.',
-				'rrze-directions'
-			),
 		},
 	];
 }

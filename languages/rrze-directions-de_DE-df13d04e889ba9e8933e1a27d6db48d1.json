@@ -1,0 +1,43 @@
+{
+	"translation-revision-date": "2026-06-29 12:00+0000",
+	"generator": "Manual",
+	"source": "build/rrze-directions-guided-tour.js",
+	"domain": "rrze-directions",
+	"locale_data": {
+		"rrze-directions": {
+			"": {
+				"domain": "",
+				"lang": "de_DE",
+				"plural-forms": "nplurals=2; plural=n != 1;"
+			},
+			"Welcome to RRZE Directions": ["Willkommen bei RRZE Directions"],
+			"This plugin adds an arrival block with FAUdir addresses, an embedded FAU map, and OpenRouteService directions with interactive route maps.": ["Dieses Plugin ergänzt einen Anfahrtsblock mit FAUdir-Adressen, eingebetteter FAU-Karte und OpenRouteService-Wegbeschreibungen mit interaktiven Routenkarten."],
+			"FAUdir and maps": ["FAUdir und Karten"],
+			"Select a person and workplace in the block editor. The plugin loads address data from FAUdir and embeds karte.fau.de with a location pin when possible.": ["Wählen Sie im Block-Editor eine Person und einen Arbeitsplatz. Das Plugin lädt Adressdaten aus FAUdir und bindet karte.fau.de mit Standort-Pin ein, sofern möglich."],
+			"Routes and layouts": ["Routen und Layouts"],
+			"Walking, car, and public transport directions can be shown as accordion, tabs, columns, or dropdown. Within each mode, pill buttons let visitors pick a starting point. Numbered steps link to the route map.": ["Wegbeschreibungen zu Fuß, mit dem Auto und mit öffentlichen Verkehrsmitteln können als Akkordeon, Tabs, Spalten oder Dropdown dargestellt werden. Pro Verkehrsmittel wählen Besucher den Startpunkt per Pill-Button. Nummerierte Schritte verknüpfen mit der Routenkarte."],
+			"Settings and tour": ["Einstellungen und Tour"],
+			"Use the setup tour to configure your OpenRouteService API key and learn how caching works. The API key is required for automatic route generation.": ["Mit der Einrichtungstour konfigurieren Sie den OpenRouteService-API-Schlüssel und erfahren, wie der Cache funktioniert. Der API-Schlüssel ist für die automatische Routenerzeugung erforderlich."],
+			"Feedback and open source": ["Feedback und Open Source"],
+			"We welcome your feedback. Everyone who wants to contribute is invited to take part.": ["Wir freuen uns über Ihr Feedback. Alle, die mitwirken möchten, sind eingeladen."],
+			"RRZE Directions is open source on": ["RRZE Directions ist Open Source auf"],
+			"Documentation": ["Dokumentation"],
+			"About RRZE Directions": ["Über RRZE Directions"],
+			"Get started": ["Loslegen"],
+			"OpenRouteService API key": ["OpenRouteService-API-Schlüssel"],
+			"Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block.": ["Fordern Sie einen kostenlosen API-Schlüssel bei openrouteservice.org an und tragen Sie ihn hier ein. Er wird für Wegbeschreibungen und interaktive Routenkarten im Block benötigt."],
+			"Save settings": ["Einstellungen speichern"],
+			"Click Save changes to store your API key. Changing the key clears cached OpenRouteService responses.": ["Klicken Sie auf Änderungen speichern, um den API-Schlüssel zu sichern. Bei einer Änderung des Schlüssels wird der OpenRouteService-Cache geleert."],
+			"API cache": ["API-Cache"],
+			"Responses from karte.fau.de, OpenRouteService, and FAUdir are cached permanently for faster page loads.": ["Antworten von karte.fau.de, OpenRouteService und FAUdir werden dauerhaft zwischengespeichert, damit Seiten schneller laden."],
+			"Clear API cache": ["API-Cache leeren"],
+			"Use this button after changing addresses or map data if the frontend still shows outdated routes or map pins.": ["Nutzen Sie diese Schaltfläche nach Adress- oder Kartenänderungen, wenn im Frontend noch veraltete Routen oder Karten-Pins angezeigt werden."],
+			"Close setup tour": ["Einrichtungstour schließen"],
+			"Next": ["Weiter"],
+			"Step %1$d of %2$d": ["Schritt %1$d von %2$d"],
+			"Previous": ["Zurück"],
+			"Skip tour": ["Tour überspringen"],
+			"Finish": ["Fertig"]
+		}
+	}
+}
