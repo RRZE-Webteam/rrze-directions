@@ -266,6 +266,9 @@ msgstr "Fortbewegungsart"
 msgid "Starting point"
 msgstr "Startpunkt"
 
+msgid "Open VGN timetable"
+msgstr "VGN-Fahrplan öffnen"
+
 msgid "Route %d"
 msgstr "Route %d"
 

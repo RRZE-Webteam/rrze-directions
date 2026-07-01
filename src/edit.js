@@ -16,7 +16,8 @@ import { Fragment, useEffect, useMemo, useRef, useState } from '@wordpress/eleme
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import apiFetch from '@wordpress/api-fetch';
-import { DirectionModeIcon, StartPointIcon } from './mode-icons';
+import { DirectionModeIcon, StartPointIcon, VgnScheduleLink } from './mode-icons';
+import { buildVgnTripUrl, isStationStartKey } from './vgn-trip-link';
 
 const KARTE_HOST_SUFFIX = 'karte.fau.de';
 const KARTE_IFRAME_PATH = '/api/v1/iframe';
@@ -918,7 +919,7 @@ function RouteVariantsEditorMaps({ routeJson, strings }) {
 	);
 }
 
-function DirectionsStartSwitcher({ routeJson, content, strings }) {
+function DirectionsStartSwitcher({ routeJson, content, strings, attributes, modeKey }) {
 	const variants = useMemo(() => parseRouteVariants(routeJson), [routeJson]);
 	const htmlParts = useMemo(() => splitRouteVariantHtml(content), [content]);
 	const [activeKey, setActiveKey] = useState(() => variantKey(variants[0], 0));
@@ -953,28 +954,39 @@ function DirectionsStartSwitcher({ routeJson, content, strings }) {
 				{variants.map((variant, index) => {
 					const key = variantKey(variant, index);
 					const active = key === activeKey;
+					const startKey = variant.startKey || key;
+					const startLabel = variant.startLabel || '';
+					const scheduleUrl =
+						modeKey === 'transit' && isStationStartKey(startKey)
+							? buildVgnTripUrl(startKey, startLabel, attributes)
+							: null;
+					const scheduleLabel =
+						strings.vgnSchedule ??
+						__('Open VGN timetable', 'rrze-directions');
 
 					return (
-						<button
-							key={key}
-							type="button"
-							className={`rrze-directions__start-pill${
-								active ? ' is-active' : ''
-							}`}
-							role="tab"
-							aria-selected={active}
-							onClick={() => setActiveKey(key)}
-						>
-							<StartPointIcon startKey={variant.startKey || key} />
-							<span className="rrze-directions__start-pill-label">
-								{variant.startLabel ||
-									sprintf(
-										/* translators: %d: route variant number */
-										__('Route %d', 'rrze-directions'),
-										index + 1
-									)}
-							</span>
-						</button>
+						<span key={key} className="rrze-directions__start-pill-group">
+							<button
+								type="button"
+								className={`rrze-directions__start-pill${
+									active ? ' is-active' : ''
+								}`}
+								role="tab"
+								aria-selected={active}
+								onClick={() => setActiveKey(key)}
+							>
+								<StartPointIcon startKey={startKey} />
+								<span className="rrze-directions__start-pill-label">
+									{startLabel ||
+										sprintf(
+											/* translators: %d: route variant number */
+											__('Route %d', 'rrze-directions'),
+											index + 1
+										)}
+								</span>
+							</button>
+							<VgnScheduleLink href={scheduleUrl} label={scheduleLabel} />
+						</span>
 					);
 				})}
 			</div>
@@ -1014,7 +1026,7 @@ function DirectionsStartSwitcher({ routeJson, content, strings }) {
 	);
 }
 
-function DirectionsSectionPreviewBody({ section, strings }) {
+function DirectionsSectionPreviewBody({ section, strings, attributes }) {
 	const variants = parseRouteVariants(section.route);
 	const htmlParts = splitRouteVariantHtml(section.content);
 	const mapHint =
@@ -1030,6 +1042,8 @@ function DirectionsSectionPreviewBody({ section, strings }) {
 				routeJson={section.route}
 				content={section.content}
 				strings={strings}
+				attributes={attributes}
+				modeKey={section.key}
 			/>
 		);
 	}
@@ -1163,6 +1177,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 					<DirectionsSectionPreviewBody
 						section={sections[0]}
 						strings={strings}
+						attributes={attributes}
 					/>
 				</div>
 			);
@@ -1214,6 +1229,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 									<DirectionsSectionPreviewBody
 										section={section}
 										strings={strings}
+										attributes={attributes}
 									/>
 								</div>
 							))}
@@ -1258,6 +1274,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 										<DirectionsSectionPreviewBody
 											section={section}
 											strings={strings}
+											attributes={attributes}
 										/>
 									</div>
 								</div>
@@ -1300,6 +1317,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 							<DirectionsSectionPreviewBody
 								section={section}
 								strings={strings}
+								attributes={attributes}
 							/>
 						</div>
 					))}
@@ -1350,6 +1368,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 							<DirectionsSectionPreviewBody
 								section={section}
 								strings={strings}
+								attributes={attributes}
 							/>
 						</div>
 					))}
@@ -1372,6 +1391,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 						<DirectionsSectionPreviewBody
 							section={section}
 							strings={strings}
+							attributes={attributes}
 						/>
 					</section>
 				))}

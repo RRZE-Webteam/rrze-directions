@@ -96,3 +96,22 @@ export function StartPointIcon({ startKey }) {
 			return <Dashicon className="rrze-directions__pill-icon" icon="location" />;
 	}
 }
+
+export function VgnScheduleLink({ href, label }) {
+	if (!href) {
+		return null;
+	}
+
+	return (
+		<a
+			className="rrze-directions__start-schedule"
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			aria-label={label}
+			onClick={(event) => event.stopPropagation()}
+		>
+			<Dashicon className="rrze-directions__pill-icon" icon="clock" />
+		</a>
+	);
+}

@@ -41,6 +41,23 @@ final class ModeIcons
         };
     }
 
+    public static function vgnScheduleLinkHtml(string $url): string
+    {
+        return '<a class="rrze-directions__start-schedule"'
+            . ' href="' . esc_url($url) . '"'
+            . ' target="_blank"'
+            . ' rel="noopener noreferrer"'
+            . ' aria-label="' . esc_attr__('Open VGN timetable', 'rrze-directions') . '"'
+            . '>'
+            . self::scheduleIconHtml()
+            . '</a>';
+    }
+
+    public static function scheduleIconHtml(): string
+    {
+        return self::dashicon('clock');
+    }
+
     private static function bikeIcon(): string
     {
         return self::svg(

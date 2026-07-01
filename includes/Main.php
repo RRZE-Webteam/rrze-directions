@@ -148,6 +148,7 @@ final class Main
                     'directionsLayoutDropdown'     => __('Dropdown', 'rrze-directions'),
                     'modeOfTransport'              => __('Mode of transport', 'rrze-directions'),
                     'startingPoint'                => __('Starting point', 'rrze-directions'),
+					'vgnSchedule'                  => __('Open VGN timetable', 'rrze-directions'),
 					'routeMapTitle'                => __('Route map', 'rrze-directions'),
 					'routeMapPreview'              => __('Interactive route map with numbered steps is shown on the published page.', 'rrze-directions'),
 					'routeMapHint'                 => __('Click a numbered step in the directions list to highlight it on the map.', 'rrze-directions'),
