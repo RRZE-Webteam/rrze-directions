@@ -143,11 +143,11 @@ final class DirectionsPresentation
                 . ' id="' . esc_attr($pillId) . '"'
                 . ' aria-selected="' . ($active ? 'true' : 'false') . '"'
                 . ' aria-controls="' . esc_attr($panelId) . '"'
+                . ' aria-label="' . esc_attr($section['title']) . '"'
                 . ' data-mode-key="' . esc_attr($section['key']) . '"'
                 . ($active ? '' : ' tabindex="-1"')
                 . '>';
             $pills .= ModeIcons::modeIconHtml($section['key']);
-            $pills .= '<span class="rrze-directions__mode-pill-label">' . esc_html($section['title']) . '</span>';
             $pills .= '</button>';
 
             $panels .= '<div'

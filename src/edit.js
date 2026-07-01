@@ -1191,12 +1191,10 @@ function DirectionsEditorPreview({ attributes, strings }) {
 									}`}
 									role="tab"
 									aria-selected={index === activeIndex}
+									aria-label={section.title}
 									onClick={() => setActiveKey(section.key)}
 								>
 									<DirectionModeIcon modeKey={section.key} />
-									<span className="rrze-directions__mode-pill-label">
-										{section.title}
-									</span>
 								</button>
 							))}
 						</div>
