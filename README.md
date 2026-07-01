@@ -124,4 +124,4 @@ On the settings page, **About** opens a short introduction to the plugin. **Tour
 
 Developed and maintained by the  
 **RRZE Webteam, Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU)**  
-👉 [https://github.com/RRZE-Webteam/rrze-directions](https://github.com/RRZE-Webteam/rrze-directions)
+👉 [https://github.com/RRZE-Webteam](https://github.com/RRZE-Webteam)
