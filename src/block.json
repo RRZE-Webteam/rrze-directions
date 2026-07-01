@@ -112,6 +112,14 @@
     "directionsLayout": {
       "type": "string",
       "default": "pills"
+    },
+    "showMap": {
+      "type": "boolean",
+      "default": true
+    },
+    "showDirections": {
+      "type": "boolean",
+      "default": true
     }
   },
   "editorScript": "file:./index.js",

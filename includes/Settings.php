@@ -293,7 +293,7 @@ final class Settings
                         <th scope="row"><?php esc_html_e('Route start', 'rrze-directions'); ?></th>
                         <td>
                             <p class="description" style="margin-top:0;">
-                                <?php esc_html_e('Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen.', 'rrze-directions'); ?>
+                                <?php esc_html_e('Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen NUE.', 'rrze-directions'); ?>
                             </p>
                         </td>
                     </tr>

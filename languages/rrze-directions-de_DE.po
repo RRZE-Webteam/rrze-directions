@@ -14,6 +14,18 @@ msgstr "Anfahrt"
 msgid "Directions — %s"
 msgstr "Anfahrt — %s"
 
+msgid "Display"
+msgstr "Anzeige"
+
+msgid "Show map"
+msgstr "Karte anzeigen"
+
+msgid "Show arrival directions"
+msgstr "Anfahrtsbeschreibungen anzeigen"
+
+msgid "Arrival directions require the map to be shown."
+msgstr "Anfahrtsbeschreibungen setzen eine angezeigte Karte voraus."
+
 msgid "Address"
 msgstr "Anschrift"
 
@@ -161,14 +173,14 @@ msgstr "Routenstart"
 msgid "For workplaces in Erlangen, Nuremberg, or Fürth, draft routes use the respective main station as the start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Fürth (main) station."
 msgstr "Bei Arbeitsplätzen in Erlangen, Nürnberg oder Fürth nutzen Entwurfsrouten jeweils den Hauptbahnhof als Start: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof bzw. Fürth (Haupt-)bahnhof."
 
-msgid "Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen."
-msgstr "Entwurfsrouten werden immer von allen drei Startpunkten erzeugt: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen."
+msgid "Draft routes are always generated from all three starting points: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen NUE."
+msgstr "Entwurfsrouten werden immer von allen drei Startpunkten erzeugt: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen NUE."
 
-msgid "Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen."
-msgstr "Entwurfsrouten werden immer vom Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen erzeugt."
+msgid "Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen NUE."
+msgstr "Entwurfsrouten werden immer vom Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen NUE erzeugt."
 
-msgid "Draft routes use one of these starting points, depending on the workplace address: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Nürnberg Flughafen."
-msgstr "Entwurfsrouten werden immer von allen drei Startpunkten erzeugt: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen."
+msgid "Draft routes use one of these starting points, depending on the workplace address: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, or Nürnberg Flughafen NUE."
+msgstr "Entwurfsrouten werden immer von allen drei Startpunkten erzeugt: Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof und Nürnberg Flughafen NUE."
 
 msgid "About %1$s km, %2$s min"
 msgstr "Etwa %1$s km, %2$s Min."
@@ -191,8 +203,8 @@ msgstr "Nürnberg Hauptbahnhof"
 msgid "Fürth Hauptbahnhof"
 msgstr "Fürth Hauptbahnhof"
 
-msgid "Nürnberg Flughafen"
-msgstr "Nürnberg Flughafen"
+msgid "Nürnberg Flughafen NUE"
+msgstr "Nürnberg Flughafen NUE"
 
 msgid "Von %1$s nach %2$s"
 msgstr "Von %1$s nach %2$s"

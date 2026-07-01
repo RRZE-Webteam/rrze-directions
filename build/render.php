@@ -60,6 +60,9 @@ $showExtraLink = $mapLinkOnly !== ''
         || rtrim(strtolower($mapLinkOnly), '/') !== rtrim(strtolower($karteIframeSrc), '/')
     );
 
+$showMapBlock        = ($attributes['showMap'] ?? true) !== false;
+$showDirectionsBlock = $showMapBlock && ($attributes['showDirections'] ?? true) !== false;
+
 $class = trim('wp-block-rrze-directions rrze-directions');
 ?>
 <section class="<?php echo esc_attr($class); ?>">
@@ -147,7 +150,7 @@ $class = trim('wp-block-rrze-directions rrze-directions');
             <?php endif; ?>
         </address>
 
-        <?php if ($mapImageId > 0) : ?>
+        <?php if ($showMapBlock && $mapImageId > 0) : ?>
             <figure class="rrze-directions__map-image">
                 <?php
                 echo wp_get_attachment_image(
@@ -164,6 +167,7 @@ $class = trim('wp-block-rrze-directions rrze-directions');
             </figure>
         <?php endif; ?>
 
+        <?php if ($showMapBlock) : ?>
         <div class="rrze-directions__map">
             <h3 class="rrze-directions__map-title"><?php echo esc_html__('Arrival map', 'rrze-directions'); ?></h3>
 
@@ -190,9 +194,10 @@ $class = trim('wp-block-rrze-directions rrze-directions');
                     <?php echo esc_html__('No map parameters available (add FAUdir data or a Map URL).', 'rrze-directions'); ?></p>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
 
         <?php
-        $directionsHtml = class_exists(\RRZE\Directions\DirectionsPresentation::class)
+        $directionsHtml = $showDirectionsBlock && class_exists(\RRZE\Directions\DirectionsPresentation::class)
             ? \RRZE\Directions\DirectionsPresentation::render($attributes)
             : '';
 

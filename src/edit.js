@@ -3,6 +3,7 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
+	ToggleControl,
 } from '@wordpress/components';
 import {
 	InspectorControls,
@@ -1453,6 +1454,8 @@ export default function Edit({ attributes, setAttributes }) {
 		showDirectionsCar,
 		showDirectionsTransit,
 		directionsLayout,
+		showMap,
+		showDirections,
 	} = attributes;
 
 	const blockProps = useBlockProps({ className: 'rrze-directions-block' });
@@ -1894,6 +1897,40 @@ export default function Edit({ attributes, setAttributes }) {
 	return (
 		<Fragment>
 			<InspectorControls>
+				<PanelBody
+					title={strings.displaySettings ?? __('Display', 'rrze-directions')}
+					initialOpen
+				>
+					<ToggleControl
+						label={strings.showMap ?? __('Show map', 'rrze-directions')}
+						checked={showMap !== false}
+						onChange={(next) =>
+							setAttributes({
+								showMap: next,
+								...(next ? {} : { showDirections: false }),
+							})
+						}
+					/>
+					<ToggleControl
+						label={
+							strings.showDirectionsSection ??
+							__('Show arrival directions', 'rrze-directions')
+						}
+						checked={showDirections !== false}
+						disabled={showMap === false}
+						onChange={(next) => setAttributes({ showDirections: next })}
+						help={
+							showMap === false
+								? strings.showDirectionsRequiresMap ??
+									__(
+										'Arrival directions require the map to be shown.',
+										'rrze-directions'
+									)
+								: undefined
+						}
+					/>
+				</PanelBody>
+
 				<PanelBody title={strings.selectPersonPanel ?? __('FAUdir', 'rrze-directions')}>
 					<SelectControl
 						label={strings.selectPerson ?? __('Person', 'rrze-directions')}
@@ -2105,36 +2142,39 @@ export default function Edit({ attributes, setAttributes }) {
 						</address>
 					</section>
 
-					<section className="rrze-directions-editor__map">
-						{isLoadingDirections ? (
-							<p className="rrze-directions-editor__loading" aria-live="polite">
-								{strings.mapLoading ??
-									__('Loading map…', 'rrze-directions')}
-							</p>
-						) : editorMapSrc ? (
-							<div className="rrze-directions__map-frame">
-								<iframe
-									title={
-										strings.mapServiceTitle ??
-										__('FAU map service', 'rrze-directions')
-									}
-									src={editorMapSrc}
-									className="rrze-directions__iframe"
-									loading="lazy"
-									referrerPolicy="no-referrer-when-downgrade"
-								/>
-							</div>
-						) : (
-							<p className="rrze-directions-editor__muted">
-								{strings.mapUnavailable ??
-									__(
-										'No map parameters available (add FAUdir data or a Map URL).',
-										'rrze-directions'
-									)}
-							</p>
-						)}
-					</section>
+					{showMap !== false ? (
+						<section className="rrze-directions-editor__map">
+							{isLoadingDirections ? (
+								<p className="rrze-directions-editor__loading" aria-live="polite">
+									{strings.mapLoading ??
+										__('Loading map…', 'rrze-directions')}
+								</p>
+							) : editorMapSrc ? (
+								<div className="rrze-directions__map-frame">
+									<iframe
+										title={
+											strings.mapServiceTitle ??
+											__('FAU map service', 'rrze-directions')
+										}
+										src={editorMapSrc}
+										className="rrze-directions__iframe"
+										loading="lazy"
+										referrerPolicy="no-referrer-when-downgrade"
+									/>
+								</div>
+							) : (
+								<p className="rrze-directions-editor__muted">
+									{strings.mapUnavailable ??
+										__(
+											'No map parameters available (add FAUdir data or a Map URL).',
+											'rrze-directions'
+										)}
+								</p>
+							)}
+						</section>
+					) : null}
 
+					{showMap !== false && showDirections !== false ? (
 					<section>
 						{showDirectionsBike !== false ? (
 							<>
@@ -2220,6 +2260,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 						<DirectionsEditorPreview attributes={attributes} strings={strings} />
 					</section>
+					) : null}
 				</div>
 			</div>
 		</Fragment>

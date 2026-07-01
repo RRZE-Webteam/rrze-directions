@@ -21,7 +21,7 @@ function getSetupSteps() {
 			target: '[data-rrze-tour="route-start"]',
 			title: __( 'Route start', 'rrze-directions' ),
 			text: __(
-				'Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen.',
+				'Draft routes are always generated from Erlangen Hauptbahnhof, Nürnberg Hauptbahnhof, and Nürnberg Flughafen NUE.',
 				'rrze-directions'
 			),
 		},

@@ -2,10 +2,13 @@ import { Dashicon } from '@wordpress/components';
 
 const iconClass = 'rrze-directions__pill-icon rrze-directions__pill-icon--svg';
 
-function SvgIcon({ viewBox, children }) {
+const TRAIN_FILLED_PATH =
+	'M4 15.5V6q0-1.325.688-2.113t1.812-1.2t2.563-.55T12 2q1.65 0 3.113.138t2.55.55t1.712 1.2T20 6v9.5q0 1.475-1.012 2.488T16.5 19l1.5 1.5v.5h-2l-2-2h-4l-2 2H6v-.5L7.5 19q-1.475 0-2.488-1.012T4 15.5M6 10h5V7H6zm7 0h5V7h-5zm-3.425 5.575Q10 15.15 10 14.5t-.425-1.075T8.5 13t-1.075.425T7 14.5t.425 1.075T8.5 16t1.075-.425m7 0Q17 15.15 17 14.5t-.425-1.075T15.5 13t-1.075.425T14 14.5t.425 1.075T15.5 16t1.075-.425';
+
+function SvgIcon({ viewBox, children, className = iconClass }) {
 	return (
 		<svg
-			className={iconClass}
+			className={className}
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox={viewBox}
 			aria-hidden="true"
@@ -40,21 +43,33 @@ function CarModeIcon() {
 
 function TransitModeIcon() {
 	return (
-		<SvgIcon viewBox="0 0 512 512">
-			<path
-				fill="currentColor"
-				d="M384 32h-64a16 16 0 0 0-16-16h-96a16 16 0 0 0-16 16h-64c-16 0-32 16-32 32v288c0 23.92 160 80 160 80s160-56.74 160-80V64c0-16-16-32-32-32M256 352a48 48 0 1 1 48-48a48 48 0 0 1-48 48m112-152a8 8 0 0 1-8 8H152a8 8 0 0 1-8-8v-80a8 8 0 0 1 8-8h208a8 8 0 0 1 8 8Z"
-			/>
-			<path
-				fill="currentColor"
-				d="m314 432l15.32 16H182.58L198 432l-32-13l-76.62 77h45.2l16-16h210.74l16 16h45.3l-76.36-77.75z"
-			/>
+		<SvgIcon viewBox="0 0 24 24">
+			<path fill="currentColor" d={TRAIN_FILLED_PATH} />
 		</SvgIcon>
 	);
 }
 
-function TrainStartIcon() {
-	return <TransitModeIcon />;
+function StationStartIcon() {
+	return (
+		<SvgIcon
+			viewBox="0 0 24 24"
+			className={`${iconClass} rrze-directions__pill-icon--station`}
+		>
+			<rect
+				x="1.5"
+				y="1.5"
+				width="21"
+				height="21"
+				rx="4"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="1.5"
+			/>
+			<g transform="translate(12 12) scale(0.82) translate(-12 -12)">
+				<path fill="currentColor" d={TRAIN_FILLED_PATH} />
+			</g>
+		</SvgIcon>
+	);
 }
 
 export function DirectionModeIcon({ modeKey }) {
@@ -76,7 +91,7 @@ export function StartPointIcon({ startKey }) {
 			return <Dashicon className="rrze-directions__pill-icon" icon="airplane" />;
 		case 'erlangen':
 		case 'nuernberg':
-			return <TrainStartIcon />;
+			return <StationStartIcon />;
 		default:
 			return <Dashicon className="rrze-directions__pill-icon" icon="location" />;
 	}
