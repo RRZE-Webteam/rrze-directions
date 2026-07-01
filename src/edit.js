@@ -552,11 +552,19 @@ async function loadManualLocationData(attributes) {
 }
 
 
-function defaultHeadingForPerson(personName) {
-	const base = __('Directions', 'rrze-directions');
+function defaultHeadingForPerson(personName, strings = getEditorStrings()) {
 	const name = `${personName ?? ''}`.trim();
+	const base = strings.defaultHeading ?? __('Directions', 'rrze-directions');
 
-	return name ? `${base} — ${name}` : base;
+	if (!name) {
+		return base;
+	}
+
+	if (strings.defaultHeadingWithPerson) {
+		return sprintf(strings.defaultHeadingWithPerson, name);
+	}
+
+	return `${base} — ${name}`;
 }
 
 function clearPersonLinkAttributes() {
@@ -565,6 +573,22 @@ function clearPersonLinkAttributes() {
 		personLabel: '',
 		workplaceKey: '',
 	};
+}
+
+function resolvePlaceForPerson(row, workplaceKey) {
+	if (!row?.places?.length) {
+		return null;
+	}
+
+	const key = `${workplaceKey ?? ''}`.trim();
+	if (key) {
+		const match = row.places.find((place) => `${place.id}` === key);
+		if (match) {
+			return match;
+		}
+	}
+
+	return row.places[0] ?? null;
 }
 
 function mapUrlFromCoordinates(latitude, longitude) {
@@ -1492,11 +1516,42 @@ export default function Edit({ attributes, setAttributes }) {
 	const wpSelectOptions = workplaceOptions;
 
 	const displayHeading =
-		`${heading ?? ''}`.trim() || defaultHeadingForPerson(selectedRow?.label ?? personLabel);
+		`${heading ?? ''}`.trim() ||
+		defaultHeadingForPerson(selectedRow?.label ?? personLabel, strings);
 
 	const loadRequestIdRef = useRef(0);
+	const personLoadRef = useRef(0);
 	const mapUrlResolveRef = useRef(0);
 	const mapUrlFromCoordsRef = useRef(0);
+	const personIdRef = useRef(personId);
+	const workplaceKeyRef = useRef(workplaceKey);
+	personIdRef.current = personId;
+	workplaceKeyRef.current = workplaceKey;
+
+	const invalidateManualMapRequests = () => {
+		mapUrlResolveRef.current += 1;
+		mapUrlFromCoordsRef.current += 1;
+	};
+
+	const cancelPersonLoad = () => {
+		personLoadRef.current += 1;
+	};
+
+	const clearDirectionsAttributes = () => ({
+		directionsBike: '',
+		directionsCar: '',
+		directionsTransit: '',
+		directionsBikeRoute: '',
+		directionsCarRoute: '',
+		directionsTransitRoute: '',
+	});
+
+	const resetMapAttributesForReload = () => ({
+		mapUrl: '',
+		mapLatitude: '',
+		mapLongitude: '',
+		...clearDirectionsAttributes(),
+	});
 	const [isLoadingDirections, setIsLoadingDirections] = useState(false);
 	const [editorMapSrc, setEditorMapSrc] = useState('');
 
@@ -1518,14 +1573,15 @@ export default function Edit({ attributes, setAttributes }) {
 			return undefined;
 		}
 
-		const id = workplaceKey || row.places[0]?.id;
-		const place = id ? row.places.find((p) => p.id === id) : row.places[0];
+		const place = resolvePlaceForPerson(row, workplaceKey);
 		if (!place) {
 			setIsLoadingDirections(false);
 			return undefined;
 		}
 
-		const requestId = ++loadRequestIdRef.current;
+		const activePersonId = Number(personId);
+		const activePlaceId = `${place.id}`;
+		const requestId = ++personLoadRef.current;
 		setIsLoadingDirections(true);
 
 		(async () => {
@@ -1535,7 +1591,22 @@ export default function Edit({ attributes, setAttributes }) {
 					zip: place.zip ?? addressZip ?? '',
 				});
 
-				if (loadRequestIdRef.current !== requestId) {
+				if (personLoadRef.current !== requestId) {
+					return;
+				}
+
+				if (Number(personIdRef.current) !== activePersonId) {
+					return;
+				}
+
+				const currentRow = personRows.find(
+					(candidate) => candidate.id === Number(personIdRef.current)
+				);
+				const currentPlace = resolvePlaceForPerson(
+					currentRow,
+					workplaceKeyRef.current
+				);
+				if (!currentPlace || `${currentPlace.id}` !== activePlaceId) {
 					return;
 				}
 
@@ -1544,15 +1615,22 @@ export default function Edit({ attributes, setAttributes }) {
 					mapLongitude: coords.mapLongitude,
 				};
 
-				if (!`${heading ?? ''}`.trim() && row.label) {
-					payload.heading = defaultHeadingForPerson(row.label);
+				if (row.label) {
 					payload.personLabel = row.label;
 				}
 
 				applyDirectionsPayload(payload, dirs);
 
-				const nextMapUrl = await resolvePersistedMapUrl(place, coords, mapUrl);
-				if (loadRequestIdRef.current !== requestId) {
+				const nextMapUrl = await resolvePersistedMapUrl(
+					place,
+					coords,
+					`${place.faumap ?? ''}`.trim()
+				);
+				if (personLoadRef.current !== requestId) {
+					return;
+				}
+
+				if (Number(personIdRef.current) !== activePersonId) {
 					return;
 				}
 
@@ -1562,7 +1640,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 				setAttributes(payload);
 			} finally {
-				if (loadRequestIdRef.current === requestId) {
+				if (personLoadRef.current === requestId) {
 					setIsLoadingDirections(false);
 				}
 			}
@@ -1591,6 +1669,10 @@ export default function Edit({ attributes, setAttributes }) {
 			);
 
 			if (mapUrlFromCoordsRef.current !== requestId) {
+				return;
+			}
+
+			if (personIdRef.current) {
 				return;
 			}
 
@@ -1623,6 +1705,10 @@ export default function Edit({ attributes, setAttributes }) {
 		(async () => {
 			const coords = await fetchCoordinatesFromMapUrl(url);
 			if (mapUrlResolveRef.current !== requestId) {
+				return;
+			}
+
+			if (personIdRef.current) {
 				return;
 			}
 
@@ -1676,6 +1762,10 @@ export default function Edit({ attributes, setAttributes }) {
 					return;
 				}
 
+				if (personIdRef.current) {
+					return;
+				}
+
 				const payload = {};
 				applyDirectionsPayload(payload, dirs);
 				if (Object.keys(payload).length > 0) {
@@ -1700,6 +1790,9 @@ export default function Edit({ attributes, setAttributes }) {
 	]);
 
 	const syncWorkplaceAttrs = (key) => {
+		cancelPersonLoad();
+		invalidateManualMapRequests();
+
 		if (!selectedRow?.places?.length) {
 			setAttributes({
 				workplaceKey: '',
@@ -1711,26 +1804,30 @@ export default function Edit({ attributes, setAttributes }) {
 				addressZip: '',
 				addressCity: '',
 				addressFormatted: '',
-				mapUrl: '',
-				mapLatitude: '',
-				mapLongitude: '',
-				directionsBike: '',
-				directionsCar: '',
-				directionsTransit: '',
-				directionsBikeRoute: '',
-				directionsCarRoute: '',
-				directionsTransitRoute: '',
+				...resetMapAttributesForReload(),
 			});
 			return;
 		}
 
 		const place =
-			(key && selectedRow.places.find((p) => p.id === key)) ||
+			(key && selectedRow.places.find((p) => `${p.id}` === `${key}`)) ||
 			selectedRow.places[0];
+		const snapshot = snapshotFromPlace(place);
 
 		setAttributes({
-			...snapshotFromPlace(place),
-			workplaceKey: place.id ?? '',
+			workplaceKey: snapshot.workplaceKey,
+			organizationName: snapshot.organizationName,
+			organizationNumber: snapshot.organizationNumber,
+			addressRoom: snapshot.addressRoom,
+			addressFloor: snapshot.addressFloor,
+			addressStreet: snapshot.addressStreet,
+			addressZip: snapshot.addressZip,
+			addressCity: snapshot.addressCity,
+			addressFormatted: snapshot.addressFormatted,
+			mapUrl: snapshot.mapUrl,
+			mapLatitude: snapshot.mapLatitude,
+			mapLongitude: snapshot.mapLongitude,
+			...clearDirectionsAttributes(),
 		});
 	};
 
@@ -1807,17 +1904,16 @@ export default function Edit({ attributes, setAttributes }) {
 						onChange={(next) => {
 							const nextId = Number(next) || 0;
 							const row = nextId ? personRows.find((r) => r.id === nextId) : null;
-							const nextHeading =
-								row?.label && !`${heading ?? ''}`.trim()
-									? defaultHeadingForPerson(row.label)
-									: heading;
+
+							cancelPersonLoad();
+							invalidateManualMapRequests();
 
 							if (!row?.places?.length) {
 								setAttributes({
 									...clearPersonLinkAttributes(),
 									personId: nextId,
 									personLabel: row?.label ?? '',
-									heading: nextHeading,
+									heading: `${heading ?? ''}`.trim() ? heading : '',
 									mapImageId: 0,
 									organizationName: '',
 									organizationNumber: '',
@@ -1827,25 +1923,18 @@ export default function Edit({ attributes, setAttributes }) {
 									addressZip: '',
 									addressCity: '',
 									addressFormatted: '',
-									mapUrl: '',
-									mapLatitude: '',
-									mapLongitude: '',
-									directionsBike: '',
-									directionsCar: '',
-									directionsTransit: '',
-									directionsBikeRoute: '',
-									directionsCarRoute: '',
-									directionsTransitRoute: '',
+									...resetMapAttributesForReload(),
 								});
 								return;
 							}
 
-							const snapshot = snapshotFromPlace(row.places[0]);
+							const place = row.places[0];
+							const snapshot = snapshotFromPlace(place);
 
 							setAttributes({
 								personId: nextId,
 								personLabel: row.label ?? '',
-								heading: nextHeading,
+								heading: `${heading ?? ''}`.trim() ? heading : '',
 								mapImageId: 0,
 								workplaceKey: snapshot.workplaceKey,
 								organizationName: snapshot.organizationName,
@@ -1859,6 +1948,7 @@ export default function Edit({ attributes, setAttributes }) {
 								mapUrl: snapshot.mapUrl,
 								mapLatitude: snapshot.mapLatitude,
 								mapLongitude: snapshot.mapLongitude,
+								...clearDirectionsAttributes(),
 							});
 						}}
 					/>

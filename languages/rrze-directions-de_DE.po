@@ -11,6 +11,9 @@ msgstr ""
 msgid "Directions"
 msgstr "Anfahrt"
 
+msgid "Directions — %s"
+msgstr "Anfahrt — %s"
+
 msgid "Address"
 msgstr "Anschrift"
 

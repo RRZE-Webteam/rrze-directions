@@ -129,6 +129,8 @@ final class Main
                     'directionsBikePlaceholder'   => __('Directions by foot / bike.', 'rrze-directions'),
                     'directionsCarPlaceholder'    => __('Directions by car.', 'rrze-directions'),
                     'directionsTransitPlaceholder'=> __('Public transport.', 'rrze-directions'),
+                    'defaultHeading'               => __('Directions', 'rrze-directions'),
+                    'defaultHeadingWithPerson'     => __('Directions — %s', 'rrze-directions'),
                     'directionsSettings'           => __('Arrival directions', 'rrze-directions'),
                     'showDirectionsBike'            => __('Show walking / cycling', 'rrze-directions'),
                     'showDirectionsCar'             => __('Show by car', 'rrze-directions'),
