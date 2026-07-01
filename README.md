@@ -120,40 +120,8 @@ On the settings page, **About** opens a short introduction to the plugin. **Tour
 
 ---
 
-## Development
-
-From the plugin directory:
-
-```bash
-npm install
-npm run build    # compile assets into /build, admin CSS, JSON translations
-npm run start    # watch mode
-npm run lint:js
-npm run lint:css
-```
-
-Compile German translations:
-
-```bash
-msgfmt -o languages/rrze-directions-de_DE.mo languages/rrze-directions-de_DE.po
-```
-
-**Source layout**
-
-- `src/` — block editor, styles, route map scripts, guided tour
-- `includes/` — PHP rendering, FAUdir integration, REST endpoints, API cache
-- `build/` — compiled assets (committed or generated before release)
-
----
-
-## License
-
-Licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
-
----
-
 ## Credits
 
 Developed and maintained by the  
 **RRZE Webteam, Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU)**  
-👉 [https://github.com/RRZE-Webteam/rrze-directions](https://github.com/RRZE-Webteam/rrze-directions)
+👉 [https://github.com/RRZE-Webteam](https://github.com/RRZE-Webteam)
