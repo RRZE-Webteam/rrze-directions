@@ -15,6 +15,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from '@wordpress/eleme
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import apiFetch from '@wordpress/api-fetch';
+import { DirectionModeIcon, StartPointIcon } from './mode-icons';
 
 const KARTE_HOST_SUFFIX = 'karte.fau.de';
 const KARTE_IFRAME_PATH = '/api/v1/iframe';
@@ -402,7 +403,57 @@ function hasResolvedCoordinates(coords) {
 	);
 }
 
-async function loadWorkplaceCoordinates(place) {
+async function fetchOpenRouteDirections(place, coords, extras = {}) {
+	const path = window.rrze_directions?.restOpenRouteDirectionsPath;
+	if (!path) {
+		return null;
+	}
+
+	const lat =
+		parseCoordinate(coords.mapLatitude) ?? parseCoordinate(place.latitude);
+	const lon =
+		parseCoordinate(coords.mapLongitude) ?? parseCoordinate(place.longitude);
+	const city =
+		`${place.city ?? ''}`.trim() ||
+		`${extras.addressCity ?? ''}`.trim();
+	const zip =
+		`${place.zip ?? ''}`.trim() || `${extras.zip ?? ''}`.trim();
+	const street = `${place.street ?? ''}`.trim();
+	const formattedAddress = `${place.formattedAddress ?? ''}`.trim();
+
+	if (lat === null || lon === null) {
+		return null;
+	}
+
+	try {
+		return await apiFetch({
+			path,
+			method: 'POST',
+			data: {
+				latitude: lat,
+				longitude: lon,
+				city,
+				zip,
+				street,
+				formattedAddress,
+			},
+		});
+	} catch (error) {
+		return null;
+	}
+}
+
+function directionsResponseHasContent(dirs) {
+	if (!dirs) {
+		return false;
+	}
+
+	return ['directionsBike', 'directionsCar', 'directionsTransit'].some((key) =>
+		hasDirectionsContent(dirs[key])
+	);
+}
+
+async function loadWorkplaceData(place, extras = {}) {
 	const coordDelays = [0, 600, 1500];
 	let coords = { mapLatitude: '', mapLongitude: '' };
 
@@ -419,8 +470,87 @@ async function loadWorkplaceCoordinates(place) {
 		}
 	}
 
-	return coords;
+	if (!hasResolvedCoordinates(coords)) {
+		return { coords, dirs: null };
+	}
+
+	const dirDelays = [0, 1000, 2500];
+	let dirs = null;
+
+	for (const delay of dirDelays) {
+		if (delay > 0) {
+			await new Promise((resolve) => {
+				window.setTimeout(resolve, delay);
+			});
+		}
+
+		dirs = await fetchOpenRouteDirections(place, coords, extras);
+		if (directionsResponseHasContent(dirs)) {
+			break;
+		}
+	}
+
+	return { coords, dirs };
 }
+
+function applyDirectionsPayload(payload, dirs) {
+	if (!dirs || !directionsResponseHasContent(dirs)) {
+		return;
+	}
+
+	payload.directionsBike = dirs.directionsBike ?? '';
+	payload.directionsCar = dirs.directionsCar ?? '';
+	payload.directionsTransit = dirs.directionsTransit ?? '';
+	payload.directionsBikeRoute = dirs.directionsBikeRoute ?? '';
+	payload.directionsCarRoute = dirs.directionsCarRoute ?? '';
+	payload.directionsTransitRoute = dirs.directionsTransitRoute ?? '';
+}
+
+
+function manualLocationPlace(attributes) {
+	return {
+		latitude: attributes.mapLatitude,
+		longitude: attributes.mapLongitude,
+		city: attributes.addressCity ?? '',
+		zip: attributes.addressZip ?? '',
+		street: attributes.addressStreet ?? '',
+		formattedAddress: attributes.addressFormatted ?? '',
+	};
+}
+
+async function loadManualLocationData(attributes) {
+	const coords = {
+		mapLatitude: attributes.mapLatitude ?? '',
+		mapLongitude: attributes.mapLongitude ?? '',
+	};
+
+	if (!hasResolvedCoordinates(coords)) {
+		return { coords, dirs: null };
+	}
+
+	const place = manualLocationPlace(attributes);
+	const dirDelays = [0, 1000, 2500];
+	let dirs = null;
+
+	for (const delay of dirDelays) {
+		if (delay > 0) {
+			await new Promise((resolve) => {
+				window.setTimeout(resolve, delay);
+			});
+		}
+
+		dirs = await fetchOpenRouteDirections(place, coords, {
+			addressCity: place.city,
+			zip: place.zip,
+		});
+		if (directionsResponseHasContent(dirs)) {
+			break;
+		}
+	}
+
+	return { coords, dirs };
+}
+
 
 function defaultHeadingForPerson(personName) {
 	const base = __('Directions', 'rrze-directions');
@@ -435,6 +565,28 @@ function clearPersonLinkAttributes() {
 		personLabel: '',
 		workplaceKey: '',
 	};
+}
+
+function mapUrlFromCoordinates(latitude, longitude) {
+	const lat = parseCoordinate(latitude);
+	const lon = parseCoordinate(longitude);
+
+	if (lat === null || lon === null) {
+		return '';
+	}
+
+	return buildCenterIframeUrl(lat, lon);
+}
+
+async function resolvePersistedMapUrlFromCoordinates(latitude, longitude) {
+	const candidate = mapUrlFromCoordinates(latitude, longitude);
+	if (!candidate) {
+		return '';
+	}
+
+	const resolved = await fetchResolvedIframeSrc(candidate);
+
+	return resolved.mapUrl || resolved.iframeSrc || candidate;
 }
 
 async function resolvePersistedMapUrl(place, coords, currentMapUrl = '') {
@@ -486,6 +638,732 @@ function snapshotFromPlace(place) {
 				? ''
 				: String(place.longitude),
 	};
+}
+
+function hasDirectionsContent(html) {
+	return `${html ?? ''}`.replace(/<[^>]*>/g, '').trim() !== '';
+}
+
+function hasRouteData(routeJson) {
+	if (!routeJson) {
+		return false;
+	}
+
+	try {
+		const data = JSON.parse(routeJson);
+		if (Array.isArray(data?.variants)) {
+			return data.variants.some((variant) =>
+				hasRouteData(JSON.stringify(variant?.route ?? {}))
+			);
+		}
+
+		return (
+			Array.isArray(data?.coordinates) &&
+			data.coordinates.length > 1 &&
+			Array.isArray(data?.steps) &&
+			data.steps.length > 0
+		);
+	} catch (error) {
+		return false;
+	}
+}
+
+function parseRouteVariants(routeJson) {
+	if (!routeJson) {
+		return [];
+	}
+
+	try {
+		const data = JSON.parse(routeJson);
+		if (Array.isArray(data?.variants)) {
+			return data.variants
+				.map((variant) => ({
+					startKey: `${variant?.startKey ?? ''}`,
+					startLabel: `${variant?.startLabel ?? ''}`,
+					route: variant?.route ?? null,
+				}))
+				.filter((variant) => hasRouteData(JSON.stringify(variant.route ?? {})));
+		}
+
+		if (hasRouteData(routeJson)) {
+			return [{ startKey: '', startLabel: '', route: data }];
+		}
+	} catch (error) {
+		return [];
+	}
+
+	return [];
+}
+
+function splitRouteVariantHtml(html) {
+	const source = `${html ?? ''}`;
+	if (!source.includes('rrze-directions__route-variant')) {
+		const trimmed = source.trim();
+		return trimmed ? [trimmed] : [];
+	}
+
+	const marker =
+		/<div class="rrze-directions__route-variant">([\s\S]*?)<\/div>/g;
+	const parts = [];
+	let match = marker.exec(source);
+
+	while (match) {
+		parts.push(match[1].trim());
+		match = marker.exec(source);
+	}
+
+	if (parts.length > 0) {
+		return parts;
+	}
+
+	const parser = new DOMParser();
+	const document = parser.parseFromString(
+		`<div id="rrze-directions-root">${source}</div>`,
+		'text/html'
+	);
+	const nodes = document.querySelectorAll('.rrze-directions__route-variant');
+
+	nodes.forEach((node) => {
+		parts.push(node.innerHTML.trim());
+	});
+
+	if (parts.length > 0) {
+		return parts;
+	}
+
+	const trimmed = source.trim();
+	return trimmed ? [trimmed] : [];
+}
+
+function getVisibleDirectionsSections(attributes, strings) {
+	const sections = [
+		{
+			key: 'bike',
+			enabled: attributes.showDirectionsBike !== false,
+			content: attributes.directionsBike,
+			route: attributes.directionsBikeRoute,
+			title: strings.directionsBike ?? __('Walking / Cycling', 'rrze-directions'),
+			placeholder:
+				strings.directionsBikePlaceholder ??
+				__('Directions by foot / bike.', 'rrze-directions'),
+		},
+		{
+			key: 'car',
+			enabled: attributes.showDirectionsCar !== false,
+			content: attributes.directionsCar,
+			route: attributes.directionsCarRoute,
+			title: strings.directionsCar ?? __('By car', 'rrze-directions'),
+			placeholder:
+				strings.directionsCarPlaceholder ??
+				__('Directions by car.', 'rrze-directions'),
+		},
+		{
+			key: 'transit',
+			enabled: attributes.showDirectionsTransit !== false,
+			content: attributes.directionsTransit,
+			route: attributes.directionsTransitRoute,
+			title: strings.directionsTransit ?? __('Bus / train', 'rrze-directions'),
+			placeholder:
+				strings.directionsTransitPlaceholder ??
+				__('Public transport.', 'rrze-directions'),
+		},
+	];
+
+	return sections.filter(
+		(section) => section.enabled && hasDirectionsContent(section.content)
+	);
+}
+
+function normalizeDirectionsLayout(layout) {
+	if (
+		layout === 'accordion' ||
+		layout === 'columns' ||
+		layout === 'tabs' ||
+		layout === 'dropdown'
+	) {
+		return layout;
+	}
+
+	return 'pills';
+}
+
+function variantKey(variant, index) {
+	if (!variant) {
+		return `variant-${index}`;
+	}
+
+	return variant.startKey || `variant-${index}`;
+}
+
+function RouteVariantsEditorMaps({ routeJson, strings }) {
+	const variants = parseRouteVariants(routeJson);
+	const mapHint =
+		strings.routeMapPreview ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-directions'
+		);
+	const [activeKey, setActiveKey] = useState(() =>
+		variantKey(variants[0], 0)
+	);
+
+	useEffect(() => {
+		if (variants.length === 0) {
+			return;
+		}
+
+		setActiveKey((current) => {
+			if (variants.some((variant, index) => variantKey(variant, index) === current)) {
+				return current;
+			}
+
+			return variantKey(variants[0], 0);
+		});
+	}, [routeJson]);
+
+	if (variants.length > 1) {
+		return (
+			<div className="rrze-directions__start-switcher">
+				<div className="rrze-directions__start-pills" role="tablist">
+					{variants.map((variant, index) => {
+						const key = variantKey(variant, index);
+						const active = key === activeKey;
+
+						return (
+							<button
+								key={key}
+								type="button"
+								className={`rrze-directions__start-pill${
+									active ? ' is-active' : ''
+								}`}
+								role="tab"
+								aria-selected={active}
+								onClick={() => setActiveKey(key)}
+							>
+								<StartPointIcon startKey={variant.startKey || key} />
+								<span className="rrze-directions__start-pill-label">
+									{variant.startLabel ||
+										strings.routeMapTitle ||
+										__('Route map', 'rrze-directions')}
+								</span>
+							</button>
+						);
+					})}
+				</div>
+				<div className="rrze-directions__start-panels">
+					{variants.map((variant, index) => {
+						const key = variantKey(variant, index);
+
+						return (
+							<div
+								key={key}
+								className={`rrze-directions__route-variant${
+									key === activeKey ? ' is-active' : ''
+								}`}
+								role="tabpanel"
+								hidden={key !== activeKey}
+							>
+								<RouteMapEditorPlaceholder
+									routeJson={JSON.stringify(variant.route)}
+									title={
+										variant.startLabel ||
+										strings.routeMapTitle ||
+										__('Route map', 'rrze-directions')
+									}
+									hint={mapHint}
+								/>
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<RouteMapEditorPlaceholder
+			routeJson={
+				variants.length === 1
+					? JSON.stringify(variants[0].route)
+					: routeJson
+			}
+			title={strings.routeMapTitle ?? __('Route map', 'rrze-directions')}
+			hint={mapHint}
+		/>
+	);
+}
+
+function DirectionsStartSwitcher({ routeJson, content, strings }) {
+	const variants = useMemo(() => parseRouteVariants(routeJson), [routeJson]);
+	const htmlParts = useMemo(() => splitRouteVariantHtml(content), [content]);
+	const [activeKey, setActiveKey] = useState(() => variantKey(variants[0], 0));
+	const mapHint =
+		strings.routeMapPreview ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-directions'
+		);
+
+	useEffect(() => {
+		if (variants.length === 0) {
+			return;
+		}
+
+		setActiveKey((current) => {
+			if (variants.some((variant, index) => variantKey(variant, index) === current)) {
+				return current;
+			}
+
+			return variantKey(variants[0], 0);
+		});
+	}, [routeJson, variants]);
+
+	return (
+		<div className="rrze-directions__start-switcher">
+			<div
+				className="rrze-directions__start-pills"
+				role="tablist"
+				aria-label={strings.startingPoint ?? __('Starting point', 'rrze-directions')}
+			>
+				{variants.map((variant, index) => {
+					const key = variantKey(variant, index);
+					const active = key === activeKey;
+
+					return (
+						<button
+							key={key}
+							type="button"
+							className={`rrze-directions__start-pill${
+								active ? ' is-active' : ''
+							}`}
+							role="tab"
+							aria-selected={active}
+							onClick={() => setActiveKey(key)}
+						>
+							<StartPointIcon startKey={variant.startKey || key} />
+							<span className="rrze-directions__start-pill-label">
+								{variant.startLabel ||
+									sprintf(
+										/* translators: %d: route variant number */
+										__('Route %d', 'rrze-directions'),
+										index + 1
+									)}
+							</span>
+						</button>
+					);
+				})}
+			</div>
+			<div className="rrze-directions__start-panels">
+				{variants.map((variant, index) => {
+					const key = variantKey(variant, index);
+
+					return (
+						<div
+							key={key}
+							className={`rrze-directions__route-variant${
+								key === activeKey ? ' is-active' : ''
+							}`}
+							role="tabpanel"
+							hidden={key !== activeKey}
+						>
+							<RouteMapEditorPlaceholder
+								routeJson={JSON.stringify(variant.route)}
+								title={
+									variant.startLabel ||
+									strings.routeMapTitle ||
+									__('Route map', 'rrze-directions')
+								}
+								hint={mapHint}
+							/>
+							<div
+								className="rrze-directions__rte"
+								dangerouslySetInnerHTML={{
+									__html: htmlParts[index] ?? '',
+								}}
+							/>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function DirectionsSectionPreviewBody({ section, strings }) {
+	const variants = parseRouteVariants(section.route);
+	const htmlParts = splitRouteVariantHtml(section.content);
+	const mapHint =
+		strings.routeMapPreview ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-directions'
+		);
+
+	if (variants.length > 1) {
+		return (
+			<DirectionsStartSwitcher
+				routeJson={section.route}
+				content={section.content}
+				strings={strings}
+			/>
+		);
+	}
+
+	if (variants.length === 1) {
+		return (
+			<>
+				<RouteMapEditorPlaceholder
+					routeJson={JSON.stringify(variants[0].route)}
+					title={
+						variants[0].startLabel ||
+						strings.routeMapTitle ||
+						__('Route map', 'rrze-directions')
+					}
+					hint={mapHint}
+				/>
+				<div
+					className="rrze-directions__rte"
+					dangerouslySetInnerHTML={{
+						__html: htmlParts[0] ?? section.content,
+					}}
+				/>
+			</>
+		);
+	}
+
+	return (
+		<>
+			<RouteMapEditorPlaceholder
+				routeJson={section.route}
+				title={strings.routeMapTitle ?? __('Route map', 'rrze-directions')}
+				hint={mapHint}
+			/>
+			<div
+				className="rrze-directions__rte"
+				dangerouslySetInnerHTML={{ __html: section.content }}
+			/>
+		</>
+	);
+}
+
+function RouteMapEditorPlaceholder({ routeJson, title, hint }) {
+	if (!hasRouteData(routeJson)) {
+		return null;
+	}
+
+	const previewHint =
+		hint ??
+		__(
+			'Interactive route map with numbered steps is shown on the published page.',
+			'rrze-directions'
+		);
+
+	return (
+		<div className="rrze-directions-route-map rrze-directions-route-map--editor-placeholder">
+			{title ? (
+				<h4 className="rrze-directions-route-map__title">{title}</h4>
+			) : null}
+			<div className="rrze-directions-route-map__preview" aria-hidden="true">
+				<svg
+					className="rrze-directions-route-map__preview-svg"
+					viewBox="0 0 640 360"
+					xmlns="http://www.w3.org/2000/svg"
+					preserveAspectRatio="xMidYMid slice"
+					role="presentation"
+				>
+					<rect width="640" height="360" fill="#e8eef4" />
+					<path
+						d="M0 72h640M0 144h640M0 216h640M0 288h640M128 0v360M256 0v360M384 0v360M512 0v360"
+						stroke="#d0dae6"
+						strokeWidth="2"
+					/>
+					<path
+						d="M96 248 C180 220, 220 120, 320 108 S460 72, 544 92"
+						fill="none"
+						stroke="#04316a"
+						strokeWidth="10"
+						strokeLinecap="round"
+					/>
+					<circle cx="96" cy="248" r="18" fill="#04316a" stroke="#fff" strokeWidth="4" />
+					<text x="96" y="254" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">
+						1
+					</text>
+					<circle cx="320" cy="108" r="18" fill="#04316a" stroke="#fff" strokeWidth="4" />
+					<text x="320" y="114" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">
+						2
+					</text>
+					<circle cx="544" cy="92" r="18" fill="#04316a" stroke="#fff" strokeWidth="4" />
+					<text x="544" y="98" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">
+						3
+					</text>
+				</svg>
+			</div>
+			<p className="rrze-directions-route-map__hint">{previewHint}</p>
+		</div>
+	);
+}
+
+function DirectionsEditorPreview({ attributes, strings }) {
+	const layout = normalizeDirectionsLayout(attributes.directionsLayout);
+	const sections = getVisibleDirectionsSections(attributes, strings);
+	const [activeKey, setActiveKey] = useState(sections[0]?.key ?? '');
+
+	useEffect(() => {
+		if (!sections.some((section) => section.key === activeKey)) {
+			setActiveKey(sections[0]?.key ?? '');
+		}
+	}, [sections, activeKey]);
+
+	if (sections.length === 0) {
+		return null;
+	}
+
+	const layoutLabel =
+		layout === 'pills'
+			? strings.directionsLayoutPills ?? __('Pills', 'rrze-directions')
+			: layout === 'columns'
+			? strings.directionsLayoutColumns ?? __('Columns', 'rrze-directions')
+			: layout === 'tabs'
+				? strings.directionsLayoutTabs ?? __('Tabs', 'rrze-directions')
+				: layout === 'dropdown'
+					? strings.directionsLayoutDropdown ?? __('Dropdown', 'rrze-directions')
+					: strings.directionsLayoutAccordion ?? __('Accordion', 'rrze-directions');
+
+	let preview = null;
+
+	if (layout === 'pills') {
+		if (sections.length === 1) {
+			preview = (
+				<div className="rrze-directions__directions rrze-directions__directions--mode-pills">
+					<DirectionsSectionPreviewBody
+						section={sections[0]}
+						strings={strings}
+					/>
+				</div>
+			);
+		} else {
+			const activeIndex = Math.max(
+				0,
+				sections.findIndex((section) => section.key === activeKey)
+			);
+
+			preview = (
+				<div className="rrze-directions__directions rrze-directions__directions--mode-pills">
+					<div className="rrze-directions__mode-switcher">
+						<div
+							className="rrze-directions__mode-pills"
+							role="tablist"
+							aria-label={
+								strings.modeOfTransport ??
+								__('Mode of transport', 'rrze-directions')
+							}
+						>
+							{sections.map((section, index) => (
+								<button
+									key={section.key}
+									type="button"
+									className={`rrze-directions__mode-pill${
+										index === activeIndex ? ' is-active' : ''
+									}`}
+									role="tab"
+									aria-selected={index === activeIndex}
+									onClick={() => setActiveKey(section.key)}
+								>
+									<DirectionModeIcon modeKey={section.key} />
+									<span className="rrze-directions__mode-pill-label">
+										{section.title}
+									</span>
+								</button>
+							))}
+						</div>
+						<div className="rrze-directions__mode-panels">
+							{sections.map((section, index) => (
+								<div
+									key={section.key}
+									className={`rrze-directions__mode-variant${
+										index === activeIndex ? ' is-active' : ''
+									}`}
+									role="tabpanel"
+									aria-label={section.title}
+									hidden={index !== activeIndex}
+								>
+									<h3 className="screen-reader-text">{section.title}</h3>
+									<DirectionsSectionPreviewBody
+										section={section}
+										strings={strings}
+									/>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			);
+		}
+	} else if (layout === 'accordion') {
+		preview = (
+			<div className="rrze-directions__directions rrze-directions__accordions">
+				<div className="rrze-directions__accordion">
+					{sections.map((section, index) => (
+						<div
+							key={section.key}
+							className="rrze-directions__accordion-item"
+						>
+							<div className="rrze-directions__accordion-group">
+								<h3 className="rrze-directions__accordion-heading">
+									<button
+										type="button"
+										className={
+											index === 0
+												? 'rrze-directions__accordion-toggle active'
+												: 'rrze-directions__accordion-toggle'
+										}
+										aria-expanded={index === 0}
+									>
+										{section.title}
+									</button>
+								</h3>
+								<div
+									className={
+										index === 0
+											? 'rrze-directions__accordion-panel open'
+											: 'rrze-directions__accordion-panel'
+									}
+									role="region"
+									hidden={index !== 0 ? true : undefined}
+								>
+									<div className="rrze-directions__accordion-inner clearfix">
+										<DirectionsSectionPreviewBody
+											section={section}
+											strings={strings}
+										/>
+									</div>
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	} else if (layout === 'tabs') {
+		const activeIndex = Math.max(
+			0,
+			sections.findIndex((section) => section.key === activeKey)
+		);
+
+		preview = (
+			<div className="rrze-directions__directions">
+				<div className="rrze-elements-tabs primary">
+					<div role="tablist" className="manual">
+						{sections.map((section, index) => (
+							<button
+								key={section.key}
+								type="button"
+								role="tab"
+								aria-selected={index === activeIndex}
+								onClick={() => setActiveKey(section.key)}
+							>
+								<span className="focus" tabIndex={-1}>
+									{section.title}
+								</span>
+							</button>
+						))}
+					</div>
+					{sections.map((section, index) => (
+						<div
+							key={section.key}
+							role="tabpanel"
+							className={index !== activeIndex ? 'is-hidden' : undefined}
+						>
+							<DirectionsSectionPreviewBody
+								section={section}
+								strings={strings}
+							/>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	} else if (layout === 'dropdown') {
+		const activeIndex = Math.max(
+			0,
+			sections.findIndex((section) => section.key === activeKey)
+		);
+
+		preview = (
+			<div className="rrze-directions__directions rrze-directions__directions--dropdown">
+				<div className="rrze-directions__mode-dropdown">
+					<label
+						className="rrze-directions__mode-label"
+						htmlFor="rrze-directions-editor-mode-select"
+					>
+						{strings.modeOfTransport ??
+							__('Mode of transport', 'rrze-directions')}
+					</label>
+					<select
+						id="rrze-directions-editor-mode-select"
+						className="rrze-directions__mode-select"
+						value={sections[activeIndex]?.key ?? ''}
+						onChange={(event) => setActiveKey(event.target.value)}
+					>
+						{sections.map((section) => (
+							<option key={section.key} value={section.key}>
+								{section.title}
+							</option>
+						))}
+					</select>
+				</div>
+				<div className="rrze-directions__mode-panels">
+					{sections.map((section, index) => (
+						<div
+							key={section.key}
+							className={`rrze-directions__mode-panel${
+								index === activeIndex ? ' is-active' : ''
+							}`}
+							role="region"
+							aria-label={section.title}
+							hidden={index !== activeIndex}
+						>
+							<h3 className="screen-reader-text">{section.title}</h3>
+							<DirectionsSectionPreviewBody
+								section={section}
+								strings={strings}
+							/>
+						</div>
+					))}
+				</div>
+			</div>
+		);
+	} else {
+		preview = (
+			<div
+				className={`rrze-directions__directions rrze-directions__directions-grid rrze-directions__directions-grid--cols-${
+					sections.length >= 3 ? 3 : sections.length
+				}`}
+			>
+				{sections.map((section) => (
+					<section
+						key={section.key}
+						className="rrze-directions__text rrze-directions__text--column"
+					>
+						<h3>{section.title}</h3>
+						<DirectionsSectionPreviewBody
+							section={section}
+							strings={strings}
+						/>
+					</section>
+				))}
+			</div>
+		);
+	}
+
+	return (
+		<div className="rrze-directions-editor__directions-preview">
+			<p className="rrze-directions-editor__directions-preview-label">
+				{layoutLabel}
+			</p>
+			{preview}
+		</div>
+	);
 }
 
 
@@ -543,6 +1421,16 @@ export default function Edit({ attributes, setAttributes }) {
 		mapLatitude,
 		mapLongitude,
 		mapImageId,
+		directionsBike,
+		directionsCar,
+		directionsTransit,
+		directionsBikeRoute,
+		directionsCarRoute,
+		directionsTransitRoute,
+		showDirectionsBike,
+		showDirectionsCar,
+		showDirectionsTransit,
+		directionsLayout,
 	} = attributes;
 
 	const blockProps = useBlockProps({ className: 'rrze-directions-block' });
@@ -608,14 +1496,15 @@ export default function Edit({ attributes, setAttributes }) {
 
 	const loadRequestIdRef = useRef(0);
 	const mapUrlResolveRef = useRef(0);
+	const mapUrlFromCoordsRef = useRef(0);
 	const [isLoadingDirections, setIsLoadingDirections] = useState(false);
 	const [editorMapSrc, setEditorMapSrc] = useState('');
 
 	useEffect(() => {
-		if (!isLoadingDirections) {
+		if (!isLoadingDirections || !personId) {
 			setEditorMapSrc(mapIframeSrc);
 		}
-	}, [isLoadingDirections, mapIframeSrc]);
+	}, [isLoadingDirections, mapIframeSrc, personId]);
 
 	useEffect(() => {
 		if (!personId || !personRows.length) {
@@ -681,6 +1570,43 @@ export default function Edit({ attributes, setAttributes }) {
 
 		return undefined;
 	}, [personId, workplaceKey, personRows]);
+
+	useEffect(() => {
+		if (personId) {
+			return undefined;
+		}
+
+		const lat = parseCoordinate(mapLatitude);
+		const lon = parseCoordinate(mapLongitude);
+		if (lat === null || lon === null) {
+			return undefined;
+		}
+
+		const requestId = ++mapUrlFromCoordsRef.current;
+
+		(async () => {
+			const nextMapUrl = await resolvePersistedMapUrlFromCoordinates(
+				mapLatitude,
+				mapLongitude
+			);
+
+			if (mapUrlFromCoordsRef.current !== requestId) {
+				return;
+			}
+
+			if (!nextMapUrl) {
+				return;
+			}
+
+			if (nextMapUrl === `${mapUrl ?? ''}`.trim()) {
+				return;
+			}
+
+			setAttributes({ mapUrl: nextMapUrl });
+		})();
+
+		return undefined;
+	}, [personId, mapLatitude, mapLongitude]);
 
 	useEffect(() => {
 		if (personId) {
@@ -1012,87 +1938,6 @@ export default function Edit({ attributes, setAttributes }) {
 					<br />
 
 					{mapIllustration}
-				</PanelBody>
-
-				<PanelBody
-					title={
-						strings.directionsSettings ??
-						__('Arrival directions', 'rrze-directions')
-					}
-					initialOpen
-				>
-					<ToggleControl
-						label={
-							strings.showDirectionsBike ??
-							__('Show walking / cycling', 'rrze-directions')
-						}
-						checked={showDirectionsBike !== false}
-						onChange={(next) =>
-							setAttributes({ showDirectionsBike: next })
-						}
-					/>
-					<ToggleControl
-						label={
-							strings.showDirectionsCar ??
-							__('Show by car', 'rrze-directions')
-						}
-						checked={showDirectionsCar !== false}
-						onChange={(next) => setAttributes({ showDirectionsCar: next })}
-					/>
-					<ToggleControl
-						label={
-							strings.showDirectionsTransit ??
-							__('Show bus / train', 'rrze-directions')
-						}
-						checked={showDirectionsTransit !== false}
-						onChange={(next) =>
-							setAttributes({ showDirectionsTransit: next })
-						}
-					/>
-					<SelectControl
-						label={
-							strings.directionsLayout ??
-							__('Layout', 'rrze-directions')
-						}
-						value={normalizeDirectionsLayout(directionsLayout)}
-						options={[
-							{
-								label:
-									strings.directionsLayoutPills ??
-									__('Pills', 'rrze-directions'),
-								value: 'pills',
-							},
-							{
-								label:
-									strings.directionsLayoutAccordion ??
-									__('Accordion', 'rrze-directions'),
-								value: 'accordion',
-							},
-							{
-								label:
-									strings.directionsLayoutColumns ??
-									__('Columns', 'rrze-directions'),
-								value: 'columns',
-							},
-							{
-								label:
-									strings.directionsLayoutTabs ??
-									__('Tabs', 'rrze-directions'),
-								value: 'tabs',
-							},
-							{
-								label:
-									strings.directionsLayoutDropdown ??
-									__('Dropdown', 'rrze-directions'),
-								value: 'dropdown',
-							},
-						]}
-						onChange={(next) =>
-							setAttributes({
-								directionsLayout: normalizeDirectionsLayout(next),
-							})
-						}
-					/>
 				</PanelBody>
 			</InspectorControls>
 
