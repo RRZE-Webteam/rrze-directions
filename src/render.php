@@ -64,7 +64,29 @@ $class = trim('wp-block-rrze-directions rrze-directions');
 ?>
 <section class="<?php echo esc_attr($class); ?>">
     <div class="rrze-directions__body">
-        <h2 class="rrze-directions__title"><?php echo esc_html__('Directions', 'rrze-directions'); ?></h2>
+        <h2 class="rrze-directions__title"><?php
+        $heading     = trim((string) ($attributes['heading'] ?? ''));
+        $personLabel = trim((string) ($attributes['personLabel'] ?? ''));
+
+        if (
+            $heading === ''
+            || $heading === 'Directions'
+            || (
+                $personLabel !== ''
+                && str_starts_with($heading, 'Directions — ')
+            )
+        ) {
+            $heading = $personLabel !== ''
+                ? sprintf(
+                    /* translators: %s: person name */
+                    __('Directions — %s', 'rrze-directions'),
+                    $personLabel
+                )
+                : __('Directions', 'rrze-directions');
+        }
+
+        echo esc_html($heading);
+        ?></h2>
 
         <address class="rrze-directions__address">
             <?php if ($organizationName !== '') : ?>

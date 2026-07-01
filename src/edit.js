@@ -3,7 +3,6 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
-	ToggleControl,
 } from '@wordpress/components';
 import {
 	InspectorControls,
@@ -163,6 +162,26 @@ function buildAddressIframeUrl(addressQuery) {
 	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/address/${encodeURIComponent(addressQuery)}/`;
 }
 
+function isManualLocationMode(attributes) {
+	return !Number(attributes.personId);
+}
+
+function resolveManualMapIframeSrc(attributes) {
+	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
+
+	if (mapUrl && isApiIframeUrl(mapUrl)) {
+		return mapUrl;
+	}
+
+	const lat = parseCoordinate(attributes.mapLatitude);
+	const lon = parseCoordinate(attributes.mapLongitude);
+	if (lat !== null && lon !== null) {
+		return buildCenterIframeUrl(lat, lon);
+	}
+
+	return '';
+}
+
 function resolveMapIframeSrc(attributes) {
 	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
 
@@ -173,6 +192,10 @@ function resolveMapIframeSrc(attributes) {
 	const famos = famosFromIframeUrl(mapUrl);
 	if (famos) {
 		return buildFamosIframeUrl(famos);
+	}
+
+	if (isManualLocationMode(attributes)) {
+		return resolveManualMapIframeSrc(attributes);
 	}
 
 	const org = sanitizeOrganizationDigits(attributes.organizationNumber);
@@ -253,6 +276,42 @@ function appleMapsUrl(latitude, longitude) {
 	const encoded = encodeURIComponent(pair);
 
 	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
+}
+
+async function fetchCoordinatesFromMapUrl(mapUrl) {
+	const trimmed = `${mapUrl ?? ''}`.trim();
+	if (!trimmed) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	const path = window.rrze_directions?.restResolveCoordinatesPath;
+	if (!path) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	try {
+		const res = await apiFetch({
+			path,
+			method: 'POST',
+			data: { faumap: trimmed },
+		});
+
+		const la = res?.latitude;
+		const lo = res?.longitude;
+
+		if (
+			la != null &&
+			lo != null &&
+			Number.isFinite(Number(la)) &&
+			Number.isFinite(Number(lo))
+		) {
+			return { mapLatitude: String(la), mapLongitude: String(lo) };
+		}
+	} catch (error) {
+		// Leave coordinates empty on failure.
+	}
+
+	return { mapLatitude: '', mapLongitude: '' };
 }
 
 async function fetchResolvedCoordinates(place) {
@@ -337,6 +396,13 @@ async function fetchResolvedIframeSrc(candidateUrl) {
 	return { iframeSrc: trimmed, mapUrl: trimmed };
 }
 
+function hasResolvedCoordinates(coords) {
+	return (
+		parseCoordinate(coords?.mapLatitude) !== null &&
+		parseCoordinate(coords?.mapLongitude) !== null
+	);
+}
+
 async function fetchOpenRouteDirections(place, coords, extras = {}) {
 	const path = window.rrze_directions?.restOpenRouteDirectionsPath;
 	if (!path) {
@@ -355,7 +421,7 @@ async function fetchOpenRouteDirections(place, coords, extras = {}) {
 	const street = `${place.street ?? ''}`.trim();
 	const formattedAddress = `${place.formattedAddress ?? ''}`.trim();
 
-	if (lat === null || lon === null || (!city && !zip)) {
+	if (lat === null || lon === null) {
 		return null;
 	}
 
@@ -384,13 +450,6 @@ function directionsResponseHasContent(dirs) {
 
 	return ['directionsBike', 'directionsCar', 'directionsTransit'].some((key) =>
 		hasDirectionsContent(dirs[key])
-	);
-}
-
-function hasResolvedCoordinates(coords) {
-	return (
-		parseCoordinate(coords?.mapLatitude) !== null &&
-		parseCoordinate(coords?.mapLongitude) !== null
 	);
 }
 
@@ -445,6 +504,113 @@ function applyDirectionsPayload(payload, dirs) {
 	payload.directionsBikeRoute = dirs.directionsBikeRoute ?? '';
 	payload.directionsCarRoute = dirs.directionsCarRoute ?? '';
 	payload.directionsTransitRoute = dirs.directionsTransitRoute ?? '';
+}
+
+
+function manualLocationPlace(attributes) {
+	return {
+		latitude: attributes.mapLatitude,
+		longitude: attributes.mapLongitude,
+		city: attributes.addressCity ?? '',
+		zip: attributes.addressZip ?? '',
+		street: attributes.addressStreet ?? '',
+		formattedAddress: attributes.addressFormatted ?? '',
+	};
+}
+
+async function loadManualLocationData(attributes) {
+	const coords = {
+		mapLatitude: attributes.mapLatitude ?? '',
+		mapLongitude: attributes.mapLongitude ?? '',
+	};
+
+	if (!hasResolvedCoordinates(coords)) {
+		return { coords, dirs: null };
+	}
+
+	const place = manualLocationPlace(attributes);
+	const dirDelays = [0, 1000, 2500];
+	let dirs = null;
+
+	for (const delay of dirDelays) {
+		if (delay > 0) {
+			await new Promise((resolve) => {
+				window.setTimeout(resolve, delay);
+			});
+		}
+
+		dirs = await fetchOpenRouteDirections(place, coords, {
+			addressCity: place.city,
+			zip: place.zip,
+		});
+		if (directionsResponseHasContent(dirs)) {
+			break;
+		}
+	}
+
+	return { coords, dirs };
+}
+
+
+function defaultHeadingForPerson(personName, strings = getEditorStrings()) {
+	const name = `${personName ?? ''}`.trim();
+	const base = strings.defaultHeading ?? __('Directions', 'rrze-directions');
+
+	if (!name) {
+		return base;
+	}
+
+	if (strings.defaultHeadingWithPerson) {
+		return sprintf(strings.defaultHeadingWithPerson, name);
+	}
+
+	return `${base} — ${name}`;
+}
+
+function clearPersonLinkAttributes() {
+	return {
+		personId: 0,
+		personLabel: '',
+		workplaceKey: '',
+	};
+}
+
+function resolvePlaceForPerson(row, workplaceKey) {
+	if (!row?.places?.length) {
+		return null;
+	}
+
+	const key = `${workplaceKey ?? ''}`.trim();
+	if (key) {
+		const match = row.places.find((place) => `${place.id}` === key);
+		if (match) {
+			return match;
+		}
+	}
+
+	return row.places[0] ?? null;
+}
+
+function mapUrlFromCoordinates(latitude, longitude) {
+	const lat = parseCoordinate(latitude);
+	const lon = parseCoordinate(longitude);
+
+	if (lat === null || lon === null) {
+		return '';
+	}
+
+	return buildCenterIframeUrl(lat, lon);
+}
+
+async function resolvePersistedMapUrlFromCoordinates(latitude, longitude) {
+	const candidate = mapUrlFromCoordinates(latitude, longitude);
+	if (!candidate) {
+		return '';
+	}
+
+	const resolved = await fetchResolvedIframeSrc(candidate);
+
+	return resolved.mapUrl || resolved.iframeSrc || candidate;
 }
 
 async function resolvePersistedMapUrl(place, coords, currentMapUrl = '') {
@@ -1224,6 +1390,7 @@ function DirectionsEditorPreview({ attributes, strings }) {
 	);
 }
 
+
 function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false }) {
 	const lat = parseCoordinate(latitude);
 	const lon = parseCoordinate(longitude);
@@ -1263,6 +1430,8 @@ function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false
 export default function Edit({ attributes, setAttributes }) {
 	const {
 		personId,
+		personLabel,
+		heading,
 		workplaceKey,
 		organizationName,
 		organizationNumber,
@@ -1300,6 +1469,7 @@ export default function Edit({ attributes, setAttributes }) {
 	const mapIframeSrc = useMemo(
 		() => resolveMapIframeSrc(attributes),
 		[
+			personId,
 			mapUrl,
 			organizationNumber,
 			mapLatitude,
@@ -1345,18 +1515,51 @@ export default function Edit({ attributes, setAttributes }) {
 
 	const wpSelectOptions = workplaceOptions;
 
-	const previewPersonLabel =
-		selectedRow?.label ?? __('Directions', 'rrze-directions');
+	const displayHeading =
+		`${heading ?? ''}`.trim() ||
+		defaultHeadingForPerson(selectedRow?.label ?? personLabel, strings);
 
 	const loadRequestIdRef = useRef(0);
+	const personLoadRef = useRef(0);
+	const mapUrlResolveRef = useRef(0);
+	const mapUrlFromCoordsRef = useRef(0);
+	const personIdRef = useRef(personId);
+	const workplaceKeyRef = useRef(workplaceKey);
+	personIdRef.current = personId;
+	workplaceKeyRef.current = workplaceKey;
+
+	const invalidateManualMapRequests = () => {
+		mapUrlResolveRef.current += 1;
+		mapUrlFromCoordsRef.current += 1;
+	};
+
+	const cancelPersonLoad = () => {
+		personLoadRef.current += 1;
+	};
+
+	const clearDirectionsAttributes = () => ({
+		directionsBike: '',
+		directionsCar: '',
+		directionsTransit: '',
+		directionsBikeRoute: '',
+		directionsCarRoute: '',
+		directionsTransitRoute: '',
+	});
+
+	const resetMapAttributesForReload = () => ({
+		mapUrl: '',
+		mapLatitude: '',
+		mapLongitude: '',
+		...clearDirectionsAttributes(),
+	});
 	const [isLoadingDirections, setIsLoadingDirections] = useState(false);
 	const [editorMapSrc, setEditorMapSrc] = useState('');
 
 	useEffect(() => {
-		if (!isLoadingDirections) {
+		if (!isLoadingDirections || !personId) {
 			setEditorMapSrc(mapIframeSrc);
 		}
-	}, [isLoadingDirections, mapIframeSrc]);
+	}, [isLoadingDirections, mapIframeSrc, personId]);
 
 	useEffect(() => {
 		if (!personId || !personRows.length) {
@@ -1370,14 +1573,15 @@ export default function Edit({ attributes, setAttributes }) {
 			return undefined;
 		}
 
-		const id = workplaceKey || row.places[0]?.id;
-		const place = id ? row.places.find((p) => p.id === id) : row.places[0];
+		const place = resolvePlaceForPerson(row, workplaceKey);
 		if (!place) {
 			setIsLoadingDirections(false);
 			return undefined;
 		}
 
-		const requestId = ++loadRequestIdRef.current;
+		const activePersonId = Number(personId);
+		const activePlaceId = `${place.id}`;
+		const requestId = ++personLoadRef.current;
 		setIsLoadingDirections(true);
 
 		(async () => {
@@ -1387,7 +1591,22 @@ export default function Edit({ attributes, setAttributes }) {
 					zip: place.zip ?? addressZip ?? '',
 				});
 
-				if (loadRequestIdRef.current !== requestId) {
+				if (personLoadRef.current !== requestId) {
+					return;
+				}
+
+				if (Number(personIdRef.current) !== activePersonId) {
+					return;
+				}
+
+				const currentRow = personRows.find(
+					(candidate) => candidate.id === Number(personIdRef.current)
+				);
+				const currentPlace = resolvePlaceForPerson(
+					currentRow,
+					workplaceKeyRef.current
+				);
+				if (!currentPlace || `${currentPlace.id}` !== activePlaceId) {
 					return;
 				}
 
@@ -1396,10 +1615,22 @@ export default function Edit({ attributes, setAttributes }) {
 					mapLongitude: coords.mapLongitude,
 				};
 
+				if (row.label) {
+					payload.personLabel = row.label;
+				}
+
 				applyDirectionsPayload(payload, dirs);
 
-				const nextMapUrl = await resolvePersistedMapUrl(place, coords, mapUrl);
-				if (loadRequestIdRef.current !== requestId) {
+				const nextMapUrl = await resolvePersistedMapUrl(
+					place,
+					coords,
+					`${place.faumap ?? ''}`.trim()
+				);
+				if (personLoadRef.current !== requestId) {
+					return;
+				}
+
+				if (Number(personIdRef.current) !== activePersonId) {
 					return;
 				}
 
@@ -1409,7 +1640,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 				setAttributes(payload);
 			} finally {
-				if (loadRequestIdRef.current === requestId) {
+				if (personLoadRef.current === requestId) {
 					setIsLoadingDirections(false);
 				}
 			}
@@ -1418,7 +1649,150 @@ export default function Edit({ attributes, setAttributes }) {
 		return undefined;
 	}, [personId, workplaceKey, personRows]);
 
+	useEffect(() => {
+		if (personId) {
+			return undefined;
+		}
+
+		const lat = parseCoordinate(mapLatitude);
+		const lon = parseCoordinate(mapLongitude);
+		if (lat === null || lon === null) {
+			return undefined;
+		}
+
+		const requestId = ++mapUrlFromCoordsRef.current;
+
+		(async () => {
+			const nextMapUrl = await resolvePersistedMapUrlFromCoordinates(
+				mapLatitude,
+				mapLongitude
+			);
+
+			if (mapUrlFromCoordsRef.current !== requestId) {
+				return;
+			}
+
+			if (personIdRef.current) {
+				return;
+			}
+
+			if (!nextMapUrl) {
+				return;
+			}
+
+			if (nextMapUrl === `${mapUrl ?? ''}`.trim()) {
+				return;
+			}
+
+			setAttributes({ mapUrl: nextMapUrl });
+		})();
+
+		return undefined;
+	}, [personId, mapLatitude, mapLongitude]);
+
+	useEffect(() => {
+		if (personId) {
+			return undefined;
+		}
+
+		const url = `${mapUrl ?? ''}`.trim();
+		if (!url) {
+			return undefined;
+		}
+
+		const requestId = ++mapUrlResolveRef.current;
+
+		(async () => {
+			const coords = await fetchCoordinatesFromMapUrl(url);
+			if (mapUrlResolveRef.current !== requestId) {
+				return;
+			}
+
+			if (personIdRef.current) {
+				return;
+			}
+
+			if (!hasResolvedCoordinates(coords)) {
+				return;
+			}
+
+			if (
+				coords.mapLatitude === mapLatitude &&
+				coords.mapLongitude === mapLongitude
+			) {
+				return;
+			}
+
+			setAttributes({
+				mapLatitude: coords.mapLatitude,
+				mapLongitude: coords.mapLongitude,
+			});
+		})();
+
+		return undefined;
+	}, [mapUrl, personId]);
+
+	useEffect(() => {
+		if (personId) {
+			return undefined;
+		}
+
+		const lat = parseCoordinate(mapLatitude);
+		const lon = parseCoordinate(mapLongitude);
+		if (lat === null || lon === null) {
+			setIsLoadingDirections(false);
+			return undefined;
+		}
+
+		const requestId = ++loadRequestIdRef.current;
+		setIsLoadingDirections(true);
+
+		(async () => {
+			try {
+				const { dirs } = await loadManualLocationData({
+					mapLatitude,
+					mapLongitude,
+					addressCity,
+					addressZip,
+					addressStreet,
+					addressFormatted,
+				});
+
+				if (loadRequestIdRef.current !== requestId) {
+					return;
+				}
+
+				if (personIdRef.current) {
+					return;
+				}
+
+				const payload = {};
+				applyDirectionsPayload(payload, dirs);
+				if (Object.keys(payload).length > 0) {
+					setAttributes(payload);
+				}
+			} finally {
+				if (loadRequestIdRef.current === requestId) {
+					setIsLoadingDirections(false);
+				}
+			}
+		})();
+
+		return undefined;
+	}, [
+		personId,
+		mapLatitude,
+		mapLongitude,
+		addressCity,
+		addressZip,
+		addressStreet,
+		addressFormatted,
+	]);
+
 	const syncWorkplaceAttrs = (key) => {
+		cancelPersonLoad();
+		invalidateManualMapRequests();
+
 		if (!selectedRow?.places?.length) {
 			setAttributes({
 				workplaceKey: '',
@@ -1430,26 +1804,30 @@ export default function Edit({ attributes, setAttributes }) {
 				addressZip: '',
 				addressCity: '',
 				addressFormatted: '',
-				mapUrl: '',
-				mapLatitude: '',
-				mapLongitude: '',
-				directionsBike: '',
-				directionsCar: '',
-				directionsTransit: '',
-				directionsBikeRoute: '',
-				directionsCarRoute: '',
-				directionsTransitRoute: '',
+				...resetMapAttributesForReload(),
 			});
 			return;
 		}
 
 		const place =
-			(key && selectedRow.places.find((p) => p.id === key)) ||
+			(key && selectedRow.places.find((p) => `${p.id}` === `${key}`)) ||
 			selectedRow.places[0];
+		const snapshot = snapshotFromPlace(place);
 
 		setAttributes({
-			...snapshotFromPlace(place),
-			workplaceKey: place.id ?? '',
+			workplaceKey: snapshot.workplaceKey,
+			organizationName: snapshot.organizationName,
+			organizationNumber: snapshot.organizationNumber,
+			addressRoom: snapshot.addressRoom,
+			addressFloor: snapshot.addressFloor,
+			addressStreet: snapshot.addressStreet,
+			addressZip: snapshot.addressZip,
+			addressCity: snapshot.addressCity,
+			addressFormatted: snapshot.addressFormatted,
+			mapUrl: snapshot.mapUrl,
+			mapLatitude: snapshot.mapLatitude,
+			mapLongitude: snapshot.mapLongitude,
+			...clearDirectionsAttributes(),
 		});
 	};
 
@@ -1527,11 +1905,16 @@ export default function Edit({ attributes, setAttributes }) {
 							const nextId = Number(next) || 0;
 							const row = nextId ? personRows.find((r) => r.id === nextId) : null;
 
+							cancelPersonLoad();
+							invalidateManualMapRequests();
+
 							if (!row?.places?.length) {
 								setAttributes({
+									...clearPersonLinkAttributes(),
 									personId: nextId,
+									personLabel: row?.label ?? '',
+									heading: `${heading ?? ''}`.trim() ? heading : '',
 									mapImageId: 0,
-									workplaceKey: '',
 									organizationName: '',
 									organizationNumber: '',
 									addressRoom: '',
@@ -1540,23 +1923,18 @@ export default function Edit({ attributes, setAttributes }) {
 									addressZip: '',
 									addressCity: '',
 									addressFormatted: '',
-									mapUrl: '',
-									mapLatitude: '',
-									mapLongitude: '',
-									directionsBike: '',
-									directionsCar: '',
-									directionsTransit: '',
-									directionsBikeRoute: '',
-									directionsCarRoute: '',
-									directionsTransitRoute: '',
+									...resetMapAttributesForReload(),
 								});
 								return;
 							}
 
-							const snapshot = snapshotFromPlace(row.places[0]);
+							const place = row.places[0];
+							const snapshot = snapshotFromPlace(place);
 
 							setAttributes({
 								personId: nextId,
+								personLabel: row.label ?? '',
+								heading: `${heading ?? ''}`.trim() ? heading : '',
 								mapImageId: 0,
 								workplaceKey: snapshot.workplaceKey,
 								organizationName: snapshot.organizationName,
@@ -1570,6 +1948,7 @@ export default function Edit({ attributes, setAttributes }) {
 								mapUrl: snapshot.mapUrl,
 								mapLatitude: snapshot.mapLatitude,
 								mapLongitude: snapshot.mapLongitude,
+								...clearDirectionsAttributes(),
 							});
 						}}
 					/>
@@ -1602,7 +1981,42 @@ export default function Edit({ attributes, setAttributes }) {
 							</>
 						}
 						value={mapUrl}
-						onChange={(next) => setAttributes({ mapUrl: next })}
+						onChange={(next) =>
+							setAttributes({
+								mapUrl: next,
+								...clearPersonLinkAttributes(),
+							})
+						}
+					/>
+					<TextControl
+						label={strings.mapLatitudeLabel ?? __('Latitude', 'rrze-directions')}
+						value={mapLatitude}
+						onChange={(next) =>
+							setAttributes({
+								mapLatitude: next,
+								mapUrl: '',
+								...clearPersonLinkAttributes(),
+							})
+						}
+						help={__(
+							'Decimal degrees, e.g. 49.4550',
+							'rrze-directions'
+						)}
+					/>
+					<TextControl
+						label={strings.mapLongitudeLabel ?? __('Longitude', 'rrze-directions')}
+						value={mapLongitude}
+						onChange={(next) =>
+							setAttributes({
+								mapLongitude: next,
+								mapUrl: '',
+								...clearPersonLinkAttributes(),
+							})
+						}
+						help={__(
+							'Decimal degrees, e.g. 11.0770',
+							'rrze-directions'
+						)}
 					/>
 					<div className="rrze-directions-editor__map-meta">
 						<CoordinateLinks
@@ -1615,95 +2029,18 @@ export default function Edit({ attributes, setAttributes }) {
 
 					{mapIllustration}
 				</PanelBody>
-
-				<PanelBody
-					title={
-						strings.directionsSettings ??
-						__('Arrival directions', 'rrze-directions')
-					}
-					initialOpen
-				>
-					<ToggleControl
-						label={
-							strings.showDirectionsBike ??
-							__('Show walking / cycling', 'rrze-directions')
-						}
-						checked={showDirectionsBike !== false}
-						onChange={(next) =>
-							setAttributes({ showDirectionsBike: next })
-						}
-					/>
-					<ToggleControl
-						label={
-							strings.showDirectionsCar ??
-							__('Show by car', 'rrze-directions')
-						}
-						checked={showDirectionsCar !== false}
-						onChange={(next) => setAttributes({ showDirectionsCar: next })}
-					/>
-					<ToggleControl
-						label={
-							strings.showDirectionsTransit ??
-							__('Show bus / train', 'rrze-directions')
-						}
-						checked={showDirectionsTransit !== false}
-						onChange={(next) =>
-							setAttributes({ showDirectionsTransit: next })
-						}
-					/>
-					<SelectControl
-						label={
-							strings.directionsLayout ??
-							__('Layout', 'rrze-directions')
-						}
-						value={normalizeDirectionsLayout(directionsLayout)}
-						options={[
-							{
-								label:
-									strings.directionsLayoutPills ??
-									__('Pills', 'rrze-directions'),
-								value: 'pills',
-							},
-							{
-								label:
-									strings.directionsLayoutAccordion ??
-									__('Accordion', 'rrze-directions'),
-								value: 'accordion',
-							},
-							{
-								label:
-									strings.directionsLayoutColumns ??
-									__('Columns', 'rrze-directions'),
-								value: 'columns',
-							},
-							{
-								label:
-									strings.directionsLayoutTabs ??
-									__('Tabs', 'rrze-directions'),
-								value: 'tabs',
-							},
-							{
-								label:
-									strings.directionsLayoutDropdown ??
-									__('Dropdown', 'rrze-directions'),
-								value: 'dropdown',
-							},
-						]}
-						onChange={(next) =>
-							setAttributes({
-								directionsLayout: normalizeDirectionsLayout(next),
-							})
-						}
-					/>
-				</PanelBody>
 			</InspectorControls>
 
 			<div {...blockProps}>
 				<div className="rrze-directions-editor">
-					<h3 className="rrze-directions-editor__title">
-						{__('Directions', 'rrze-directions')}
-						{personId ? ` — ${previewPersonLabel}` : ''}
-					</h3>
+					<RichText
+						tagName="h3"
+						className="rrze-directions-editor__title"
+						value={heading}
+						onChange={(next) => setAttributes({ heading: next })}
+						placeholder={displayHeading}
+						allowedFormats={[]}
+					/>
 
 					<section>
 						<address className="rrze-directions-editor__address">
