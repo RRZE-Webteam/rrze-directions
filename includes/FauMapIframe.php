@@ -117,6 +117,10 @@ final class FauMapIframe
             }
         }
 
+        if (self::isManualLocationMode($attributes)) {
+            return self::resolveManualIframeSrc($attributes);
+        }
+
         $org = self::sanitizeOrganizationDigits((string) ($attributes['organizationNumber'] ?? ''));
         if ($org !== '') {
             $direct = self::escIframeSrc(self::buildOrgIframeUrl($org, $attributes));
@@ -148,6 +152,42 @@ final class FauMapIframe
 
         if ($mapUrl !== '' && self::isApiIframeUrl($mapUrl)) {
             return self::escIframeSrc($mapUrl);
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array<string,mixed> $attributes
+     */
+    private static function isManualLocationMode(array $attributes): bool
+    {
+        return ((int) ($attributes['personId'] ?? 0)) <= 0;
+    }
+
+    /**
+     * Manual map: link or coordinates only (ignore leftover FAUdir address fields).
+     *
+     * @param array<string,mixed> $attributes
+     */
+    private static function resolveManualIframeSrc(array $attributes): string
+    {
+        $mapUrl = trim((string) ($attributes['mapUrl'] ?? ''));
+
+        if ($mapUrl !== '' && self::isApiIframeUrl($mapUrl)) {
+            $direct = self::escIframeSrc($mapUrl);
+            if ($direct !== '') {
+                return $direct;
+            }
+        }
+
+        $lat = self::parseCoordinate($attributes['mapLatitude'] ?? null);
+        $lon = self::parseCoordinate($attributes['mapLongitude'] ?? null);
+        if (null !== $lat && null !== $lon) {
+            $direct = self::escIframeSrc(self::buildCenterIframeUrl($lat, $lon));
+            if ($direct !== '') {
+                return $direct;
+            }
         }
 
         return '';

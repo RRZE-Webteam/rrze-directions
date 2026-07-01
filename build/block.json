@@ -17,6 +17,10 @@
       "type": "string",
       "default": ""
     },
+    "heading": {
+      "type": "string",
+      "default": ""
+    },
     "workplaceKey": {
       "type": "string",
       "default": ""

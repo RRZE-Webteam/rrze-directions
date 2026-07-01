@@ -64,7 +64,10 @@ $class = trim('wp-block-rrze-directions rrze-directions');
 ?>
 <section class="<?php echo esc_attr($class); ?>">
     <div class="rrze-directions__body">
-        <h2 class="rrze-directions__title"><?php echo esc_html__('Directions', 'rrze-directions'); ?></h2>
+        <h2 class="rrze-directions__title"><?php
+        $heading = trim((string) ($attributes['heading'] ?? ''));
+        echo esc_html($heading !== '' ? $heading : __('Directions', 'rrze-directions'));
+        ?></h2>
 
         <address class="rrze-directions__address">
             <?php if ($organizationName !== '') : ?>

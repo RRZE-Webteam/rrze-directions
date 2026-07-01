@@ -114,6 +114,8 @@ final class Main
                     'selectPersonWorkplace'      => __('Select person and workplace.', 'rrze-directions'),
                     'mapSection'                 => __('Directions map', 'rrze-directions'),
                     'mapUrl'                     => __('Link to', 'rrze-directions'),
+                    'mapLatitudeLabel'           => __('Latitude', 'rrze-directions'),
+                    'mapLongitudeLabel'          => __('Longitude', 'rrze-directions'),
                     'googleMaps'                 => __('Google Maps', 'rrze-directions'),
                     'appleMaps'                  => __('Apple Maps', 'rrze-directions'),
                     'mapImageLabel'              => __('Illustration', 'rrze-directions'),

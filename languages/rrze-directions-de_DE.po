@@ -212,6 +212,18 @@ msgstr "Mit dem Auto anzeigen"
 msgid "Show bus / train"
 msgstr "Bus / Bahn anzeigen"
 
+msgid "Latitude"
+msgstr "Breitengrad"
+
+msgid "Longitude"
+msgstr "Längengrad"
+
+msgid "Decimal degrees, e.g. 49.4550"
+msgstr "Dezimalgrad, z. B. 49,4550"
+
+msgid "Decimal degrees, e.g. 11.0770"
+msgstr "Dezimalgrad, z. B. 11,0770"
+
 msgid "Layout"
 msgstr "Darstellung"
 

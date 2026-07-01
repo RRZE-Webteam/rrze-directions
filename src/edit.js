@@ -3,7 +3,6 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
-	ToggleControl,
 } from '@wordpress/components';
 import {
 	InspectorControls,
@@ -16,7 +15,6 @@ import { Fragment, useEffect, useMemo, useRef, useState } from '@wordpress/eleme
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import apiFetch from '@wordpress/api-fetch';
-import { DirectionModeIcon, StartPointIcon } from './mode-icons';
 
 const KARTE_HOST_SUFFIX = 'karte.fau.de';
 const KARTE_IFRAME_PATH = '/api/v1/iframe';
@@ -163,6 +161,26 @@ function buildAddressIframeUrl(addressQuery) {
 	return `https://${KARTE_HOST_SUFFIX}${KARTE_IFRAME_PATH}/address/${encodeURIComponent(addressQuery)}/`;
 }
 
+function isManualLocationMode(attributes) {
+	return !Number(attributes.personId);
+}
+
+function resolveManualMapIframeSrc(attributes) {
+	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
+
+	if (mapUrl && isApiIframeUrl(mapUrl)) {
+		return mapUrl;
+	}
+
+	const lat = parseCoordinate(attributes.mapLatitude);
+	const lon = parseCoordinate(attributes.mapLongitude);
+	if (lat !== null && lon !== null) {
+		return buildCenterIframeUrl(lat, lon);
+	}
+
+	return '';
+}
+
 function resolveMapIframeSrc(attributes) {
 	const mapUrl = `${attributes.mapUrl ?? ''}`.trim();
 
@@ -173,6 +191,10 @@ function resolveMapIframeSrc(attributes) {
 	const famos = famosFromIframeUrl(mapUrl);
 	if (famos) {
 		return buildFamosIframeUrl(famos);
+	}
+
+	if (isManualLocationMode(attributes)) {
+		return resolveManualMapIframeSrc(attributes);
 	}
 
 	const org = sanitizeOrganizationDigits(attributes.organizationNumber);
@@ -253,6 +275,42 @@ function appleMapsUrl(latitude, longitude) {
 	const encoded = encodeURIComponent(pair);
 
 	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
+}
+
+async function fetchCoordinatesFromMapUrl(mapUrl) {
+	const trimmed = `${mapUrl ?? ''}`.trim();
+	if (!trimmed) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	const path = window.rrze_directions?.restResolveCoordinatesPath;
+	if (!path) {
+		return { mapLatitude: '', mapLongitude: '' };
+	}
+
+	try {
+		const res = await apiFetch({
+			path,
+			method: 'POST',
+			data: { faumap: trimmed },
+		});
+
+		const la = res?.latitude;
+		const lo = res?.longitude;
+
+		if (
+			la != null &&
+			lo != null &&
+			Number.isFinite(Number(la)) &&
+			Number.isFinite(Number(lo))
+		) {
+			return { mapLatitude: String(la), mapLongitude: String(lo) };
+		}
+	} catch (error) {
+		// Leave coordinates empty on failure.
+	}
+
+	return { mapLatitude: '', mapLongitude: '' };
 }
 
 async function fetchResolvedCoordinates(place) {
@@ -337,56 +395,6 @@ async function fetchResolvedIframeSrc(candidateUrl) {
 	return { iframeSrc: trimmed, mapUrl: trimmed };
 }
 
-async function fetchOpenRouteDirections(place, coords, extras = {}) {
-	const path = window.rrze_directions?.restOpenRouteDirectionsPath;
-	if (!path) {
-		return null;
-	}
-
-	const lat =
-		parseCoordinate(coords.mapLatitude) ?? parseCoordinate(place.latitude);
-	const lon =
-		parseCoordinate(coords.mapLongitude) ?? parseCoordinate(place.longitude);
-	const city =
-		`${place.city ?? ''}`.trim() ||
-		`${extras.addressCity ?? ''}`.trim();
-	const zip =
-		`${place.zip ?? ''}`.trim() || `${extras.zip ?? ''}`.trim();
-	const street = `${place.street ?? ''}`.trim();
-	const formattedAddress = `${place.formattedAddress ?? ''}`.trim();
-
-	if (lat === null || lon === null || (!city && !zip)) {
-		return null;
-	}
-
-	try {
-		return await apiFetch({
-			path,
-			method: 'POST',
-			data: {
-				latitude: lat,
-				longitude: lon,
-				city,
-				zip,
-				street,
-				formattedAddress,
-			},
-		});
-	} catch (error) {
-		return null;
-	}
-}
-
-function directionsResponseHasContent(dirs) {
-	if (!dirs) {
-		return false;
-	}
-
-	return ['directionsBike', 'directionsCar', 'directionsTransit'].some((key) =>
-		hasDirectionsContent(dirs[key])
-	);
-}
-
 function hasResolvedCoordinates(coords) {
 	return (
 		parseCoordinate(coords?.mapLatitude) !== null &&
@@ -394,7 +402,7 @@ function hasResolvedCoordinates(coords) {
 	);
 }
 
-async function loadWorkplaceData(place, extras = {}) {
+async function loadWorkplaceCoordinates(place) {
 	const coordDelays = [0, 600, 1500];
 	let coords = { mapLatitude: '', mapLongitude: '' };
 
@@ -411,40 +419,22 @@ async function loadWorkplaceData(place, extras = {}) {
 		}
 	}
 
-	if (!hasResolvedCoordinates(coords)) {
-		return { coords, dirs: null };
-	}
-
-	const dirDelays = [0, 1000, 2500];
-	let dirs = null;
-
-	for (const delay of dirDelays) {
-		if (delay > 0) {
-			await new Promise((resolve) => {
-				window.setTimeout(resolve, delay);
-			});
-		}
-
-		dirs = await fetchOpenRouteDirections(place, coords, extras);
-		if (directionsResponseHasContent(dirs)) {
-			break;
-		}
-	}
-
-	return { coords, dirs };
+	return coords;
 }
 
-function applyDirectionsPayload(payload, dirs) {
-	if (!dirs || !directionsResponseHasContent(dirs)) {
-		return;
-	}
+function defaultHeadingForPerson(personName) {
+	const base = __('Directions', 'rrze-directions');
+	const name = `${personName ?? ''}`.trim();
 
-	payload.directionsBike = dirs.directionsBike ?? '';
-	payload.directionsCar = dirs.directionsCar ?? '';
-	payload.directionsTransit = dirs.directionsTransit ?? '';
-	payload.directionsBikeRoute = dirs.directionsBikeRoute ?? '';
-	payload.directionsCarRoute = dirs.directionsCarRoute ?? '';
-	payload.directionsTransitRoute = dirs.directionsTransitRoute ?? '';
+	return name ? `${base} — ${name}` : base;
+}
+
+function clearPersonLinkAttributes() {
+	return {
+		personId: 0,
+		personLabel: '',
+		workplaceKey: '',
+	};
 }
 
 async function resolvePersistedMapUrl(place, coords, currentMapUrl = '') {
@@ -498,731 +488,6 @@ function snapshotFromPlace(place) {
 	};
 }
 
-function hasDirectionsContent(html) {
-	return `${html ?? ''}`.replace(/<[^>]*>/g, '').trim() !== '';
-}
-
-function hasRouteData(routeJson) {
-	if (!routeJson) {
-		return false;
-	}
-
-	try {
-		const data = JSON.parse(routeJson);
-		if (Array.isArray(data?.variants)) {
-			return data.variants.some((variant) =>
-				hasRouteData(JSON.stringify(variant?.route ?? {}))
-			);
-		}
-
-		return (
-			Array.isArray(data?.coordinates) &&
-			data.coordinates.length > 1 &&
-			Array.isArray(data?.steps) &&
-			data.steps.length > 0
-		);
-	} catch (error) {
-		return false;
-	}
-}
-
-function parseRouteVariants(routeJson) {
-	if (!routeJson) {
-		return [];
-	}
-
-	try {
-		const data = JSON.parse(routeJson);
-		if (Array.isArray(data?.variants)) {
-			return data.variants
-				.map((variant) => ({
-					startKey: `${variant?.startKey ?? ''}`,
-					startLabel: `${variant?.startLabel ?? ''}`,
-					route: variant?.route ?? null,
-				}))
-				.filter((variant) => hasRouteData(JSON.stringify(variant.route ?? {})));
-		}
-
-		if (hasRouteData(routeJson)) {
-			return [{ startKey: '', startLabel: '', route: data }];
-		}
-	} catch (error) {
-		return [];
-	}
-
-	return [];
-}
-
-function splitRouteVariantHtml(html) {
-	const source = `${html ?? ''}`;
-	if (!source.includes('rrze-directions__route-variant')) {
-		const trimmed = source.trim();
-		return trimmed ? [trimmed] : [];
-	}
-
-	const marker =
-		/<div class="rrze-directions__route-variant">([\s\S]*?)<\/div>/g;
-	const parts = [];
-	let match = marker.exec(source);
-
-	while (match) {
-		parts.push(match[1].trim());
-		match = marker.exec(source);
-	}
-
-	if (parts.length > 0) {
-		return parts;
-	}
-
-	const parser = new DOMParser();
-	const document = parser.parseFromString(
-		`<div id="rrze-directions-root">${source}</div>`,
-		'text/html'
-	);
-	const nodes = document.querySelectorAll('.rrze-directions__route-variant');
-
-	nodes.forEach((node) => {
-		parts.push(node.innerHTML.trim());
-	});
-
-	if (parts.length > 0) {
-		return parts;
-	}
-
-	const trimmed = source.trim();
-	return trimmed ? [trimmed] : [];
-}
-
-function getVisibleDirectionsSections(attributes, strings) {
-	const sections = [
-		{
-			key: 'bike',
-			enabled: attributes.showDirectionsBike !== false,
-			content: attributes.directionsBike,
-			route: attributes.directionsBikeRoute,
-			title: strings.directionsBike ?? __('Walking / Cycling', 'rrze-directions'),
-			placeholder:
-				strings.directionsBikePlaceholder ??
-				__('Directions by foot / bike.', 'rrze-directions'),
-		},
-		{
-			key: 'car',
-			enabled: attributes.showDirectionsCar !== false,
-			content: attributes.directionsCar,
-			route: attributes.directionsCarRoute,
-			title: strings.directionsCar ?? __('By car', 'rrze-directions'),
-			placeholder:
-				strings.directionsCarPlaceholder ??
-				__('Directions by car.', 'rrze-directions'),
-		},
-		{
-			key: 'transit',
-			enabled: attributes.showDirectionsTransit !== false,
-			content: attributes.directionsTransit,
-			route: attributes.directionsTransitRoute,
-			title: strings.directionsTransit ?? __('Bus / train', 'rrze-directions'),
-			placeholder:
-				strings.directionsTransitPlaceholder ??
-				__('Public transport.', 'rrze-directions'),
-		},
-	];
-
-	return sections.filter(
-		(section) => section.enabled && hasDirectionsContent(section.content)
-	);
-}
-
-function normalizeDirectionsLayout(layout) {
-	if (
-		layout === 'accordion' ||
-		layout === 'columns' ||
-		layout === 'tabs' ||
-		layout === 'dropdown'
-	) {
-		return layout;
-	}
-
-	return 'pills';
-}
-
-function variantKey(variant, index) {
-	if (!variant) {
-		return `variant-${index}`;
-	}
-
-	return variant.startKey || `variant-${index}`;
-}
-
-function RouteVariantsEditorMaps({ routeJson, strings }) {
-	const variants = parseRouteVariants(routeJson);
-	const mapHint =
-		strings.routeMapPreview ??
-		__(
-			'Interactive route map with numbered steps is shown on the published page.',
-			'rrze-directions'
-		);
-	const [activeKey, setActiveKey] = useState(() =>
-		variantKey(variants[0], 0)
-	);
-
-	useEffect(() => {
-		if (variants.length === 0) {
-			return;
-		}
-
-		setActiveKey((current) => {
-			if (variants.some((variant, index) => variantKey(variant, index) === current)) {
-				return current;
-			}
-
-			return variantKey(variants[0], 0);
-		});
-	}, [routeJson]);
-
-	if (variants.length > 1) {
-		return (
-			<div className="rrze-directions__start-switcher">
-				<div className="rrze-directions__start-pills" role="tablist">
-					{variants.map((variant, index) => {
-						const key = variantKey(variant, index);
-						const active = key === activeKey;
-
-						return (
-							<button
-								key={key}
-								type="button"
-								className={`rrze-directions__start-pill${
-									active ? ' is-active' : ''
-								}`}
-								role="tab"
-								aria-selected={active}
-								onClick={() => setActiveKey(key)}
-							>
-								<StartPointIcon startKey={variant.startKey || key} />
-								<span className="rrze-directions__start-pill-label">
-									{variant.startLabel ||
-										strings.routeMapTitle ||
-										__('Route map', 'rrze-directions')}
-								</span>
-							</button>
-						);
-					})}
-				</div>
-				<div className="rrze-directions__start-panels">
-					{variants.map((variant, index) => {
-						const key = variantKey(variant, index);
-
-						return (
-							<div
-								key={key}
-								className={`rrze-directions__route-variant${
-									key === activeKey ? ' is-active' : ''
-								}`}
-								role="tabpanel"
-								hidden={key !== activeKey}
-							>
-								<RouteMapEditorPlaceholder
-									routeJson={JSON.stringify(variant.route)}
-									title={
-										variant.startLabel ||
-										strings.routeMapTitle ||
-										__('Route map', 'rrze-directions')
-									}
-									hint={mapHint}
-								/>
-							</div>
-						);
-					})}
-				</div>
-			</div>
-		);
-	}
-
-	return (
-		<RouteMapEditorPlaceholder
-			routeJson={
-				variants.length === 1
-					? JSON.stringify(variants[0].route)
-					: routeJson
-			}
-			title={strings.routeMapTitle ?? __('Route map', 'rrze-directions')}
-			hint={mapHint}
-		/>
-	);
-}
-
-function DirectionsStartSwitcher({ routeJson, content, strings }) {
-	const variants = useMemo(() => parseRouteVariants(routeJson), [routeJson]);
-	const htmlParts = useMemo(() => splitRouteVariantHtml(content), [content]);
-	const [activeKey, setActiveKey] = useState(() => variantKey(variants[0], 0));
-	const mapHint =
-		strings.routeMapPreview ??
-		__(
-			'Interactive route map with numbered steps is shown on the published page.',
-			'rrze-directions'
-		);
-
-	useEffect(() => {
-		if (variants.length === 0) {
-			return;
-		}
-
-		setActiveKey((current) => {
-			if (variants.some((variant, index) => variantKey(variant, index) === current)) {
-				return current;
-			}
-
-			return variantKey(variants[0], 0);
-		});
-	}, [routeJson, variants]);
-
-	return (
-		<div className="rrze-directions__start-switcher">
-			<div
-				className="rrze-directions__start-pills"
-				role="tablist"
-				aria-label={strings.startingPoint ?? __('Starting point', 'rrze-directions')}
-			>
-				{variants.map((variant, index) => {
-					const key = variantKey(variant, index);
-					const active = key === activeKey;
-
-					return (
-						<button
-							key={key}
-							type="button"
-							className={`rrze-directions__start-pill${
-								active ? ' is-active' : ''
-							}`}
-							role="tab"
-							aria-selected={active}
-							onClick={() => setActiveKey(key)}
-						>
-							<StartPointIcon startKey={variant.startKey || key} />
-							<span className="rrze-directions__start-pill-label">
-								{variant.startLabel ||
-									sprintf(
-										/* translators: %d: route variant number */
-										__('Route %d', 'rrze-directions'),
-										index + 1
-									)}
-							</span>
-						</button>
-					);
-				})}
-			</div>
-			<div className="rrze-directions__start-panels">
-				{variants.map((variant, index) => {
-					const key = variantKey(variant, index);
-
-					return (
-						<div
-							key={key}
-							className={`rrze-directions__route-variant${
-								key === activeKey ? ' is-active' : ''
-							}`}
-							role="tabpanel"
-							hidden={key !== activeKey}
-						>
-							<RouteMapEditorPlaceholder
-								routeJson={JSON.stringify(variant.route)}
-								title={
-									variant.startLabel ||
-									strings.routeMapTitle ||
-									__('Route map', 'rrze-directions')
-								}
-								hint={mapHint}
-							/>
-							<div
-								className="rrze-directions__rte"
-								dangerouslySetInnerHTML={{
-									__html: htmlParts[index] ?? '',
-								}}
-							/>
-						</div>
-					);
-				})}
-			</div>
-		</div>
-	);
-}
-
-function DirectionsSectionPreviewBody({ section, strings }) {
-	const variants = parseRouteVariants(section.route);
-	const htmlParts = splitRouteVariantHtml(section.content);
-	const mapHint =
-		strings.routeMapPreview ??
-		__(
-			'Interactive route map with numbered steps is shown on the published page.',
-			'rrze-directions'
-		);
-
-	if (variants.length > 1) {
-		return (
-			<DirectionsStartSwitcher
-				routeJson={section.route}
-				content={section.content}
-				strings={strings}
-			/>
-		);
-	}
-
-	if (variants.length === 1) {
-		return (
-			<>
-				<RouteMapEditorPlaceholder
-					routeJson={JSON.stringify(variants[0].route)}
-					title={
-						variants[0].startLabel ||
-						strings.routeMapTitle ||
-						__('Route map', 'rrze-directions')
-					}
-					hint={mapHint}
-				/>
-				<div
-					className="rrze-directions__rte"
-					dangerouslySetInnerHTML={{
-						__html: htmlParts[0] ?? section.content,
-					}}
-				/>
-			</>
-		);
-	}
-
-	return (
-		<>
-			<RouteMapEditorPlaceholder
-				routeJson={section.route}
-				title={strings.routeMapTitle ?? __('Route map', 'rrze-directions')}
-				hint={mapHint}
-			/>
-			<div
-				className="rrze-directions__rte"
-				dangerouslySetInnerHTML={{ __html: section.content }}
-			/>
-		</>
-	);
-}
-
-function RouteMapEditorPlaceholder({ routeJson, title, hint }) {
-	if (!hasRouteData(routeJson)) {
-		return null;
-	}
-
-	const previewHint =
-		hint ??
-		__(
-			'Interactive route map with numbered steps is shown on the published page.',
-			'rrze-directions'
-		);
-
-	return (
-		<div className="rrze-directions-route-map rrze-directions-route-map--editor-placeholder">
-			{title ? (
-				<h4 className="rrze-directions-route-map__title">{title}</h4>
-			) : null}
-			<div className="rrze-directions-route-map__preview" aria-hidden="true">
-				<svg
-					className="rrze-directions-route-map__preview-svg"
-					viewBox="0 0 640 360"
-					xmlns="http://www.w3.org/2000/svg"
-					preserveAspectRatio="xMidYMid slice"
-					role="presentation"
-				>
-					<rect width="640" height="360" fill="#e8eef4" />
-					<path
-						d="M0 72h640M0 144h640M0 216h640M0 288h640M128 0v360M256 0v360M384 0v360M512 0v360"
-						stroke="#d0dae6"
-						strokeWidth="2"
-					/>
-					<path
-						d="M96 248 C180 220, 220 120, 320 108 S460 72, 544 92"
-						fill="none"
-						stroke="#04316a"
-						strokeWidth="10"
-						strokeLinecap="round"
-					/>
-					<circle cx="96" cy="248" r="18" fill="#04316a" stroke="#fff" strokeWidth="4" />
-					<text x="96" y="254" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">
-						1
-					</text>
-					<circle cx="320" cy="108" r="18" fill="#04316a" stroke="#fff" strokeWidth="4" />
-					<text x="320" y="114" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">
-						2
-					</text>
-					<circle cx="544" cy="92" r="18" fill="#04316a" stroke="#fff" strokeWidth="4" />
-					<text x="544" y="98" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="700">
-						3
-					</text>
-				</svg>
-			</div>
-			<p className="rrze-directions-route-map__hint">{previewHint}</p>
-		</div>
-	);
-}
-
-function DirectionsEditorPreview({ attributes, strings }) {
-	const layout = normalizeDirectionsLayout(attributes.directionsLayout);
-	const sections = getVisibleDirectionsSections(attributes, strings);
-	const [activeKey, setActiveKey] = useState(sections[0]?.key ?? '');
-
-	useEffect(() => {
-		if (!sections.some((section) => section.key === activeKey)) {
-			setActiveKey(sections[0]?.key ?? '');
-		}
-	}, [sections, activeKey]);
-
-	if (sections.length === 0) {
-		return null;
-	}
-
-	const layoutLabel =
-		layout === 'pills'
-			? strings.directionsLayoutPills ?? __('Pills', 'rrze-directions')
-			: layout === 'columns'
-			? strings.directionsLayoutColumns ?? __('Columns', 'rrze-directions')
-			: layout === 'tabs'
-				? strings.directionsLayoutTabs ?? __('Tabs', 'rrze-directions')
-				: layout === 'dropdown'
-					? strings.directionsLayoutDropdown ?? __('Dropdown', 'rrze-directions')
-					: strings.directionsLayoutAccordion ?? __('Accordion', 'rrze-directions');
-
-	let preview = null;
-
-	if (layout === 'pills') {
-		if (sections.length === 1) {
-			preview = (
-				<div className="rrze-directions__directions rrze-directions__directions--mode-pills">
-					<DirectionsSectionPreviewBody
-						section={sections[0]}
-						strings={strings}
-					/>
-				</div>
-			);
-		} else {
-			const activeIndex = Math.max(
-				0,
-				sections.findIndex((section) => section.key === activeKey)
-			);
-
-			preview = (
-				<div className="rrze-directions__directions rrze-directions__directions--mode-pills">
-					<div className="rrze-directions__mode-switcher">
-						<div
-							className="rrze-directions__mode-pills"
-							role="tablist"
-							aria-label={
-								strings.modeOfTransport ??
-								__('Mode of transport', 'rrze-directions')
-							}
-						>
-							{sections.map((section, index) => (
-								<button
-									key={section.key}
-									type="button"
-									className={`rrze-directions__mode-pill${
-										index === activeIndex ? ' is-active' : ''
-									}`}
-									role="tab"
-									aria-selected={index === activeIndex}
-									onClick={() => setActiveKey(section.key)}
-								>
-									<DirectionModeIcon modeKey={section.key} />
-									<span className="rrze-directions__mode-pill-label">
-										{section.title}
-									</span>
-								</button>
-							))}
-						</div>
-						<div className="rrze-directions__mode-panels">
-							{sections.map((section, index) => (
-								<div
-									key={section.key}
-									className={`rrze-directions__mode-variant${
-										index === activeIndex ? ' is-active' : ''
-									}`}
-									role="tabpanel"
-									aria-label={section.title}
-									hidden={index !== activeIndex}
-								>
-									<h3 className="screen-reader-text">{section.title}</h3>
-									<DirectionsSectionPreviewBody
-										section={section}
-										strings={strings}
-									/>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			);
-		}
-	} else if (layout === 'accordion') {
-		preview = (
-			<div className="rrze-directions__directions rrze-directions__accordions">
-				<div className="rrze-directions__accordion">
-					{sections.map((section, index) => (
-						<div
-							key={section.key}
-							className="rrze-directions__accordion-item"
-						>
-							<div className="rrze-directions__accordion-group">
-								<h3 className="rrze-directions__accordion-heading">
-									<button
-										type="button"
-										className={
-											index === 0
-												? 'rrze-directions__accordion-toggle active'
-												: 'rrze-directions__accordion-toggle'
-										}
-										aria-expanded={index === 0}
-									>
-										{section.title}
-									</button>
-								</h3>
-								<div
-									className={
-										index === 0
-											? 'rrze-directions__accordion-panel open'
-											: 'rrze-directions__accordion-panel'
-									}
-									role="region"
-									hidden={index !== 0 ? true : undefined}
-								>
-									<div className="rrze-directions__accordion-inner clearfix">
-										<DirectionsSectionPreviewBody
-											section={section}
-											strings={strings}
-										/>
-									</div>
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
-			</div>
-		);
-	} else if (layout === 'tabs') {
-		const activeIndex = Math.max(
-			0,
-			sections.findIndex((section) => section.key === activeKey)
-		);
-
-		preview = (
-			<div className="rrze-directions__directions">
-				<div className="rrze-elements-tabs primary">
-					<div role="tablist" className="manual">
-						{sections.map((section, index) => (
-							<button
-								key={section.key}
-								type="button"
-								role="tab"
-								aria-selected={index === activeIndex}
-								onClick={() => setActiveKey(section.key)}
-							>
-								<span className="focus" tabIndex={-1}>
-									{section.title}
-								</span>
-							</button>
-						))}
-					</div>
-					{sections.map((section, index) => (
-						<div
-							key={section.key}
-							role="tabpanel"
-							className={index !== activeIndex ? 'is-hidden' : undefined}
-						>
-							<DirectionsSectionPreviewBody
-								section={section}
-								strings={strings}
-							/>
-						</div>
-					))}
-				</div>
-			</div>
-		);
-	} else if (layout === 'dropdown') {
-		const activeIndex = Math.max(
-			0,
-			sections.findIndex((section) => section.key === activeKey)
-		);
-
-		preview = (
-			<div className="rrze-directions__directions rrze-directions__directions--dropdown">
-				<div className="rrze-directions__mode-dropdown">
-					<label
-						className="rrze-directions__mode-label"
-						htmlFor="rrze-directions-editor-mode-select"
-					>
-						{strings.modeOfTransport ??
-							__('Mode of transport', 'rrze-directions')}
-					</label>
-					<select
-						id="rrze-directions-editor-mode-select"
-						className="rrze-directions__mode-select"
-						value={sections[activeIndex]?.key ?? ''}
-						onChange={(event) => setActiveKey(event.target.value)}
-					>
-						{sections.map((section) => (
-							<option key={section.key} value={section.key}>
-								{section.title}
-							</option>
-						))}
-					</select>
-				</div>
-				<div className="rrze-directions__mode-panels">
-					{sections.map((section, index) => (
-						<div
-							key={section.key}
-							className={`rrze-directions__mode-panel${
-								index === activeIndex ? ' is-active' : ''
-							}`}
-							role="region"
-							aria-label={section.title}
-							hidden={index !== activeIndex}
-						>
-							<h3 className="screen-reader-text">{section.title}</h3>
-							<DirectionsSectionPreviewBody
-								section={section}
-								strings={strings}
-							/>
-						</div>
-					))}
-				</div>
-			</div>
-		);
-	} else {
-		preview = (
-			<div
-				className={`rrze-directions__directions rrze-directions__directions-grid rrze-directions__directions-grid--cols-${
-					sections.length >= 3 ? 3 : sections.length
-				}`}
-			>
-				{sections.map((section) => (
-					<section
-						key={section.key}
-						className="rrze-directions__text rrze-directions__text--column"
-					>
-						<h3>{section.title}</h3>
-						<DirectionsSectionPreviewBody
-							section={section}
-							strings={strings}
-						/>
-					</section>
-				))}
-			</div>
-		);
-	}
-
-	return (
-		<div className="rrze-directions-editor__directions-preview">
-			<p className="rrze-directions-editor__directions-preview-label">
-				{layoutLabel}
-			</p>
-			{preview}
-		</div>
-	);
-}
 
 function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false }) {
 	const lat = parseCoordinate(latitude);
@@ -1263,6 +528,8 @@ function CoordinateLinks({ latitude, longitude, strings, hideWhenMissing = false
 export default function Edit({ attributes, setAttributes }) {
 	const {
 		personId,
+		personLabel,
+		heading,
 		workplaceKey,
 		organizationName,
 		organizationNumber,
@@ -1276,16 +543,6 @@ export default function Edit({ attributes, setAttributes }) {
 		mapLatitude,
 		mapLongitude,
 		mapImageId,
-		directionsBike,
-		directionsCar,
-		directionsTransit,
-		directionsBikeRoute,
-		directionsCarRoute,
-		directionsTransitRoute,
-		showDirectionsBike,
-		showDirectionsCar,
-		showDirectionsTransit,
-		directionsLayout,
 	} = attributes;
 
 	const blockProps = useBlockProps({ className: 'rrze-directions-block' });
@@ -1300,6 +557,7 @@ export default function Edit({ attributes, setAttributes }) {
 	const mapIframeSrc = useMemo(
 		() => resolveMapIframeSrc(attributes),
 		[
+			personId,
 			mapUrl,
 			organizationNumber,
 			mapLatitude,
@@ -1345,10 +603,11 @@ export default function Edit({ attributes, setAttributes }) {
 
 	const wpSelectOptions = workplaceOptions;
 
-	const previewPersonLabel =
-		selectedRow?.label ?? __('Directions', 'rrze-directions');
+	const displayHeading =
+		`${heading ?? ''}`.trim() || defaultHeadingForPerson(selectedRow?.label ?? personLabel);
 
 	const loadRequestIdRef = useRef(0);
+	const mapUrlResolveRef = useRef(0);
 	const [isLoadingDirections, setIsLoadingDirections] = useState(false);
 	const [editorMapSrc, setEditorMapSrc] = useState('');
 
@@ -1396,6 +655,11 @@ export default function Edit({ attributes, setAttributes }) {
 					mapLongitude: coords.mapLongitude,
 				};
 
+				if (!`${heading ?? ''}`.trim() && row.label) {
+					payload.heading = defaultHeadingForPerson(row.label);
+					payload.personLabel = row.label;
+				}
+
 				applyDirectionsPayload(payload, dirs);
 
 				const nextMapUrl = await resolvePersistedMapUrl(place, coords, mapUrl);
@@ -1417,6 +681,97 @@ export default function Edit({ attributes, setAttributes }) {
 
 		return undefined;
 	}, [personId, workplaceKey, personRows]);
+
+	useEffect(() => {
+		if (personId) {
+			return undefined;
+		}
+
+		const url = `${mapUrl ?? ''}`.trim();
+		if (!url) {
+			return undefined;
+		}
+
+		const requestId = ++mapUrlResolveRef.current;
+
+		(async () => {
+			const coords = await fetchCoordinatesFromMapUrl(url);
+			if (mapUrlResolveRef.current !== requestId) {
+				return;
+			}
+
+			if (!hasResolvedCoordinates(coords)) {
+				return;
+			}
+
+			if (
+				coords.mapLatitude === mapLatitude &&
+				coords.mapLongitude === mapLongitude
+			) {
+				return;
+			}
+
+			setAttributes({
+				mapLatitude: coords.mapLatitude,
+				mapLongitude: coords.mapLongitude,
+			});
+		})();
+
+		return undefined;
+	}, [mapUrl, personId]);
+
+	useEffect(() => {
+		if (personId) {
+			return undefined;
+		}
+
+		const lat = parseCoordinate(mapLatitude);
+		const lon = parseCoordinate(mapLongitude);
+		if (lat === null || lon === null) {
+			setIsLoadingDirections(false);
+			return undefined;
+		}
+
+		const requestId = ++loadRequestIdRef.current;
+		setIsLoadingDirections(true);
+
+		(async () => {
+			try {
+				const { dirs } = await loadManualLocationData({
+					mapLatitude,
+					mapLongitude,
+					addressCity,
+					addressZip,
+					addressStreet,
+					addressFormatted,
+				});
+
+				if (loadRequestIdRef.current !== requestId) {
+					return;
+				}
+
+				const payload = {};
+				applyDirectionsPayload(payload, dirs);
+				if (Object.keys(payload).length > 0) {
+					setAttributes(payload);
+				}
+			} finally {
+				if (loadRequestIdRef.current === requestId) {
+					setIsLoadingDirections(false);
+				}
+			}
+		})();
+
+		return undefined;
+	}, [
+		personId,
+		mapLatitude,
+		mapLongitude,
+		addressCity,
+		addressZip,
+		addressStreet,
+		addressFormatted,
+	]);
 
 	const syncWorkplaceAttrs = (key) => {
 		if (!selectedRow?.places?.length) {
@@ -1526,12 +881,18 @@ export default function Edit({ attributes, setAttributes }) {
 						onChange={(next) => {
 							const nextId = Number(next) || 0;
 							const row = nextId ? personRows.find((r) => r.id === nextId) : null;
+							const nextHeading =
+								row?.label && !`${heading ?? ''}`.trim()
+									? defaultHeadingForPerson(row.label)
+									: heading;
 
 							if (!row?.places?.length) {
 								setAttributes({
+									...clearPersonLinkAttributes(),
 									personId: nextId,
+									personLabel: row?.label ?? '',
+									heading: nextHeading,
 									mapImageId: 0,
-									workplaceKey: '',
 									organizationName: '',
 									organizationNumber: '',
 									addressRoom: '',
@@ -1557,6 +918,8 @@ export default function Edit({ attributes, setAttributes }) {
 
 							setAttributes({
 								personId: nextId,
+								personLabel: row.label ?? '',
+								heading: nextHeading,
 								mapImageId: 0,
 								workplaceKey: snapshot.workplaceKey,
 								organizationName: snapshot.organizationName,
@@ -1602,7 +965,42 @@ export default function Edit({ attributes, setAttributes }) {
 							</>
 						}
 						value={mapUrl}
-						onChange={(next) => setAttributes({ mapUrl: next })}
+						onChange={(next) =>
+							setAttributes({
+								mapUrl: next,
+								...clearPersonLinkAttributes(),
+							})
+						}
+					/>
+					<TextControl
+						label={strings.mapLatitudeLabel ?? __('Latitude', 'rrze-directions')}
+						value={mapLatitude}
+						onChange={(next) =>
+							setAttributes({
+								mapLatitude: next,
+								mapUrl: '',
+								...clearPersonLinkAttributes(),
+							})
+						}
+						help={__(
+							'Decimal degrees, e.g. 49.4550',
+							'rrze-directions'
+						)}
+					/>
+					<TextControl
+						label={strings.mapLongitudeLabel ?? __('Longitude', 'rrze-directions')}
+						value={mapLongitude}
+						onChange={(next) =>
+							setAttributes({
+								mapLongitude: next,
+								mapUrl: '',
+								...clearPersonLinkAttributes(),
+							})
+						}
+						help={__(
+							'Decimal degrees, e.g. 11.0770',
+							'rrze-directions'
+						)}
 					/>
 					<div className="rrze-directions-editor__map-meta">
 						<CoordinateLinks
@@ -1700,10 +1098,14 @@ export default function Edit({ attributes, setAttributes }) {
 
 			<div {...blockProps}>
 				<div className="rrze-directions-editor">
-					<h3 className="rrze-directions-editor__title">
-						{__('Directions', 'rrze-directions')}
-						{personId ? ` — ${previewPersonLabel}` : ''}
-					</h3>
+					<RichText
+						tagName="h3"
+						className="rrze-directions-editor__title"
+						value={heading}
+						onChange={(next) => setAttributes({ heading: next })}
+						placeholder={displayHeading}
+						allowedFormats={[]}
+					/>
 
 					<section>
 						<address className="rrze-directions-editor__address">
