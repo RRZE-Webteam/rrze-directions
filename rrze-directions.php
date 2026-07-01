@@ -3,7 +3,7 @@
 /*
 Plugin Name:        RRZE Directions
 Plugin URI:         https://github.com/RRZE-Webteam/
-Version:            1.2.0
+Version:            1.2.1
 Description:        Arrival and directions as a Gutenberg block: RRZE-FAUdir addresses, karte.fau.de embed, and OpenRouteService route maps.
 Author:             RRZE Webteam
 Author URI:         https://www.wp.rrze.fau.de/

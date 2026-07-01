@@ -403,11 +403,17 @@ msgstr "Weiter"
 msgid "Close setup tour"
 msgstr "Einrichtungstour schließen"
 
+msgid "Save settings"
+msgstr "Einstellungen speichern"
+
 msgid "Request a free API key from openrouteservice.org and paste it here. It is required for route directions and interactive route maps in the block."
 msgstr "Fordern Sie einen kostenlosen API-Schlüssel bei openrouteservice.org an und tragen Sie ihn hier ein. Er wird für Wegbeschreibungen und interaktive Routenkarten im Block benötigt."
 
 msgid "Click Save changes to store your API key. Changing the key clears cached OpenRouteService responses."
 msgstr "Klicken Sie auf Änderungen speichern, um den API-Schlüssel zu sichern. Bei einer Änderung des Schlüssels wird der OpenRouteService-Cache geleert."
+
+msgid "Responses from karte.fau.de, OpenRouteService, and FAUdir are cached permanently for faster page loads."
+msgstr "Antworten von karte.fau.de, OpenRouteService und FAUdir werden dauerhaft zwischengespeichert, damit Seiten schneller laden."
 
 msgid "Use this button after changing addresses or map data if the frontend still shows outdated routes or map pins."
 msgstr "Nutzen Sie diese Schaltfläche nach Adress- oder Kartenänderungen, wenn im Frontend noch veraltete Routen oder Karten-Pins angezeigt werden."
