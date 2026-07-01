@@ -20,6 +20,7 @@ const TILE_LAYERS = [
 		url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
 		options: {
 			subdomains: 'abcd',
+			crossOrigin: true,
 			attribution:
 				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
 		},
@@ -28,6 +29,7 @@ const TILE_LAYERS = [
 		url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 		options: {
 			subdomains: 'abc',
+			crossOrigin: true,
 			attribution:
 				'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 		},

@@ -47,14 +47,14 @@ final class MapLinks
     {
         $query = rawurlencode($latitude . ',' . $longitude);
 
-        return 'https://www.google.com/maps/search/?api=1&query=' . $query;
+        return 'https://www.google.com/maps/dir/?api=1&destination=' . $query;
     }
 
     public static function appleMapsUrl(float $latitude, float $longitude): string
     {
         $pair = $latitude . ',' . $longitude;
 
-        return 'https://maps.apple.com/?ll=' . rawurlencode($pair) . '&q=' . rawurlencode($pair);
+        return 'https://maps.apple.com/?daddr=' . rawurlencode($pair) . '&q=' . rawurlencode($pair);
     }
 
     public static function formatCoordinatePair(float $latitude, float $longitude): string

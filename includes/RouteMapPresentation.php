@@ -11,7 +11,10 @@ defined('ABSPATH') || exit;
  */
 final class RouteMapPresentation
 {
-    public static function render(string $routeJson): string
+    /**
+     * @param array{modeKey?: string, modeLabel?: string, startLabel?: string} $context
+     */
+    public static function render(string $routeJson, array $context = []): string
     {
         $routeJson = trim($routeJson);
         if ($routeJson === '') {
@@ -23,11 +26,37 @@ final class RouteMapPresentation
             return '';
         }
 
-        return '<div class="rrze-directions-route-map"'
-            . ' data-route="' . esc_attr($routeJson) . '">'
+        $attrs = ' data-route="' . esc_attr($routeJson) . '"';
+
+        $modeKey = trim((string) ($context['modeKey'] ?? ''));
+        if ($modeKey !== '') {
+            $attrs .= ' data-mode-key="' . esc_attr($modeKey) . '"';
+        }
+
+        $modeLabel = trim((string) ($context['modeLabel'] ?? ''));
+        if ($modeLabel !== '') {
+            $attrs .= ' data-mode-label="' . esc_attr($modeLabel) . '"';
+        }
+
+        $startLabel = trim((string) ($context['startLabel'] ?? ''));
+        if ($startLabel !== '') {
+            $attrs .= ' data-start-label="' . esc_attr($startLabel) . '"';
+        }
+
+        return '<div class="rrze-directions-route-map"' . $attrs . '>'
+            . '<div class="rrze-directions-route-map__header">'
             . '<h4 class="rrze-directions-route-map__title">'
             . esc_html__('Route map', 'rrze-directions')
             . '</h4>'
+            . '<button'
+            . ' type="button"'
+            . ' class="rrze-directions-route-map__pdf-btn"'
+            . ' data-route-pdf="1"'
+            . ' aria-label="' . esc_attr__('Download route as PDF', 'rrze-directions') . '"'
+            . '>'
+            . esc_html__('PDF', 'rrze-directions')
+            . '</button>'
+            . '</div>'
             . '<div class="rrze-directions-route-map__canvas"'
             . ' role="application"'
             . ' aria-label="' . esc_attr__('Interactive route map', 'rrze-directions') . '"'

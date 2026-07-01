@@ -63,9 +63,20 @@ $showExtraLink = $mapLinkOnly !== ''
 $showMapBlock        = ($attributes['showMap'] ?? true) !== false;
 $showDirectionsBlock = $showMapBlock && ($attributes['showDirections'] ?? true) !== false;
 
+$destinationParts = array_filter([
+    $organizationName,
+    $addressRoom !== '' ? sprintf(__('Room: %s', 'rrze-directions'), $addressRoom) : '',
+    $addressFloor !== '' ? sprintf(__('Floor: %s', 'rrze-directions'), $addressFloor) : '',
+    $streetLine !== '' ? $streetLine : ($showFormattedAddress ? $addressFormatted : ''),
+]);
+$destinationLabel = trim(implode(', ', $destinationParts));
+
 $class = trim('wp-block-rrze-directions rrze-directions');
+$destinationAttr = $destinationLabel !== ''
+    ? ' data-destination-label="' . esc_attr($destinationLabel) . '"'
+    : '';
 ?>
-<section class="<?php echo esc_attr($class); ?>">
+<section class="<?php echo esc_attr($class); ?>"<?php echo $destinationAttr; ?>>
     <div class="rrze-directions__body">
         <h2 class="rrze-directions__title"><?php
         $heading     = trim((string) ($attributes['heading'] ?? ''));

@@ -269,14 +269,14 @@ function formatCoordinatePair(latitude, longitude) {
 function googleMapsUrl(latitude, longitude) {
 	const query = encodeURIComponent(`${latitude},${longitude}`);
 
-	return `https://www.google.com/maps/search/?api=1&query=${query}`;
+	return `https://www.google.com/maps/dir/?api=1&destination=${query}`;
 }
 
 function appleMapsUrl(latitude, longitude) {
 	const pair = `${latitude},${longitude}`;
 	const encoded = encodeURIComponent(pair);
 
-	return `https://maps.apple.com/?ll=${encoded}&q=${encoded}`;
+	return `https://maps.apple.com/?daddr=${encoded}&q=${encoded}`;
 }
 
 async function fetchCoordinatesFromMapUrl(mapUrl) {
@@ -1898,40 +1898,9 @@ export default function Edit({ attributes, setAttributes }) {
 		<Fragment>
 			<InspectorControls>
 				<PanelBody
-					title={strings.displaySettings ?? __('Display', 'rrze-directions')}
+					title={strings.selectPersonPanel ?? __('FAUdir', 'rrze-directions')}
 					initialOpen
 				>
-					<ToggleControl
-						label={strings.showMap ?? __('Show map', 'rrze-directions')}
-						checked={showMap !== false}
-						onChange={(next) =>
-							setAttributes({
-								showMap: next,
-								...(next ? {} : { showDirections: false }),
-							})
-						}
-					/>
-					<ToggleControl
-						label={
-							strings.showDirectionsSection ??
-							__('Show arrival directions', 'rrze-directions')
-						}
-						checked={showDirections !== false}
-						disabled={showMap === false}
-						onChange={(next) => setAttributes({ showDirections: next })}
-						help={
-							showMap === false
-								? strings.showDirectionsRequiresMap ??
-									__(
-										'Arrival directions require the map to be shown.',
-										'rrze-directions'
-									)
-								: undefined
-						}
-					/>
-				</PanelBody>
-
-				<PanelBody title={strings.selectPersonPanel ?? __('FAUdir', 'rrze-directions')}>
 					<SelectControl
 						label={strings.selectPerson ?? __('Person', 'rrze-directions')}
 						value={personId ? String(personId) : ''}
@@ -2001,6 +1970,30 @@ export default function Edit({ attributes, setAttributes }) {
 					) : null}
 				</PanelBody>
 
+				<PanelBody title={strings.displaySettings ?? __('Display', 'rrze-directions')}>
+					<ToggleControl
+						label={strings.showMap ?? __('Show map', 'rrze-directions')}
+						checked={showMap !== false}
+						onChange={(next) =>
+							setAttributes({
+								showMap: next,
+								...(next ? {} : { showDirections: false }),
+							})
+						}
+					/>
+					{showMap !== false ? (
+						<ToggleControl
+							label={
+								strings.showDirectionsSection ??
+								__('Show arrival directions', 'rrze-directions')
+							}
+							checked={showDirections !== false}
+							onChange={(next) => setAttributes({ showDirections: next })}
+						/>
+					) : null}
+				</PanelBody>
+
+				{showMap !== false ? (
 				<PanelBody title={strings.mapSection ?? __('Map', 'rrze-directions')}>
 					<TextControl
 						label={
@@ -2064,6 +2057,7 @@ export default function Edit({ attributes, setAttributes }) {
 
 					{mapIllustration}
 				</PanelBody>
+				) : null}
 			</InspectorControls>
 
 			<div {...blockProps}>

@@ -364,12 +364,16 @@ final class DirectionsPresentation
     private static function renderSectionBody(array $section): string
     {
         $variants = RouteMapPresentation::parseVariants($section['route']);
+        $context  = [
+            'modeKey'   => $section['key'],
+            'modeLabel' => $section['title'],
+        ];
 
         if ($variants !== []) {
-            return self::renderStartSwitcher($variants, $section['html']);
+            return self::renderStartSwitcher($variants, $section['html'], $context);
         }
 
-        $html = RouteMapPresentation::render($section['route']);
+        $html = RouteMapPresentation::render($section['route'], $context);
         $html .= '<div class="rrze-directions__rte">' . wp_kses_post($section['html']) . '</div>';
 
         return $html;
@@ -377,8 +381,9 @@ final class DirectionsPresentation
 
     /**
      * @param list<array{startKey: string, startLabel: string, route: array<string, mixed>}> $variants
+     * @param array{modeKey?: string, modeLabel?: string}                     $context
      */
-    private static function renderStartSwitcher(array $variants, string $sectionHtml): string
+    private static function renderStartSwitcher(array $variants, string $sectionHtml, array $context = []): string
     {
         if (count($variants) === 1) {
             $variant   = $variants[0];
@@ -388,7 +393,9 @@ final class DirectionsPresentation
             $output    = '';
 
             if (is_string($routeJson) && $routeJson !== '') {
-                $output .= RouteMapPresentation::render($routeJson);
+                $output .= RouteMapPresentation::render($routeJson, array_merge($context, [
+                    'startLabel' => $variant['startLabel'],
+                ]));
             }
 
             if ($part !== '') {
@@ -435,7 +442,9 @@ final class DirectionsPresentation
             $part           = $htmlParts[$index] ?? '';
 
             if (is_string($routeJson) && $routeJson !== '') {
-                $panelContent .= RouteMapPresentation::render($routeJson);
+                $panelContent .= RouteMapPresentation::render($routeJson, array_merge($context, [
+                    'startLabel' => $label,
+                ]));
             }
 
             if ($part !== '') {

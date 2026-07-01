@@ -272,6 +272,36 @@ msgstr "Route %d"
 msgid "Route map"
 msgstr "Routenkarte"
 
+msgid "PDF"
+msgstr "PDF"
+
+msgid "Download route as PDF"
+msgstr "Route als PDF herunterladen"
+
+msgid "From"
+msgstr "Von"
+
+msgid "To"
+msgstr "Nach"
+
+msgid "Summary"
+msgstr "Zusammenfassung"
+
+msgid "Overview map"
+msgstr "Übersichtskarte"
+
+msgid "Detail map"
+msgstr "Detailkarte"
+
+msgid "Page"
+msgstr "Seite"
+
+msgid "Generating PDF…"
+msgstr "PDF wird erstellt…"
+
+msgid "Could not generate the PDF."
+msgstr "Das PDF konnte nicht erstellt werden."
+
 msgid "Interactive route map"
 msgstr "Interaktive Routenkarte"
 
